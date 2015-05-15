@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!python2.7
 
 #####
 #ncchinfo.bin format
