@@ -12,8 +12,8 @@
 
 void ClearTop()
 {
-    ClearScreen(TOP_SCREEN0, RGB(255, 255, 255));
-    ClearScreen(TOP_SCREEN1, RGB(255, 255, 255));
+    ClearScreen(TOP_SCREEN0, RGB(0, 0, 0));
+    ClearScreen(TOP_SCREEN1, RGB(0, 0, 0));
     current_y = 0;
 }
 
@@ -28,6 +28,10 @@ int main()
     ClearTop();
     InitFS();
 
+    Debug("Decrypt9 (bootstrap branch) by Archshift");
+    Debug("with modifications by Shadowtrance & d0k3");
+    Debug("https://github.com/archshift/Decrypt9");
+    Debug("");
     Debug("A: NCCH Padgen");
     Debug("B: SD Padgen");
     Debug("X: Titlekey Decryption");
