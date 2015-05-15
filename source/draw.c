@@ -59,8 +59,8 @@ void DrawStringF(int x, int y, const char *format, ...)
     vsnprintf(str, 256, format, va);
     va_end(va);
 
-    DrawString(TOP_SCREEN0, str, x, y, RGB(0, 0, 0), RGB(255, 255, 255));
-    DrawString(TOP_SCREEN1, str, x, y, RGB(0, 0, 0), RGB(255, 255, 255));
+    DrawString(TOP_SCREEN0, str, x, y, RGB(255, 255, 255), RGB(0, 0, 0));
+    DrawString(TOP_SCREEN1, str, x, y, RGB(255, 255, 255), RGB(0, 0, 0));
 }
 
 void Debug(const char *format, ...)
@@ -72,8 +72,14 @@ void Debug(const char *format, ...)
     vsnprintf(str, 256, format, va);
     va_end(va);
 
-    DrawString(TOP_SCREEN0, str, 10, current_y, RGB(0, 0, 0), RGB(255, 255, 255));
-    DrawString(TOP_SCREEN1, str, 10, current_y, RGB(0, 0, 0), RGB(255, 255, 255));
+    if (current_y >= 240) {
+        ClearScreen(TOP_SCREEN0, RGB(0, 0, 0));
+        ClearScreen(TOP_SCREEN1, RGB(0, 0, 0));
+        cureent_y = 0;
+    }
+    
+    DrawString(TOP_SCREEN0, str, 10, current_y, RGB(255, 255, 255), RGB(0, 0, 0));
+    DrawString(TOP_SCREEN1, str, 10, current_y, RGB(255, 255, 255), RGB(0, 0, 0));
 
     current_y += 10;
 }
