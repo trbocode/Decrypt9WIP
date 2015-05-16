@@ -30,7 +30,7 @@ int main()
 
     Debug("Decrypt9 (bootstrap branch) by Archshift");
     Debug("with modifications by Shadowtrance & d0k3");
-    Debug("https://github.com/archshift/Decrypt9");
+    Debug("https://github.com/Shadowtrance/Decrypt9");
     Debug("");
     Debug("A: NCCH Padgen");
     Debug("B: SD Padgen");
