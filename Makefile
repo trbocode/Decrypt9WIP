@@ -101,8 +101,6 @@ all: $(BUILD)
 $(BUILD):
 	@[ -d $@ ] || mkdir -p $@
 	@make --no-print-directory -C $(BUILD) -f $(CURDIR)/Makefile
-	cp tools/LauncherTemplate.dat Launcher.dat
-	python tools/insert.py Launcher.dat $(OUTPUT).bin 0x16D8D0
  
 #---------------------------------------------------------------------------------
 clean:
