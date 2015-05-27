@@ -59,8 +59,65 @@ void DrawStringF(int x, int y, const char *format, ...)
     vsnprintf(str, 256, format, va);
     va_end(va);
 
-    DrawString(TOP_SCREEN0, str, x, y, RGB(255, 255, 255), RGB(0, 0, 0));
-    DrawString(TOP_SCREEN1, str, x, y, RGB(255, 255, 255), RGB(0, 0, 0));
+    DrawString(TOP_SCREEN0, str, x, y, RGB(0, 255, 0), RGB(0, 0, 0));
+    DrawString(TOP_SCREEN1, str, x, y, RGB(0, 255, 0), RGB(0, 0, 0));
+}
+
+void drawRect( int x1, int y1, int x2, int y2, char r, char g, char b, u8* screen)
+{
+	drawLine( x1, y1, x2, y1, r, g, b, screen);
+	drawLine( x2, y1, x2, y2, r, g, b, screen);
+	drawLine( x1, y2, x2, y2, r, g, b, screen);
+	drawLine( x1, y1, x1, y2, r, g, b, screen);
+}
+
+void drawPixel(int x, int y, char r, char g, char b, u8* screen)
+{
+	int height=240;
+	
+	u32 v=(height-1-y+x*height)*3;
+	screen[v]=b;
+	screen[v+1]=g;
+	screen[v+2]=r;
+}
+
+void drawLine( int x1, int y1, int x2, int y2, char r, char g, char b, u8* screen)
+{
+
+	int x, y;
+	if (x1 == x2){
+		if (y1<y2) for (y = y1; y < y2; y++) drawPixel(x1,y,r,g,b,screen);
+		else for (y = y2; y < y1; y++) drawPixel(x1,y,r,g,b,screen);
+	} else {
+		if (x1<x2) for (x = x1; x < x2; x++) drawPixel(x,y1,r,g,b,screen);
+		else for (x = x2; x < x1; x++) drawPixel(x,y1,r,g,b,screen);
+	}
+}
+
+void drawFillRect( int x1, int y1, int x2, int y2, char r, char g, char b, u8* screen)
+{
+	int X1,X2,Y1,Y2,i,j;
+
+	if (x1<x2){ 
+		X1=x1;
+		X2=x2;
+	} else { 
+		X1=x2;
+		X2=x1;
+	} 
+
+	if (y1<y2){ 
+		Y1=y1;
+		Y2=y2;
+	} else { 
+		Y1=y2;
+		Y2=y1;
+	} 
+	for(i=X1;i<=X2;i++){
+		for(j=Y1;j<=Y2;j++){
+			drawPixel(i,j, r, g, b, screen);
+		}
+	}
 }
 
 void Debug(const char *format, ...)
@@ -76,10 +133,12 @@ void Debug(const char *format, ...)
         ClearScreen(TOP_SCREEN0, RGB(0, 0, 0));
         ClearScreen(TOP_SCREEN1, RGB(0, 0, 0));
         current_y = 0;
+		newline(3);
+		drawUI();
     }
     
-    DrawString(TOP_SCREEN0, str, 10, current_y, RGB(255, 255, 255), RGB(0, 0, 0));
-    DrawString(TOP_SCREEN1, str, 10, current_y, RGB(255, 255, 255), RGB(0, 0, 0));
+    DrawString(TOP_SCREEN0, str, 10, current_y, RGB(0, 255, 0), RGB(0, 0, 0));
+    DrawString(TOP_SCREEN1, str, 10, current_y, RGB(0, 255, 0), RGB(0, 0, 0));
 
     current_y += 10;
 }

@@ -22,5 +22,7 @@ void DrawCharacter(unsigned char *screen, int character, int x, int y, int color
 void DrawString(unsigned char *screen, const char *str, int x, int y, int color, int bgcolor);
 void DrawStringF(int x, int y, const char *format, ...);
 
+void drawRect( int x1, int y1, int x2, int y2, char r, char g, char b, u8* screen);
+void drawFillRect( int x1, int y1, int x2, int y2, char r, char g, char b, u8* screen);
 
 void Debug(const char *format, ...);
