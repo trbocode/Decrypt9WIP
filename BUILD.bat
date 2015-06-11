@@ -9,4 +9,5 @@ mkdir data
 make
 move Decrypt9.* ..\output
 cd ..
+rm Decrypt9.elf
 pause
