@@ -4,8 +4,9 @@ if %errorlevel% neq 0 pause
 @echo on
 make
 cd Decrypt9
-mkdir Decrypt9
 make
-move Decrypt9.3dsx Decrypt9
-move Decrypt9.smdh Decrypt9
+cd ..
+mkdir output
+move Decrypt9/Decrypt9.3dsx output
+move Decrypt9/Decrypt9.smdh output
 pause
