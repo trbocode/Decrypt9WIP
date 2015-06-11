@@ -59,7 +59,7 @@ ifneq ($(BUILD),$(notdir $(CURDIR)))
 #---------------------------------------------------------------------------------
  
 export OUTPUT	:=	$(CURDIR)/$(TARGET)
-export OUTPUT_D	:=	$(CURDIR)/Decrypt9/data
+export OUTPUT_D	:=	$(CURDIR)/brahma_loader/data
 
 export VPATH	:=	$(foreach dir,$(SOURCES),$(CURDIR)/$(dir)) \
 			$(foreach dir,$(DATA),$(CURDIR)/$(dir))
