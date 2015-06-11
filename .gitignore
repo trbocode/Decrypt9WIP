@@ -1,6 +1,9 @@
-Launcher.dat
-Decrypt9.bin
 Decrypt9.elf
-/build
+Decrypt9.3dsx
+Decrypt9.smdh
+payload.bin
+
+build
+output
 
 .DS_Store

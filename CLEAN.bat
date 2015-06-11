@@ -1,8 +1,7 @@
 @echo off
-
+rm brahma_loader/data/payload.bin
+rm *.elf
 make clean
-rm Decrypt9/data/payload.bin
-rmdir /Q /S .\Decrypt9\Decrypt9
-cd Decrypt9
+cd brahma_loader
 make clean
 pause

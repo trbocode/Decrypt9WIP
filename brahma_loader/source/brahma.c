@@ -10,7 +10,6 @@
 #include <arpa/inet.h>
 #include "brahma.h"
 #include "exploitdata.h"
-#include "payload_bin.h"                                               //CHANGE this is arm9 payload data being loaded
 
 
 /* should be the very first call. allocates heap buffer
@@ -262,20 +261,41 @@ s32 recv_arm9_payload (void) {
 /* reads ARM9 payload from a given path.
    filename: full path of payload
    returns: 0 on failure, 1 on success */
-s32 load_arm9_payload (char *filename) {                             //CHANGE reads payload from RAM instead of SDMC
+s32 load_arm9_payload (char *filename) {
 	s32 result = 0;
 	u32 fsize = 0;
 
-		fsize = payload_bin_size;
-		g_ext_arm9_size = payload_bin_size;
-		
+	if (!filename)
+		return result; 
+
+	FILE *f = fopen(filename, "rb");
+	if (f) {
+		fseek(f , 0, SEEK_END);
+		fsize = ftell(f);
+		g_ext_arm9_size = fsize;
+		rewind(f);
 		if (fsize >= 8 && (fsize <= ARM9_PAYLOAD_MAX_SIZE)) {
-				memcpy(g_ext_arm9_buf,payload_bin,fsize);
-				u32 bytes_read = fsize;
+				u32 bytes_read = fread(g_ext_arm9_buf, 1, fsize, f);
 				result = (g_ext_arm9_loaded = (bytes_read == fsize));
 		}
-		
+		fclose(f);
+	}
+	return result;
+}
 
+/* reads ARM9 payload from memory.
+   data: array of u8 containing the payload
+   dsize: size of the data array
+   returns: 0 on failure, 1 on success */
+s32 load_arm9_payload_from_mem (u8* data, u32 dsize) {
+	s32 result = 0;
+
+	if (dsize >= 8 && (dsize <= ARM9_PAYLOAD_MAX_SIZE)) {
+		g_ext_arm9_size = dsize;
+		memcpy(g_ext_arm9_buf, data, dsize);
+		result = g_ext_arm9_loaded = 1;
+	}
+	
 	return result;
 }
 

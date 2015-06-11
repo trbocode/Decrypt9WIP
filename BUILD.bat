@@ -2,10 +2,12 @@
 REM === pause if there were errors ===
 if %errorlevel% neq 0 pause
 @echo on
+mkdir output
 make
-cd Decrypt9
-mkdir Decrypt9
+cd brahma_loader
+mkdir data
 make
-move Decrypt9.3dsx Decrypt9
-move Decrypt9.smdh Decrypt9
+move Decrypt9.* ..\output
+cd ..
+rm Decrypt9.elf
 pause
