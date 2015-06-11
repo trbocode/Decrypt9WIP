@@ -296,7 +296,7 @@ s32 load_arm9_payload_from_mem (u8* data, u32 dsize) {
 		result = g_ext_arm9_loaded = 1;
 	}
 	
-	return 1;
+	return result;
 }
 
 /* copies ARM9 payload to FCRAM
