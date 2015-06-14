@@ -1,6 +1,5 @@
 @echo off
-rm brahma_loader/data/payload.bin
-rm *.elf
+rmdir /Q /S .\brahma_loader\data
 make clean
 cd brahma_loader
 make clean

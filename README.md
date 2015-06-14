@@ -10,7 +10,8 @@ First build by running `BUILD.bat` in the project root.
 
 ### Decrypting gamecart dumps / extracted cia content.
 
-Copy the Decrypt9 folder from `Decrypt9` with the .3dsx and .smdh after building to your 3ds sd card. The .3dsx and .smdh are a modified version of https://github.com/patois/Brahma with the Decrypt9 bin built in.
+Copy the Decrypt9.3dsx / Decrypt9.smdh from the `output` folder after building to your 3ds sd card ( /3ds/Decrypt9 ).
+The .3dsx and .smdh are a modified version of https://github.com/patois/Brahma with the Decrypt9 bin built in.
 
 Then use `ncchinfo_gen.py` on your encrypted game (dump the game with the Gateway launcher).
 Or if using on cia content extracted with ctrtool use `ncchinfo_tgen.py`, for example extracted theme pack cia's.
