@@ -25,4 +25,7 @@ void DrawStringF(int x, int y, const char *format, ...);
 void drawRect( int x1, int y1, int x2, int y2, char r, char g, char b, u8* screen);
 void drawFillRect( int x1, int y1, int x2, int y2, char r, char g, char b, u8* screen);
 
+void drawUI();
+
+void DebugClear();
 void Debug(const char *format, ...);
