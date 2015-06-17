@@ -123,12 +123,11 @@ void drawFillRect( int x1, int y1, int x2, int y2, char r, char g, char b, u8* s
 	
 void drawUI()
 {	
-	drawRect(2, 2, 398, 238, 102, 0, 255, TOP_SCREEN0);
-	drawRect(2, 2, 398, 238, 102, 0, 255, TOP_SCREEN1);
-	drawRect(6, 6, 394, 20, 102, 0, 255, TOP_SCREEN0);
-	drawRect(6, 6, 394, 20, 102, 0, 255, TOP_SCREEN1);
-	DrawString(TOP_SCREEN0, "Decrypt9 - Bootstrap-MOD", 110, 10, 65280, 0);
-	DrawString(TOP_SCREEN1, "Decrypt9 - Bootstrap-MOD", 110, 10, 65280, 0);
+	drawRect(2, 2, 398, 238, 102, 0, 255, TOP_SCREEN0); //screen border rectangle
+	drawRect(2, 2, 398, 238, 102, 0, 255, TOP_SCREEN1); //screen border rectangle
+	drawRect(6, 6, 394, 20, 102, 0, 255, TOP_SCREEN0); //small rectangle top
+	drawRect(6, 6, 394, 20, 102, 0, 255, TOP_SCREEN1); //small rectangle top
+	DrawStringF(110, 10, "Decrypt9 - Bootstrap-MOD");
 }
 
 void DebugClear()

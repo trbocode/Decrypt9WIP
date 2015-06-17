@@ -18,22 +18,18 @@ void Reboot()
 
 void drawMenu()
 {
-    DrawString(TOP_SCREEN0, "A: NCCH Padgen", 110, 60, 65280, 0);
-    DrawString(TOP_SCREEN1, "A: NCCH Padgen", 110, 60, 65280, 0);
-    DrawString(TOP_SCREEN0, "B: SD Padgen", 110, 70, 65280, 0);
-    DrawString(TOP_SCREEN1, "B: SD Padgen", 110, 70, 65280, 0);
-    DrawString(TOP_SCREEN0, "X: Titlekey Decryption", 110, 80, 65280, 0);
-    DrawString(TOP_SCREEN1, "X: Titlekey Decryption", 110, 80, 65280, 0);
-    DrawString(TOP_SCREEN0, "Y: NAND Padgen", 110, 90, 65280, 0);
-    DrawString(TOP_SCREEN1, "Y: NAND Padgen", 110, 90, 65280, 0);
-    drawRect(6, 50, 394, 110, 102, 0, 255, TOP_SCREEN0);
-    drawRect(6, 50, 394, 110, 102, 0, 255, TOP_SCREEN1);
+    DrawStringF(110, 60, "A: NCCH Padgen");
+    DrawStringF(110, 70, "B: SD Padgen");
+    DrawStringF(110, 80, "X: Titlekey Decryption");
+    DrawStringF(110, 90, "Y: NAND Padgen");
+    drawRect(6, 50, 394, 110, 102, 0, 255, TOP_SCREEN0); //middle rectangle
+    drawRect(6, 50, 394, 110, 102, 0, 255, TOP_SCREEN1); //middle rectangle
 }
 
 void drawFreeSpace()
 {
-    drawRect(6, 234, 394, 214, 102, 0, 255, TOP_SCREEN0);
-    drawRect(6, 234, 394, 214, 102, 0, 255, TOP_SCREEN1);
+    drawRect(6, 234, 394, 214, 102, 0, 255, TOP_SCREEN0); //small rectangle bottom
+    drawRect(6, 234, 394, 214, 102, 0, 255, TOP_SCREEN1); //small rectangle bottom
     DrawStringF(10, 220, "     Remaining SD storage space: %llu MiB", RemainingStorageSpace() / 1024 / 1024);
 }
 
