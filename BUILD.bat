@@ -6,6 +6,7 @@ mkdir brahma_loader\data
 mkdir output
 make
 cd brahma_loader
+copy gfx\bot_gfx.bin data
 make
 move Decrypt9.* ..\output
 cd ..

@@ -1,0 +1,7 @@
+Use the image included in the gfx folder or
+copy your own .png image (320w x 240h), rename to bot_gfx.png
+or modify main.c (where all references of bot_gfx are),
+line 7 #include "bot_gfx_bin.h"
+line 27 memcpy(fb, bot_gfx_bin, bot_gfx_bin_size);
+
+Drag and drop your image on to make_img_bin.bat and build.
