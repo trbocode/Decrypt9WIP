@@ -14,6 +14,7 @@ s32 main (void) {
 	hbInit();
 	qtmInit();
 	
+	gfxSwapBuffers();
 	if (brahma_init()) {
 		load_arm9_payload_from_mem(payload_bin, payload_bin_size);
 		firm_reboot();
