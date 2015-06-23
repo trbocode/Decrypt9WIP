@@ -7,6 +7,7 @@
 #include "fs.h"
 #include "hid.h"
 #include "i2c.h"
+#include "decryptor/dumpnand.h"
 #include "decryptor/padgen.h"
 #include "decryptor/titlekey.h"
 
@@ -22,8 +23,9 @@ void drawMenu()
     DrawStringF(110, 70, "B: SD Padgen");
     DrawStringF(110, 80, "X: Titlekey Decryption");
     DrawStringF(110, 90, "Y: NAND Padgen");
-    drawRect(6, 50, 394, 110, 102, 0, 255, TOP_SCREEN0); //middle rectangle
-    drawRect(6, 50, 394, 110, 102, 0, 255, TOP_SCREEN1); //middle rectangle
+    DrawStringF(110, 100, "R: NAND Dump");
+    drawRect(6, 50, 394, 120, 102, 0, 255, TOP_SCREEN0); //middle rectangle
+    drawRect(6, 50, 394, 120, 102, 0, 255, TOP_SCREEN1); //middle rectangle
 }
 
 void drawFreeSpace()
@@ -58,6 +60,10 @@ int main()
             DebugClear();
             Debug("NAND Padgen: %s!", NandPadgen() == 0 ? "succeeded" : "failed");
             break;
+		} else if (pad_state & BUTTON_R1) {
+			DebugClear();
+			Debug("NAND Dump: %s!", NandDumper() == 0 ? "succeeded" : "failed");
+			break;
         } else if (pad_state & BUTTON_START) {
             goto reboot;
         }
