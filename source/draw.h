@@ -18,6 +18,7 @@
 #define TOP_SCREEN1 (u8*)(0x20046500)
 #define BOT_SCREEN0 (u8*)(0x2008CA00)
 #define BOT_SCREEN1 (u8*)(0x200C4E00)
+extern int current_y;
 
 void ClearScreen(unsigned char *screen, int color);
 void DrawCharacter(unsigned char *screen, int character, int x, int y, int color, int bgcolor);
