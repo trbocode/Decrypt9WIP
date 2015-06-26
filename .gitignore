@@ -1,7 +1,6 @@
-Launcher.dat
-Decrypt9.bin
-Decrypt9.elf
 /build
 /output
+/brahma_loader/build
+/brahma_loader/output
 
 .DS_Store
