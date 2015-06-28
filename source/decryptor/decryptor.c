@@ -338,7 +338,7 @@ u32 SeekMagicNumber(u8* magic, u32 magiclen, u32 offset, u32 size, u32 keyslot)
     return found;
 }
 
-u32 DumpPartition(char* filename, u32 offset, u32 size, u32 keyslot)
+u32 DecryptNand(char* filename, u32 offset, u32 size, u32 keyslot)
 {
     DecryptBufferInfo info;
     u8* buffer = BUFFER_ADDRESS;
@@ -482,15 +482,15 @@ u32 NandPartitionsDumper() {
     }
 
     // see: http://3dbrew.org/wiki/Flash_Filesystem
-    Debug("Dumping firm0.bin: %s!", DumpPartition("firm0.bin", 0x0B130000, 0x00400000, 0x6) == 0 ? "succeeded" : "failed");
-    Debug("Dumping firm1.bin: %s!", DumpPartition("firm1.bin", 0x0B530000, 0x00400000, 0x6) == 0 ? "succeeded" : "failed");
-    Debug("Dumping ctrnand.bin: %s!", DumpPartition("ctrnand.bin", ctrnand_offset, ctrnand_size, keyslot) == 0 ? "succeeded" : "failed");
+    Debug("Dumping firm0.bin: %s!", DecryptNand("firm0.bin", 0x0B130000, 0x00400000, 0x6) == 0 ? "succeeded" : "failed");
+    Debug("Dumping firm1.bin: %s!", DecryptNand("firm1.bin", 0x0B530000, 0x00400000, 0x6) == 0 ? "succeeded" : "failed");
+    Debug("Dumping ctrnand.bin: %s!", DecryptNand("ctrnand.bin", ctrnand_offset, ctrnand_size, keyslot) == 0 ? "succeeded" : "failed");
 
     return 0;
 }
 
 u32 TicketDumper() {
-    const u32 ticket_size = 0xD0000; // size taken from rxTools, after this nothign useful is found anymore
+    const u32 ticket_size = 0xD0000; // size taken from rxTools, after this nothing useful is found anymore
     u32 ctrnand_offset;
     u32 ctrnand_size;
     u32 keyslot;
@@ -514,5 +514,5 @@ u32 TicketDumper() {
     }
     Debug("Found at 0x%08X", offset);
     
-    return DumpPartition("ticket.bin", offset, ticket_size, keyslot);
+    return DecryptNand("ticket.bin", offset, ticket_size, keyslot);
 }

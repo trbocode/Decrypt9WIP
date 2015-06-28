@@ -78,6 +78,6 @@ typedef struct {
 } __attribute__((packed, aligned(16))) EncKeysInfo;
 
 u32 GetNandCtr(u8* ctr, u32 offset);
-u32 DumpPartition(char* filename, u32 offset, u32 size, u32 keyslot);
+u32 DecryptNand(char* filename, u32 offset, u32 size, u32 keyslot);
 u32 DecryptBuffer(DecryptBufferInfo *info);
 u32 CreatePad(PadInfo *info);
