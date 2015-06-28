@@ -26,9 +26,7 @@ static const u8 common_keyy[6][16] = {
 
 u32 DecryptBuffer(DecryptBufferInfo *info)
 {
-    u8 ctr[16] __attribute__((aligned(32)));
-    memcpy(ctr, info->CTR, 16);
-
+    u8* ctr = info->CTR;
     u8* buffer = info->buffer;
     u32 size = info->size;
 
@@ -43,9 +41,7 @@ u32 DecryptBuffer(DecryptBufferInfo *info)
         aes_decrypt((void*) buffer, (void*) buffer, ctr, 1, AES_CTR_MODE);
         add_ctr(ctr, 0x1);
     }
-
-    memcpy(info->CTR, ctr, 16);
-
+    
     return 0;
 }
 
@@ -280,6 +276,7 @@ u32 GetNandCtr(u8* ctr, u32 offset)
             if (*(u32*)version_ctrs[i] == 0x5C980) {
                 Debug("System version: %s", versions[i]);
                 ctr_start =(u8*)(version_ctrs[i] + 0x30);
+                break;
             }
         }
 
