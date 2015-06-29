@@ -53,15 +53,15 @@ int main()
             break;
         } else if (pad_state & BUTTON_L1) {
             DebugClear();
-            Debug("NAND Partition Dump: %s!", NandPartitionsDumper() == 0 ? "succeeded" : "failed");
+            Debug("NAND Partition Dump: %s!", DecryptNandPartitions() == 0 ? "succeeded" : "failed");
             break;
         } else if (pad_state & BUTTON_R1) {
             DebugClear();
-            Debug("NAND Dump: %s!", NandDumper() == 0 ? "succeeded" : "failed");
+            Debug("NAND Dump: %s!", DumpNand() == 0 ? "succeeded" : "failed");
             break;
         } else if (pad_state & BUTTON_UP) {
             DebugClear();
-            Debug("Ticket Dump: %s!", TicketDumper() == 0 ? "succeeded" : "failed");
+            Debug("Ticket Dump: %s!", DumpTicket() == 0 ? "succeeded" : "failed");
             break;
         } else if (pad_state & BUTTON_START) {
             goto reboot;

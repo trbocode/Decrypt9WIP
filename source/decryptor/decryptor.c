@@ -45,6 +45,22 @@ u32 DecryptBuffer(DecryptBufferInfo *info)
     return 0;
 }
 
+u32 DecryptTitlekey(u8* titlekey, u8* titleId, u32 index)
+{
+    u8 ctr[16];
+    u8 keyY[16];
+    
+    memset(ctr, 0, 16);
+    memcpy(ctr, titleId, 8);
+    memcpy(keyY, (void *)common_keyy[index], 16);
+    
+    set_ctr(AES_BIG_INPUT|AES_NORMAL_INPUT, ctr);
+    setup_aeskey(0x3D, AES_BIG_INPUT|AES_NORMAL_INPUT, keyY);
+    aes_decrypt(titlekey, titlekey, ctr, 1, AES_CBC_DECRYPT_MODE);
+    
+    return 0;
+}
+
 u32 DecryptTitlekeys(void)
 {
     EncKeysInfo *info = (EncKeysInfo*)0x20316000;
@@ -54,6 +70,7 @@ u32 DecryptTitlekeys(void)
         Debug("Could not open encTitleKeys.bin!");
         return 1;
     }
+    
     FileRead(info, 16, 0);
 
     if (!info->n_entries || info->n_entries > MAX_ENTRIES) {
@@ -68,19 +85,8 @@ u32 DecryptTitlekeys(void)
     FileClose();
 
     Debug("Decrypting Title Keys...");
-
-    u8 ctr[16] __attribute__((aligned(32)));
-    u8 keyY[16] __attribute__((aligned(32)));
-    u32 i;
-    for (i = 0; i < info->n_entries; i++) {
-        memset(ctr, 0, 16);
-        memcpy(ctr, info->entries[i].titleId, 8);
-        set_ctr(AES_BIG_INPUT|AES_NORMAL_INPUT, ctr);
-        memcpy(keyY, (void *)common_keyy[info->entries[i].commonKeyIndex], 16);
-        setup_aeskey(0x3D, AES_BIG_INPUT|AES_NORMAL_INPUT, keyY);
-        use_aeskey(0x3D);
-        aes_decrypt(info->entries[i].encryptedTitleKey, info->entries[i].encryptedTitleKey, ctr, 1, AES_CBC_DECRYPT_MODE);
-    }
+    for (u32 i = 0; i < info->n_entries; i++)
+        DecryptTitlekey(info->entries[i].encryptedTitleKey, info->entries[i].titleId, info->entries[i].commonKeyIndex);
 
     if (!FileCreate("/decTitleKeys.bin", true))
         return 1;
@@ -169,7 +175,7 @@ u32 NcchPadgen()
                 Debug("Failed to find seed in seeddb.bin");
                 return 0;
             }
-        u8 sha256sum[32];
+            u8 sha256sum[32];
             sha256_context shactx;
             sha256_starts(&shactx);
             sha256_update(&shactx, keydata, 32);
@@ -306,14 +312,10 @@ u32 GetNandCtr(u8* ctr, u32 offset)
 
 u32 SeekMagicNumber(u8* magic, u32 magiclen, u32 offset, u32 size, u32 keyslot)
 {
-    DecryptBufferInfo info;
     u8* buffer = BUFFER_ADDRESS;
     u32 found = (u32) -1;
 
-    info.keyslot = keyslot;
-    info.setKeyY = 0;
-    info.size = NAND_SECTOR_SIZE;
-    info.buffer = buffer;
+    DecryptBufferInfo info = {.keyslot = keyslot, .setKeyY = 0, .size = NAND_SECTOR_SIZE, .buffer = buffer};
     if(GetNandCtr(info.CTR, offset) != 0)
         return 1;
     
@@ -337,16 +339,12 @@ u32 SeekMagicNumber(u8* magic, u32 magiclen, u32 offset, u32 size, u32 keyslot)
 
 u32 DecryptNand(char* filename, u32 offset, u32 size, u32 keyslot)
 {
-    DecryptBufferInfo info;
     u8* buffer = BUFFER_ADDRESS;
 
     Debug("Decrypting NAND data. Size (MB): %u", size / (1024 * 1024));
     Debug("Filename: %s", filename);
-
-    info.keyslot = keyslot;
-    info.setKeyY = 0;
-    info.size = SECTORS_PER_READ * NAND_SECTOR_SIZE;
-    info.buffer = buffer;
+    
+    DecryptBufferInfo info = {.keyslot = keyslot, .setKeyY = 0, .size = SECTORS_PER_READ * NAND_SECTOR_SIZE, .buffer = buffer};
     if(GetNandCtr(info.CTR, offset) != 0)
         return 1;
 
@@ -371,12 +369,8 @@ u32 DecryptNand(char* filename, u32 offset, u32 size, u32 keyslot)
 
 u32 NandPadgen()
 {
-    u8 ctr[16];
     u32 keyslot;
     u32 nand_size;
-    
-    if(GetNandCtr(ctr, 0xB930000) != 0)
-        return 1;
 
     if(GetUnitPlatform() == PLATFORM_3DS) {
         keyslot = 0x4;
@@ -389,7 +383,7 @@ u32 NandPadgen()
     Debug("Creating NAND FAT16 xorpad. Size (MB): %u", nand_size);
     Debug("Filename: nand.fat16.xorpad");
 
-    PadInfo padInfo = {.keyslot = keyslot, .setKeyY = 0, .size_mb = nand_size , .filename = "/nand.fat16.xorpad"};
+    PadInfo padInfo = {.keyslot = keyslot, .setKeyY = 0, .size_mb = nand_size, .filename = "/nand.fat16.xorpad"};
     if(GetNandCtr(padInfo.CTR, 0xB930000) != 0)
         return 1;
 
@@ -439,7 +433,7 @@ u32 CreatePad(PadInfo *info)
     return 0;
 }
 
-u32 NandDumper()
+u32 DumpNand()
 {
     u8* buffer = BUFFER_ADDRESS;
     u32 nand_size = (GetUnitPlatform() == PLATFORM_3DS) ? 0x3AF00000 : 0x4D800000;
@@ -463,7 +457,7 @@ u32 NandDumper()
     return 0;
 }
 
-u32 NandPartitionsDumper() {
+u32 DecryptNandPartitions() {
     u32 ctrnand_offset;
     u32 ctrnand_size;
     u32 keyslot;
@@ -486,7 +480,7 @@ u32 NandPartitionsDumper() {
     return 0;
 }
 
-u32 TicketDumper() {
+u32 DumpTicket() {
     const u32 ticket_size = 0xD0000; // size taken from rxTools, after this nothing useful is found anymore
     u32 ctrnand_offset;
     u32 ctrnand_size;
