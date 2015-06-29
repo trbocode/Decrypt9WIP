@@ -298,53 +298,34 @@ u32 GetNandCtr(u8* ctr, u32 offset)
     return 0;
 }
 
-u32 SeekMagicNumber(u8* magic, u32 magiclen, u32 offset, u32 size, u32 keyslot)
+u32 DecryptNandToMem(u8* buffer, u32 offset, u32 size, u32 keyslot)
 {
-    u8* buffer = BUFFER_ADDRESS;
-    u32 found = (u32) -1;
-
-    DecryptBufferInfo info = {.keyslot = keyslot, .setKeyY = 0, .size = NAND_SECTOR_SIZE, .buffer = buffer};
+    DecryptBufferInfo info = {.keyslot = keyslot, .setKeyY = 0, .size = size, .buffer = buffer};
     if(GetNandCtr(info.CTR, offset) != 0)
         return 1;
-    
+
     u32 n_sectors = size / NAND_SECTOR_SIZE;
     u32 start_sector = offset / NAND_SECTOR_SIZE;
-    for (u32 i = 0; i < n_sectors; i++) {
-        ShowProgress(i, n_sectors);
-        sdmmc_nand_readsectors(start_sector + i, 1, buffer);
-        DecryptBuffer(&info);
-        if(memcmp(buffer, magic, magiclen) == 0) {
-            found = (start_sector + i) * NAND_SECTOR_SIZE;
-            break;
-        }
-    }
+    sdmmc_nand_readsectors(start_sector, n_sectors, buffer);
+    DecryptBuffer(&info);
 
-    ShowProgress(0, 0);
-
-    return found;
+    return 0;
 }
 
-u32 DecryptNand(char* filename, u32 offset, u32 size, u32 keyslot)
+u32 DecryptNandToFile(char* filename, u32 offset, u32 size, u32 keyslot)
 {
     u8* buffer = BUFFER_ADDRESS;
 
     Debug("Decrypting NAND data. Size (MB): %u", size / (1024 * 1024));
-    
-    DecryptBufferInfo info = {.keyslot = keyslot, .setKeyY = 0, .size = SECTORS_PER_READ * NAND_SECTOR_SIZE, .buffer = buffer};
-    if(GetNandCtr(info.CTR, offset) != 0)
-        return 1;
 
     if (!DebugFileCreate(filename, true))
         return 1;
 
-    u32 n_sectors = size / NAND_SECTOR_SIZE;
-    u32 start_sector = offset / NAND_SECTOR_SIZE;
-    for (u32 i = 0; i < n_sectors; i += SECTORS_PER_READ) {
-        u32 read_sectors = min(SECTORS_PER_READ, (n_sectors - i));
-        ShowProgress(i, n_sectors);
-        sdmmc_nand_readsectors(start_sector + i, read_sectors, buffer);
-        DecryptBuffer(&info);
-        if(!DebugFileWrite(buffer, NAND_SECTOR_SIZE * read_sectors, i * NAND_SECTOR_SIZE))
+    for (u32 i = 0; i < size; i += NAND_SECTOR_SIZE * SECTORS_PER_READ) {
+        u32 read_bytes = min(NAND_SECTOR_SIZE * SECTORS_PER_READ, (size - i));
+        ShowProgress(i, size);
+        DecryptNandToMem(buffer, offset + i, read_bytes, keyslot);
+        if(!DebugFileWrite(buffer, read_bytes, i))
             return 1;
     }
 
@@ -352,6 +333,25 @@ u32 DecryptNand(char* filename, u32 offset, u32 size, u32 keyslot)
     FileClose();
 
     return 0;
+}
+
+u32 SeekMagicNumber(u8* magic, u32 magiclen, u32 offset, u32 size, u32 keyslot)
+{
+    u8* buffer = BUFFER_ADDRESS;
+    u32 found = (u32) -1;
+    
+    for (u32 i = 0; i < size; i += NAND_SECTOR_SIZE) {
+        ShowProgress(i, size);
+        DecryptNandToMem(buffer, offset + i, NAND_SECTOR_SIZE, keyslot);
+        if(memcmp(buffer, magic, magiclen) == 0) {
+            found = offset + i;
+            break;
+        }
+    }
+
+    ShowProgress(0, 0);
+
+    return found;
 }
 
 u32 NandPadgen()
@@ -454,9 +454,9 @@ u32 DecryptNandPartitions() {
     }
 
     // see: http://3dbrew.org/wiki/Flash_Filesystem
-    Debug("Dumping firm0.bin: %s!", DecryptNand("firm0.bin", 0x0B130000, 0x00400000, 0x6) == 0 ? "succeeded" : "failed");
-    Debug("Dumping firm1.bin: %s!", DecryptNand("firm1.bin", 0x0B530000, 0x00400000, 0x6) == 0 ? "succeeded" : "failed");
-    Debug("Dumping ctrnand.bin: %s!", DecryptNand("ctrnand.bin", ctrnand_offset, ctrnand_size, keyslot) == 0 ? "succeeded" : "failed");
+    Debug("Dumping firm0.bin: %s!", DecryptNandToFile("firm0.bin", 0x0B130000, 0x00400000, 0x6) == 0 ? "succeeded" : "failed");
+    Debug("Dumping firm1.bin: %s!", DecryptNandToFile("firm1.bin", 0x0B530000, 0x00400000, 0x6) == 0 ? "succeeded" : "failed");
+    Debug("Dumping ctrnand.bin: %s!", DecryptNandToFile("ctrnand.bin", ctrnand_offset, ctrnand_size, keyslot) == 0 ? "succeeded" : "failed");
 
     return 0;
 }
@@ -465,8 +465,8 @@ u32 DumpTicket() {
     const u32 ticket_size = 0xD0000; // size taken from rxTools, after this nothing useful is found anymore
     u32 ctrnand_offset;
     u32 ctrnand_size;
+    u32 offset[2];
     u32 keyslot;
-    u32 offset;
 
     if(GetUnitPlatform() == PLATFORM_3DS) {
         ctrnand_offset = 0x0B95CA00;
@@ -478,14 +478,26 @@ u32 DumpTicket() {
         keyslot = 0x5;
     }
     
-    Debug("Seeking for 'TICK'...");
-    offset = SeekMagicNumber((u8*) "TICK", 4, ctrnand_offset, ctrnand_size - ticket_size + NAND_SECTOR_SIZE, keyslot);
-    if(offset == (u32) -1) {
-        Debug("Failed!");
-        return 1;
+    for(u32 i = 0; i < 2; i++) {
+        offset[i] = (i) ? offset[i-1] + NAND_SECTOR_SIZE : ctrnand_offset;
+        Debug("Seeking for 'TICK' (%u)...", i + 1);
+        offset[i] = SeekMagicNumber((u8*) "TICK", 4, offset[i], ctrnand_size  + (offset[i] - ctrnand_offset), keyslot);
+        if(offset[i] == (u32) -1) {
+            Debug("Failed!");
+            return 1;
+        }
+        Debug("Found at 0x%08X", offset[i] - ctrnand_offset);
     }
-    Debug("Found at 0x%08X", offset);
     
-    // this only works because there is no fragmentation in NAND
-    return DecryptNand("ticket.bin", offset, ticket_size, keyslot);
+    // this only works if there is no fragmentation in NAND (there should be none)
+    u8* buffer = BUFFER_ADDRESS;
+    DecryptNandToMem(buffer, offset[0], ticket_size, keyslot);
+    DecryptNandToMem(buffer + ticket_size, offset[1], ticket_size, keyslot);
+    
+    if (!DebugFileCreate("ticket.bin", true))
+        return 1;
+    if (!DebugFileWrite(buffer, 2 * ticket_size, 0))
+        return 1;
+   
+    return 0;
 }

@@ -77,8 +77,10 @@ typedef struct {
     TitleKeyEntry entries[MAX_ENTRIES];
 } __attribute__((packed, aligned(16))) EncKeysInfo;
 
-u32 GetNandCtr(u8* ctr, u32 offset);
-u32 DecryptNand(char* filename, u32 offset, u32 size, u32 keyslot);
 u32 DecryptBuffer(DecryptBufferInfo *info);
 u32 DecryptTitlekey(u8* titlekey, u8* titleId, u32 index);
 u32 CreatePad(PadInfo *info);
+u32 GetNandCtr(u8* ctr, u32 offset);
+u32 DecryptNandToMem(u8* buffer, u32 offset, u32 size, u32 keyslot);
+u32 DecryptNandToFile(char* filename, u32 offset, u32 size, u32 keyslot);
+u32 SeekMagicNumber(u8* magic, u32 magiclen, u32 offset, u32 size, u32 keyslot);
