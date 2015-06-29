@@ -2,6 +2,7 @@
 
 #include "fs.h"
 #include "draw.h"
+#include "debugfs.h"
 #include "platform.h"
 #include "decryptor/decryptor.h"
 #include "decryptor/crypto.h"
@@ -65,13 +66,11 @@ u32 DecryptTitlekeys(void)
 {
     EncKeysInfo *info = (EncKeysInfo*)0x20316000;
 
-    Debug("Opening encTitleKeys.bin ...");
-    if (!FileOpen("/encTitleKeys.bin")) {
-        Debug("Could not open encTitleKeys.bin!");
+    if (!DebugFileOpen("/encTitleKeys.bin"))
         return 1;
-    }
     
-    FileRead(info, 16, 0);
+    if (!DebugFileRead(info, 16, 0))
+        return 1;
 
     if (!info->n_entries || info->n_entries > MAX_ENTRIES) {
         Debug("Too many/few entries specified: %i", info->n_entries);
@@ -80,18 +79,20 @@ u32 DecryptTitlekeys(void)
     }
 
     Debug("Number of entries: %i", info->n_entries);
-
-    FileRead(info->entries, info->n_entries * sizeof(TitleKeyEntry), 16);
+    if (!DebugFileRead(info->entries, info->n_entries * sizeof(TitleKeyEntry), 16))
+        return 1;
+    
     FileClose();
 
     Debug("Decrypting Title Keys...");
     for (u32 i = 0; i < info->n_entries; i++)
         DecryptTitlekey(info->entries[i].encryptedTitleKey, info->entries[i].titleId, info->entries[i].commonKeyIndex);
 
-    if (!FileCreate("/decTitleKeys.bin", true))
+    if (!DebugFileCreate("/decTitleKeys.bin", true))
         return 1;
 
-    FileWrite(info, info->n_entries * sizeof(TitleKeyEntry) + 16, 0);
+    if (!DebugFileWrite(info, info->n_entries * sizeof(TitleKeyEntry) + 16, 0))
+        return 1;
     FileClose();
 
     Debug("Done!");
@@ -101,54 +102,48 @@ u32 DecryptTitlekeys(void)
 
 u32 NcchPadgen()
 {
-    size_t bytesRead;
     u32 result;
 
     NcchInfo *info = (NcchInfo*)0x20316000;
     SeedInfo *seedinfo = (SeedInfo*)0x20400000;
 
-    if (FileOpen("/slot0x25KeyX.bin")) {
+    if (DebugFileOpen("/slot0x25KeyX.bin")) {
         u8 slot0x25KeyX[16] = {0};
-        Debug("Opening slot0x25KeyX.bin ...");
-
-        bytesRead = FileRead(&slot0x25KeyX, 16, 0);
-        FileClose();
-        if (bytesRead != 16) {
-            Debug("slot0x25KeyX.bin is too small!");
+        if (!DebugFileRead(&slot0x25KeyX, 16, 0))
             return 1;
-        }
+        FileClose();
         setup_aeskeyX(0x25, slot0x25KeyX);
     } else {
-        Debug("Warning, not using slot0x25KeyX.bin");
+        // Debug("Warning, not using slot0x25KeyX.bin");
         Debug("7.x game decryption will fail on less than 7.x!");
     }
 
-    if (FileOpen("/seeddb.bin")) {
-        Debug("Opening seeddb.bin ...");
-        bytesRead = FileRead(seedinfo, 16, 0);
+    if (DebugFileOpen("/seeddb.bin")) {
+        if (!DebugFileRead(seedinfo, 16, 0))
+            return 1;
         if (!seedinfo->n_entries || seedinfo->n_entries > MAX_ENTRIES) {
             Debug("Too many/few seeddb entries.");
-            return 0;
+            return 1;
         }
-        bytesRead = FileRead(seedinfo->entries, seedinfo->n_entries * sizeof(SeedInfoEntry), 16);
+        if (!DebugFileRead(seedinfo->entries, seedinfo->n_entries * sizeof(SeedInfoEntry), 16))
+            return 1;
         FileClose();
     } else {
-        Debug("Warning, didn't open seeddb.bin");
+        // Debug("Warning, didn't open seeddb.bin");
         Debug("9.x seed crypto game decryption will fail!");
     }
 
-    Debug("Opening ncchinfo.bin ...");
-    if (!FileOpen("/ncchinfo.bin")) {
-        Debug("Could not open ncchinfo.bin!");
+    if (!DebugFileOpen("/ncchinfo.bin"))
         return 1;
-    }
-    bytesRead = FileRead(info, 16, 0);
+    if (!DebugFileRead(info, 16, 0))
+        return 1;
 
     if (!info->n_entries || info->n_entries > MAX_ENTRIES || (info->ncch_info_version != 0xF0000004)) {
         Debug("Too many/few entries, or wrong version ncchinfo.bin");
-        return 0;
+        return 1;
     }
-    bytesRead = FileRead(info->entries, info->n_entries * sizeof(NcchInfoEntry), 16);
+    if (!DebugFileRead(info->entries, info->n_entries * sizeof(NcchInfoEntry), 16))
+        return 1;
     FileClose();
 
     Debug("Number of entries: %i", info->n_entries);
@@ -204,7 +199,6 @@ u32 NcchPadgen()
 
 u32 SdPadgen()
 {
-    size_t bytesRead;
     u32 result;
 
     SdInfo *info = (SdInfo*)0x20316000;
@@ -212,29 +206,22 @@ u32 SdPadgen()
     u8 movable_seed[0x120] = {0};
 
     // Load console 0x34 keyY from movable.sed if present on SD card
-    if (FileOpen("/movable.sed")) {
-        Debug("Loading custom movable.sed");
-        bytesRead = FileRead(&movable_seed, 0x120, 0);
-        FileClose();
-        if (bytesRead != 0x120) {
-            Debug("movable.sed is too small!");
+    if (DebugFileOpen("/movable.sed")) {
+        if (!DebugFileRead(&movable_seed, 0x120, 0))
             return 1;
-        }
+        FileClose();
         if (memcmp(movable_seed, "SEED", 4) != 0) {
             Debug("movable.sed is too corrupt!");
             return 1;
         }
-
         setup_aeskey(0x34, AES_BIG_INPUT|AES_NORMAL_INPUT, &movable_seed[0x110]);
         use_aeskey(0x34);
     }
 
-    Debug("Opening SDinfo.bin ...");
-    if (!FileOpen("/SDinfo.bin")) {
-        Debug("Could not open SDinfo.bin!");
+    if (!DebugFileOpen("/SDinfo.bin"))
         return 1;
-    }
-    bytesRead = FileRead(info, 4, 0);
+    if (!DebugFileRead(info, 4, 0))
+        return 1;
 
     if (!info->n_entries || info->n_entries > MAX_ENTRIES) {
         Debug("Too many/few entries!");
@@ -243,7 +230,8 @@ u32 SdPadgen()
 
     Debug("Number of entries: %i", info->n_entries);
 
-    bytesRead = FileRead(info->entries, info->n_entries * sizeof(SdInfoEntry), 4);
+    if (!DebugFileRead(info->entries, info->n_entries * sizeof(SdInfoEntry), 4))
+        return 1;
     FileClose();
 
     for(u32 i = 0; i < info->n_entries; i++) {
@@ -332,7 +320,6 @@ u32 SeekMagicNumber(u8* magic, u32 magiclen, u32 offset, u32 size, u32 keyslot)
     }
 
     ShowProgress(0, 0);
-    FileClose();
 
     return found;
 }
@@ -342,13 +329,12 @@ u32 DecryptNand(char* filename, u32 offset, u32 size, u32 keyslot)
     u8* buffer = BUFFER_ADDRESS;
 
     Debug("Decrypting NAND data. Size (MB): %u", size / (1024 * 1024));
-    Debug("Filename: %s", filename);
     
     DecryptBufferInfo info = {.keyslot = keyslot, .setKeyY = 0, .size = SECTORS_PER_READ * NAND_SECTOR_SIZE, .buffer = buffer};
     if(GetNandCtr(info.CTR, offset) != 0)
         return 1;
 
-    if (!FileCreate(filename, true))
+    if (!DebugFileCreate(filename, true))
         return 1;
 
     u32 n_sectors = size / NAND_SECTOR_SIZE;
@@ -358,7 +344,8 @@ u32 DecryptNand(char* filename, u32 offset, u32 size, u32 keyslot)
         ShowProgress(i, n_sectors);
         sdmmc_nand_readsectors(start_sector + i, read_sectors, buffer);
         DecryptBuffer(&info);
-        FileWrite(buffer, NAND_SECTOR_SIZE * read_sectors, i * NAND_SECTOR_SIZE);
+        if(!DebugFileWrite(buffer, NAND_SECTOR_SIZE * read_sectors, i * NAND_SECTOR_SIZE))
+            return 1;
     }
 
     ShowProgress(0, 0);
@@ -393,11 +380,9 @@ u32 NandPadgen()
 u32 CreatePad(PadInfo *info)
 {
     static const uint8_t zero_buf[16] __attribute__((aligned(16))) = {0};
-
     u8* buffer = BUFFER_ADDRESS;
-    size_t bytesWritten;
-
-    if (!FileCreate(info->filename, true))
+    
+    if (!FileCreate(info->filename, true)) // No DebugFileCreate() here - messages are already given
         return 1;
 
     if(info->setKeyY)
@@ -419,12 +404,8 @@ u32 CreatePad(PadInfo *info)
 
         ShowProgress(i, size_bytes);
 
-        bytesWritten = FileWrite((void*)buffer, curr_block_size, i);
-        if (bytesWritten != curr_block_size) {
-            Debug("ERROR, SD card may be full.");
-            FileClose();
+        if (!DebugFileWrite((void*)buffer, curr_block_size, i))
             return 1;
-        }
     }
 
     ShowProgress(0, 0);
@@ -439,16 +420,16 @@ u32 DumpNand()
     u32 nand_size = (GetUnitPlatform() == PLATFORM_3DS) ? 0x3AF00000 : 0x4D800000;
 
     Debug("Dumping System NAND. Size (MB): %u", nand_size / (1024 * 1024));
-    Debug("Filename: NAND.bin");
 
-    if (!FileCreate("/NAND.bin", true))
+    if (!DebugFileCreate("/NAND.bin", true))
         return 1;
 
     u32 n_sectors = nand_size / NAND_SECTOR_SIZE;
     for (u32 i = 0; i < n_sectors; i += SECTORS_PER_READ) {
         ShowProgress(i, n_sectors);
         sdmmc_nand_readsectors(i, SECTORS_PER_READ, buffer);
-        FileWrite(buffer, NAND_SECTOR_SIZE * SECTORS_PER_READ, i * NAND_SECTOR_SIZE);
+        if(!DebugFileWrite(buffer, NAND_SECTOR_SIZE * SECTORS_PER_READ, i * NAND_SECTOR_SIZE))
+            return 1;
     }
 
     ShowProgress(0, 0);
@@ -505,5 +486,6 @@ u32 DumpTicket() {
     }
     Debug("Found at 0x%08X", offset);
     
+    // this only works because there is no fragmentation in NAND
     return DecryptNand("ticket.bin", offset, ticket_size, keyslot);
 }
