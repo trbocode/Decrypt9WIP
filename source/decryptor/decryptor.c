@@ -114,7 +114,7 @@ u32 DumpTicket() {
     return 0;
 }
 
-u32 DecryptTitlekeys(void)
+u32 DecryptTitlekeysFile(void)
 {
     EncKeysInfo *info = (EncKeysInfo*)0x20316000;
 

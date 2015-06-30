@@ -22,11 +22,12 @@ int main()
 
     Debug("A: NCCH Padgen");
     Debug("B: SD Padgen");
-    Debug("X: Titlekey Decryption");
+    Debug("X: Titlekey Decryption from file");
     Debug("Y: NAND Padgen");
     Debug("L: NAND Partition Dump");
     Debug("R: NAND Dump");
-    Debug("%c: Ticket Dump", 0x18);
+    Debug("\x18: Ticket Dump");
+    Debug("\x19: Titlekey Decryption from NAND");
     Debug("");
     Debug("START: Reboot");
     Debug("");
@@ -45,7 +46,7 @@ int main()
             break;
         } else if (pad_state & BUTTON_X) {
             DebugClear();
-            Debug("Titlekey Decryption: %s!", DecryptTitlekeys() == 0 ? "succeeded" : "failed");
+            Debug("Titlekey Decryption (file): %s!", DecryptTitlekeysFile() == 0 ? "succeeded" : "failed");
             break;
         } else if (pad_state & BUTTON_Y) {
             DebugClear();
@@ -62,6 +63,10 @@ int main()
         } else if (pad_state & BUTTON_UP) {
             DebugClear();
             Debug("Ticket Dump: %s!", DumpTicket() == 0 ? "succeeded" : "failed");
+            break;
+        } else if (pad_state & BUTTON_DOWN) {
+            DebugClear();
+            Debug("Titlekey Decryption (NAND): %s!", DecryptTitlekeysNand() == 0 ? "succeeded" : "failed");
             break;
         } else if (pad_state & BUTTON_START) {
             goto reboot;
