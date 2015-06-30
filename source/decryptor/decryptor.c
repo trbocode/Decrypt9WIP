@@ -9,11 +9,13 @@
 #include "decryptor/features.h"
 #include "sha256.h"
 
-#define BUFFER_ADDRESS  ((u8*) 0x21000000)
-#define BUFFER_MAX_SIZE (1 * 1024 * 1024)
+#define BUFFER_ADDRESS      ((u8*) 0x21000000)
+#define BUFFER_MAX_SIZE     (1 * 1024 * 1024)
 
-#define NAND_SECTOR_SIZE 0x200
-#define SECTORS_PER_READ (BUFFER_MAX_SIZE / NAND_SECTOR_SIZE)
+#define NAND_SECTOR_SIZE    0x200
+#define SECTORS_PER_READ    (BUFFER_MAX_SIZE / NAND_SECTOR_SIZE)
+
+#define TICKET_SIZE         0xD0000
 
 // From https://github.com/profi200/Project_CTR/blob/master/makerom/pki/prod.h#L19
 static const u8 common_keyy[6][16] = {
@@ -57,8 +59,58 @@ u32 DecryptTitlekey(u8* titlekey, u8* titleId, u32 index)
     
     set_ctr(AES_BIG_INPUT|AES_NORMAL_INPUT, ctr);
     setup_aeskey(0x3D, AES_BIG_INPUT|AES_NORMAL_INPUT, keyY);
+    use_aeskey(0x3D);
     aes_decrypt(titlekey, titlekey, ctr, 1, AES_CBC_DECRYPT_MODE);
     
+    return 0;
+}
+
+u32 GetTicketData(u8* buffer)
+{
+    u32 ctrnand_offset;
+    u32 ctrnand_size;
+    u32 offset[2];
+    u32 keyslot;
+
+    if(GetUnitPlatform() == PLATFORM_3DS) {
+        ctrnand_offset = 0x0B95CA00;
+        ctrnand_size = 0x2F3E3600;
+        keyslot = 0x4;
+    } else {
+        ctrnand_offset = 0x0B95AE00;
+        ctrnand_size = 0x41D2D200;
+        keyslot = 0x5;
+    }
+    
+    for(u32 i = 0; i < 2; i++) {
+        offset[i] = (i) ? offset[i-1] + 0x11BE200 : ctrnand_offset; // 0x11BE200 from rxTools v2.4
+        Debug("Seeking for 'TICK' (%u)...", i + 1);
+        offset[i] = SeekNandMagic((u8*) "TICK", 4, offset[i], ctrnand_size  + (offset[i] - ctrnand_offset), keyslot);
+        if(offset[i] == (u32) -1) {
+            Debug("Failed!");
+            return 1;
+        }
+        Debug("Found at 0x%08X", offset[i] - ctrnand_offset);
+    }
+    
+    // this only works if there is no fragmentation in NAND (there should not be)
+    DecryptNandToMem(buffer, offset[0], TICKET_SIZE, keyslot);
+    DecryptNandToMem(buffer + TICKET_SIZE, offset[1], TICKET_SIZE, keyslot);
+    
+    return 0;
+}
+
+u32 DumpTicket() {
+    u8* buffer = BUFFER_ADDRESS;
+    
+    if (GetTicketData(buffer) != 0)
+        return 1;
+    if (!DebugFileCreate("ticket.bin", true))
+        return 1;
+    if (!DebugFileWrite(buffer, 2 * TICKET_SIZE, 0))
+        return 1;
+    FileClose();
+   
     return 0;
 }
 
@@ -96,6 +148,55 @@ u32 DecryptTitlekeys(void)
     FileClose();
 
     Debug("Done!");
+
+    return 0;
+}
+
+u32 DecryptTitlekeysNand(void)
+{
+    u8* tick_buf = BUFFER_ADDRESS;
+    u8* tkey_buf = BUFFER_ADDRESS + (2* TICKET_SIZE);
+    u32 nKeys = 0;
+    u8* titlekey;
+    u8* titleId;
+    u32 commonKeyIndex;
+    
+    if (GetTicketData(tick_buf) != 0)
+        return 1;
+    
+    memset(tkey_buf, 0, 0x10);
+    for (u32 i = 0x150; i < (2 * TICKET_SIZE) - 0x200; i += 0x200) {
+        if(memcmp(tick_buf + i, (u8*) "Root-CA00000003-XS0000000c", 26) == 0) {
+            u32 exid;
+            titleId = tick_buf + i + 0x9C;
+            commonKeyIndex = *(tick_buf + i + 0xB1);
+            titlekey = tick_buf + i + 0x7F; // <- will get written to
+            for (exid = 0x18; exid < 0x10 + nKeys * 0x20; exid += 0x20)
+                if (memcmp(titleId, tkey_buf + exid, 8) == 0)
+                    break;
+            if (exid < nKeys * 0x20)
+                continue; // continue if already dumped
+            Debug("Decrypting titlekey %u...", nKeys + 1);
+            DecryptTitlekey(titlekey, titleId, commonKeyIndex);
+            memset(tkey_buf + 0x10 + nKeys * 0x20, 0x00, 0x20);
+            memcpy(tkey_buf + 0x10 + nKeys * 0x20 + 0x00, &commonKeyIndex, 4);
+            memcpy(tkey_buf + 0x10 + nKeys * 0x20 + 0x08, titleId, 8);
+            memcpy(tkey_buf + 0x10 + nKeys * 0x20 + 0x10, titlekey, 16);
+            nKeys++;
+        }
+    }
+    
+    Debug("Decrypted %u unique titlekeys", nKeys);
+    
+    if(nKeys > 0) {
+        if (!DebugFileCreate("/decTitleKeys.bin", true))
+            return 1;
+        if (!DebugFileWrite(tkey_buf, 0x10 + nKeys * 0x20, 0))
+            return 1;
+        FileClose();
+    } else {
+        return 1;
+    }
 
     return 0;
 }
@@ -335,7 +436,7 @@ u32 DecryptNandToFile(char* filename, u32 offset, u32 size, u32 keyslot)
     return 0;
 }
 
-u32 SeekMagicNumber(u8* magic, u32 magiclen, u32 offset, u32 size, u32 keyslot)
+u32 SeekNandMagic(u8* magic, u32 magiclen, u32 offset, u32 size, u32 keyslot)
 {
     u8* buffer = BUFFER_ADDRESS;
     u32 found = (u32) -1;
@@ -458,46 +559,5 @@ u32 DecryptNandPartitions() {
     Debug("Dumping firm1.bin: %s!", DecryptNandToFile("firm1.bin", 0x0B530000, 0x00400000, 0x6) == 0 ? "succeeded" : "failed");
     Debug("Dumping ctrnand.bin: %s!", DecryptNandToFile("ctrnand.bin", ctrnand_offset, ctrnand_size, keyslot) == 0 ? "succeeded" : "failed");
 
-    return 0;
-}
-
-u32 DumpTicket() {
-    const u32 ticket_size = 0xD0000; // size taken from rxTools, after this nothing useful is found anymore
-    u32 ctrnand_offset;
-    u32 ctrnand_size;
-    u32 offset[2];
-    u32 keyslot;
-
-    if(GetUnitPlatform() == PLATFORM_3DS) {
-        ctrnand_offset = 0x0B95CA00;
-        ctrnand_size = 0x2F3E3600;
-        keyslot = 0x4;
-    } else {
-        ctrnand_offset = 0x0B95AE00;
-        ctrnand_size = 0x41D2D200;
-        keyslot = 0x5;
-    }
-    
-    for(u32 i = 0; i < 2; i++) {
-        offset[i] = (i) ? offset[i-1] + NAND_SECTOR_SIZE : ctrnand_offset;
-        Debug("Seeking for 'TICK' (%u)...", i + 1);
-        offset[i] = SeekMagicNumber((u8*) "TICK", 4, offset[i], ctrnand_size  + (offset[i] - ctrnand_offset), keyslot);
-        if(offset[i] == (u32) -1) {
-            Debug("Failed!");
-            return 1;
-        }
-        Debug("Found at 0x%08X", offset[i] - ctrnand_offset);
-    }
-    
-    // this only works if there is no fragmentation in NAND (there should be none)
-    u8* buffer = BUFFER_ADDRESS;
-    DecryptNandToMem(buffer, offset[0], ticket_size, keyslot);
-    DecryptNandToMem(buffer + ticket_size, offset[1], ticket_size, keyslot);
-    
-    if (!DebugFileCreate("ticket.bin", true))
-        return 1;
-    if (!DebugFileWrite(buffer, 2 * ticket_size, 0))
-        return 1;
-   
     return 0;
 }
