@@ -69,7 +69,7 @@ int main()
             DebugClear();
             Debug("Titlekey Decryption (NAND): %s!", DecryptTitlekeysNand() == 0 ? "succeeded" : "failed");
             break;
-        } else if (pad_state & BUTTON_LEFT) {
+        } else if (pad_state & BUTTON_RIGHT) {
             DebugClear();
             Debug("System Titles Decrypt: %s!", DecryptNandSystemTitles() == 0 ? "succeeded" : "failed");
             break;

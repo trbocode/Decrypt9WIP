@@ -106,7 +106,7 @@ u32 DumpTicket() {
     
     if (GetTicketData(buffer) != 0)
         return 1;
-    if (!DebugFileCreate("ticket.bin", true))
+    if (!DebugFileCreate("/ticket.bin", true))
         return 1;
     if (!DebugFileWrite(buffer, 2 * TICKET_SIZE, 0))
         return 1;
@@ -166,7 +166,7 @@ u32 DecryptTitlekeysNand(void)
         return 1;
     
     memset(tkey_buf, 0, 0x10);
-    for (u32 i = 0x150; i < (2 * TICKET_SIZE) - 0x200; i += 0x200) {
+    for (u32 i = 0x158; i < (2 * TICKET_SIZE) - 0x200; i += 0x200) {
         if(memcmp(tick_buf + i, (u8*) "Root-CA00000003-XS0000000c", 26) == 0) {
             u32 exid;
             titleId = tick_buf + i + 0x9C;
@@ -418,8 +418,6 @@ u32 DecryptNandToFile(char* filename, u32 offset, u32 size, u32 keyslot)
 {
     u8* buffer = BUFFER_ADDRESS;
 
-    Debug("Decrypting NAND data. Size (MB): %u", size / (1024 * 1024));
-
     if (!DebugFileCreate(filename, true))
         return 1;
 
@@ -556,9 +554,12 @@ u32 DecryptNandPartitions() {
     }
 
     // see: http://3dbrew.org/wiki/Flash_Filesystem
-    Debug("Dumping firm0.bin: %s!", DecryptNandToFile("firm0.bin", 0x0B130000, 0x00400000, 0x6) == 0 ? "succeeded" : "failed");
-    Debug("Dumping firm1.bin: %s!", DecryptNandToFile("firm1.bin", 0x0B530000, 0x00400000, 0x6) == 0 ? "succeeded" : "failed");
-    Debug("Dumping ctrnand.bin: %s!", DecryptNandToFile("ctrnand.bin", ctrnand_offset, ctrnand_size, keyslot) == 0 ? "succeeded" : "failed");
+    Debug("Dumping & Decrypting FIRM0.bin, size: 4MB");
+    Debug(DecryptNandToFile("/firm0.bin", 0x0B130000, 0x00400000, 0x6) == 0 ? "Done!" : "Failed!");
+    Debug("Dumping & Decrypting FIRM1.bin, size: 4MB");
+    Debug(DecryptNandToFile("/firm1.bin", 0x0B530000, 0x00400000, 0x6) == 0 ? "Done!" : "Failed!");
+    Debug("Dumping & Decrypting CTRNAND.bin, size: %uMB", ctrnand_size / (1024 * 1024));
+    Debug(DecryptNandToFile("/ctrnand.bin", ctrnand_offset, ctrnand_size, keyslot) == 0 ? "Done!" : "Failed!");
 
     return 0;
 }
@@ -588,16 +589,19 @@ u32 DecryptNandSystemTitles() {
         if (DecryptNandToMem(buffer, ctrnand_offset + i, NAND_SECTOR_SIZE, keyslot) != 0)
             return 1;
         if (memcmp(buffer + 0x100, (u8*) "NCCH", 4) == 0) {
-            Debug("Found (%i) at 0x%08X", nTitles + 1, ctrnand_offset + i + 0x100);
-            u32 size = buffer[0x104] | (buffer[0x105] << 8) | (buffer[0x106] << 16) | (buffer[0x107] << 24);
+            u32 size = NAND_SECTOR_SIZE * (buffer[0x104] | (buffer[0x105] << 8) | (buffer[0x106] << 16) | (buffer[0x107] << 24));
             if ((size == 0) || (size > ctrnand_size - i)) {
-                Debug("Invalid size: %u", size);
+                Debug("Found at 0x%08x, but invalid size", ctrnand_offset + i + 0x100);
                 continue;
             }
-            Debug("Size: %u", size);
-            if (size % NAND_SECTOR_SIZE)
-                size += NAND_SECTOR_SIZE - (size % NAND_SECTOR_SIZE);
-            snprintf(filename, 256, "app_%08X%08X.app",  *((unsigned int*)(buffer + 0x10C)), *((unsigned int*)(buffer + 0x108)));
+            snprintf(filename, 256, "/%08X%08X.app",  *((unsigned int*)(buffer + 0x10C)), *((unsigned int*)(buffer + 0x108)));
+            if (FileOpen(filename)) {
+                FileClose();
+                Debug("Found duplicate at 0x%08X", ctrnand_offset + i + 0x100, size);
+                i += size - NAND_SECTOR_SIZE;
+                continue;
+            }
+            Debug("Found (%i) at 0x%08X, size: %ub", nTitles + 1, ctrnand_offset + i + 0x100, size);
             if (DecryptNandToFile(filename, ctrnand_offset + i, size, keyslot) != 0)
                 return 1;
             i += size - NAND_SECTOR_SIZE;
@@ -606,7 +610,7 @@ u32 DecryptNandSystemTitles() {
     }
     ShowProgress(0, 0);
     
-    Debug("Done, decrypted %u system titles!", nTitles);
+    Debug("Done, decrypted %u unique titles!", nTitles);
     
     return 0;    
 }
