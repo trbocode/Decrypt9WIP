@@ -1,4 +1,5 @@
 #include <string.h>
+#include <stdio.h>
 
 #include "fs.h"
 #include "draw.h"
@@ -440,7 +441,7 @@ u32 SeekNandMagic(u8* magic, u32 magiclen, u32 offset, u32 size, u32 keyslot)
 {
     u8* buffer = BUFFER_ADDRESS;
     u32 found = (u32) -1;
-    
+    // move this to GetTicketData()?
     for (u32 i = 0; i < size; i += NAND_SECTOR_SIZE) {
         ShowProgress(i, size);
         DecryptNandToMem(buffer, offset + i, NAND_SECTOR_SIZE, keyslot);
@@ -560,4 +561,52 @@ u32 DecryptNandPartitions() {
     Debug("Dumping ctrnand.bin: %s!", DecryptNandToFile("ctrnand.bin", ctrnand_offset, ctrnand_size, keyslot) == 0 ? "succeeded" : "failed");
 
     return 0;
+}
+
+u32 DecryptNandSystemTitles() {
+    u8* buffer = BUFFER_ADDRESS;
+    char filename[256];
+    u32 nTitles = 0;
+    
+    u32 ctrnand_offset;
+    u32 ctrnand_size;
+    u32 keyslot;
+
+    if(GetUnitPlatform() == PLATFORM_3DS) {
+        ctrnand_offset = 0x0B95CA00;
+        ctrnand_size = 0x2F3E3600;
+        keyslot = 0x4;
+    } else {
+        ctrnand_offset = 0x0B95AE00;
+        ctrnand_size = 0x41D2D200;
+        keyslot = 0x5;
+    }
+    
+    Debug("Seeking for 'NCCH'...");
+    for (u32 i = 0; i < ctrnand_size; i += NAND_SECTOR_SIZE) {
+        ShowProgress(i, ctrnand_size);
+        if (DecryptNandToMem(buffer, ctrnand_offset + i, NAND_SECTOR_SIZE, keyslot) != 0)
+            return 1;
+        if (memcmp(buffer + 0x100, (u8*) "NCCH", 4) == 0) {
+            Debug("Found (%i) at 0x%08X", nTitles + 1, ctrnand_offset + i + 0x100);
+            u32 size = buffer[0x104] | (buffer[0x105] << 8) | (buffer[0x106] << 16) | (buffer[0x107] << 24);
+            if ((size == 0) || (size > ctrnand_size - i)) {
+                Debug("Invalid size: %u", size);
+                continue;
+            }
+            Debug("Size: %u", size);
+            if (size % NAND_SECTOR_SIZE)
+                size += NAND_SECTOR_SIZE - (size % NAND_SECTOR_SIZE);
+            snprintf(filename, 256, "app_%08X%08X.app",  *((unsigned int*)(buffer + 0x10C)), *((unsigned int*)(buffer + 0x108)));
+            if (DecryptNandToFile(filename, ctrnand_offset + i, size, keyslot) != 0)
+                return 1;
+            i += size - NAND_SECTOR_SIZE;
+            nTitles++;
+        }
+    }
+    ShowProgress(0, 0);
+    
+    Debug("Done, decrypted %u system titles!", nTitles);
+    
+    return 0;    
 }

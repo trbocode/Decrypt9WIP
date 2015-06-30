@@ -28,6 +28,7 @@ int main()
     Debug("R: NAND Dump");
     Debug("\x18: Ticket Dump");
     Debug("\x19: Titlekey Decryption from NAND");
+    Debug("\x1A: System Titles Decrypt");
     Debug("");
     Debug("START: Reboot");
     Debug("");
@@ -67,6 +68,10 @@ int main()
         } else if (pad_state & BUTTON_DOWN) {
             DebugClear();
             Debug("Titlekey Decryption (NAND): %s!", DecryptTitlekeysNand() == 0 ? "succeeded" : "failed");
+            break;
+        } else if (pad_state & BUTTON_LEFT) {
+            DebugClear();
+            Debug("System Titles Decrypt: %s!", DecryptNandSystemTitles() == 0 ? "succeeded" : "failed");
             break;
         } else if (pad_state & BUTTON_START) {
             goto reboot;
