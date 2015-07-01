@@ -1,11 +1,12 @@
 #include "menu.h"
 #include "draw.h"
 #include "hid.h"
+#include "fs.h"
 
 
 void ProcessMenu(MenuInfo* info, u32 nMenus) {
-    char* buttonName[4] = { "A", "B", "X", "Y" };
-    u32 buttonCode[4] = {BUTTON_A, BUTTON_B, BUTTON_X, BUTTON_Y};
+    char* buttonName[] = { "A", "B", "X", "Y", "L", "R", "\x18", "\x19", "\x1A", "\x1B" };
+    u32 buttonCode[] = { BUTTON_A, BUTTON_B, BUTTON_X, BUTTON_Y, BUTTON_L1, BUTTON_R1, BUTTON_UP, BUTTON_DOWN, BUTTON_RIGHT, BUTTON_LEFT };
     MenuInfo* currMenu = info;
     MenuInfo* nextMenu = (nMenus > 1) ? info + 1 : NULL;
     bool drawMenu = true;
@@ -20,12 +21,14 @@ void ProcessMenu(MenuInfo* info, u32 nMenus) {
                 if (name != NULL)
                     Debug("%s: %s", buttonName[i], name);
             }
-            
             Debug("--------------------");
             Debug("");
             if (nextMenu != NULL) 
                 Debug("R: %s", nextMenu->name);
             Debug("START: Reboot");
+            Debug("");
+            Debug("");
+            Debug("Remaining SD storage space: %llu MiB", RemainingStorageSpace() / 1024 / 1024);
             drawMenu = false;
         }
        

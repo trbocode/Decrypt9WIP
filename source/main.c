@@ -33,8 +33,8 @@ MenuInfo menu[] =
     {
         "Titlekey Options",
         {
-            { "Titlekey Decryption (encTitleKeys.bin)", &DecryptTitlekeysFile },
-            { "Titlekey Decryption (NAND)", &DecryptTitlekeysNand },
+            { "Titlekey Decrypt (file)", &DecryptTitlekeysFile },
+            { "Titlekey Decrypt (NAND)", &DecryptTitlekeysNand },
             { "Ticket Dump", &DumpTicket },
             { NULL, NULL }
         }
