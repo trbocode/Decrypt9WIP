@@ -103,7 +103,7 @@ export LIBPATHS	:=	$(foreach dir,$(LIBDIRS),-L$(dir)/lib)
 .PHONY: $(BUILD) clean all gateway bootstrap
 
 #---------------------------------------------------------------------------------
-all: $(OUTPUT_D) gateway
+all: $(OUTPUT_D) bootstrap
 
 $(OUTPUT_D):
 	@[ -d $@ ] || mkdir -p $@
