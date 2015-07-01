@@ -1,5 +1,6 @@
 #include "fs.h"
 
+#include <stdio.h>
 #include "fatfs/ff.h"
 
 static FATFS fs;
@@ -23,7 +24,14 @@ void DeinitFS()
 bool FileOpen(const char* path)
 {
     unsigned flags = FA_READ | FA_WRITE | FA_OPEN_EXISTING;
+    #ifdef WORK_DIR
+    f_mkdir(WORK_DIR);
+    char workpath[256];
+    snprintf(workpath, 256, "%s/%s", WORK_DIR, (path[0] == '/') ? path + 1 : path);
+    bool ret = (f_open(&file, workpath, flags) == FR_OK);
+    #else
     bool ret = (f_open(&file, path, flags) == FR_OK);
+    #endif
     f_lseek(&file, 0);
     f_sync(&file);
     return ret;
@@ -33,7 +41,14 @@ bool FileCreate(const char* path, bool truncate)
 {
     unsigned flags = FA_READ | FA_WRITE;
     flags |= truncate ? FA_CREATE_ALWAYS : FA_OPEN_ALWAYS;
+    #ifdef WORK_DIR
+    f_mkdir(WORK_DIR);
+    char workpath[256];
+    snprintf(workpath, 256, "%s/%s", WORK_DIR, (path[0] == '/') ? path + 1 : path);
+    bool ret = (f_open(&file, workpath, flags) == FR_OK);
+    #else
     bool ret = (f_open(&file, path, flags) == FR_OK);
+    #endif
     f_lseek(&file, 0);
     f_sync(&file);
     return ret;
