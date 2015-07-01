@@ -10,6 +10,9 @@
 #include "i2c.h"
 #include "decryptor/features.h"
 
+// don't ever even think about enabling this unless you know exactly what you do
+// #define DANGER_ZONE
+
 MenuInfo menu[] =
 {
     {
@@ -38,7 +41,18 @@ MenuInfo menu[] =
             { "Ticket Dump", &DumpTicket },
             { NULL, NULL }
         }
+    },
+    #ifdef DANGER_ZONE
+    {
+        "!DANGER_ZONE!",
+        {
+            { "NAND Restore", &RestoreNand },
+            { NULL, NULL },
+            { NULL, NULL },
+            { NULL, NULL }
+        }
     }
+    #endif
 };
         
 

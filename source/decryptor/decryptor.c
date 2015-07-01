@@ -540,6 +540,7 @@ u32 DumpNand()
 }
 
 u32 DecryptNandPartitions() {
+    u32 result = 0;
     u32 ctrnand_offset;
     u32 ctrnand_size;
     u32 keyslot;
@@ -556,11 +557,11 @@ u32 DecryptNandPartitions() {
 
     // see: http://3dbrew.org/wiki/Flash_Filesystem
     Debug("Dumping & Decrypting FIRM0.bin, size: 4MB");
-    Debug(DecryptNandToFile("/firm0.bin", 0x0B130000, 0x00400000, 0x6) == 0 ? "Done!" : "Failed!");
+    result += DecryptNandToFile("/firm0.bin", 0x0B130000, 0x00400000, 0x6);
     Debug("Dumping & Decrypting FIRM1.bin, size: 4MB");
-    Debug(DecryptNandToFile("/firm1.bin", 0x0B530000, 0x00400000, 0x6) == 0 ? "Done!" : "Failed!");
+    result += DecryptNandToFile("/firm1.bin", 0x0B530000, 0x00400000, 0x6);
     Debug("Dumping & Decrypting CTRNAND.bin, size: %uMB", ctrnand_size / (1024 * 1024));
-    Debug(DecryptNandToFile("/ctrnand.bin", ctrnand_offset, ctrnand_size, keyslot) == 0 ? "Done!" : "Failed!");
+    result += DecryptNandToFile("/ctrnand.bin", ctrnand_offset, ctrnand_size, keyslot);
 
     return 0;
 }
@@ -615,3 +616,29 @@ u32 DecryptNandSystemTitles() {
     
     return 0;    
 }
+
+u32 RestoreNand()
+{
+    u8* buffer = BUFFER_ADDRESS;
+    u32 nand_size;
+
+    if (!DebugFileOpen("/NAND.bin"))
+        return 1;
+    nand_size = FileGetSize();
+    
+    Debug("Restoring System NAND. Size (MB): %u", nand_size / (1024 * 1024));
+
+    u32 n_sectors = nand_size / NAND_SECTOR_SIZE;
+    for (u32 i = 0; i < n_sectors; i += SECTORS_PER_READ) {
+        ShowProgress(i, n_sectors);
+        if(!DebugFileRead(buffer, NAND_SECTOR_SIZE * SECTORS_PER_READ, i * NAND_SECTOR_SIZE))
+            return 1;
+        sdmmc_nand_writesectors(i, SECTORS_PER_READ, buffer);
+    }
+
+    ShowProgress(0, 0);
+    FileClose();
+
+    return 0;
+}
+
