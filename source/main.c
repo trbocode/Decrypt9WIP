@@ -6,8 +6,41 @@
 #include "draw.h"
 #include "fs.h"
 #include "hid.h"
+#include "menu.h"
 #include "i2c.h"
 #include "decryptor/features.h"
+
+MenuInfo menu[] =
+{
+    {
+        "XORpad Options",
+        {
+            { "NCCH Padgen", &NcchPadgen },
+            { "SD Padgen", &SdPadgen },
+            { "CTRNAND Padgen", &NandPadgen },
+            { NULL, NULL }
+        }
+    },
+    {
+        "NAND Options",
+        {
+            { "NAND Backup", &DumpNand },
+            { "NAND Partition Dump", &DecryptNandPartitions },
+            { "System Titles Dump", &DecryptNandSystemTitles },
+            { NULL, NULL }
+        }
+    },
+    {
+        "Titlekey Options",
+        {
+            { "Titlekey Decryption (encTitleKeys.bin)", &DecryptTitlekeysFile },
+            { "Titlekey Decryption (NAND)", &DecryptTitlekeysNand },
+            { "Ticket Dump", &DumpTicket },
+            { NULL, NULL }
+        }
+    }
+};
+        
 
 void Reboot()
 {
@@ -20,7 +53,8 @@ int main()
     DebugClear();
     InitFS();
 
-    Debug("A: NCCH Padgen");
+    ProcessMenu(menu, sizeof(menu) / sizeof(MenuInfo));
+    /*Debug("A: NCCH Padgen");
     Debug("B: SD Padgen");
     Debug("X: Titlekey Decryption from file");
     Debug("Y: NAND Padgen");
@@ -85,7 +119,7 @@ int main()
             break;
     }
 
-reboot:
+reboot:*/
     DeinitFS();
     Reboot();
     return 0;
