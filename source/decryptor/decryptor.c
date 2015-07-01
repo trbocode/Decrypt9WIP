@@ -165,6 +165,8 @@ u32 DecryptTitlekeysNand(void)
     if (GetTicketData(tick_buf) != 0)
         return 1;
     
+    Debug("Decrypting Title Keys...");
+    
     memset(tkey_buf, 0, 0x10);
     for (u32 i = 0x158; i < (2 * TICKET_SIZE) - 0x200; i += 0x200) {
         if(memcmp(tick_buf + i, (u8*) "Root-CA00000003-XS0000000c", 26) == 0) {
@@ -177,7 +179,6 @@ u32 DecryptTitlekeysNand(void)
                     break;
             if (exid < nKeys * 0x20)
                 continue; // continue if already dumped
-            Debug("Decrypting titlekey %u...", nKeys + 1);
             DecryptTitlekey(titlekey, titleId, commonKeyIndex);
             memset(tkey_buf + 0x10 + nKeys * 0x20, 0x00, 0x20);
             memcpy(tkey_buf + 0x10 + nKeys * 0x20 + 0x00, &commonKeyIndex, 4);
@@ -187,7 +188,7 @@ u32 DecryptTitlekeysNand(void)
         }
     }
     
-    Debug("Decrypted %u unique titlekeys", nKeys);
+    Debug("Decrypted %u unique Title Keys", nKeys);
     
     if(nKeys > 0) {
         if (!DebugFileCreate("/decTitleKeys.bin", true))
@@ -610,7 +611,7 @@ u32 DecryptNandSystemTitles() {
     }
     ShowProgress(0, 0);
     
-    Debug("Done, decrypted %u unique titles!", nTitles);
+    Debug("Done, decrypted %u unique Titles!", nTitles);
     
     return 0;    
 }
