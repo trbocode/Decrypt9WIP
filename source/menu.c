@@ -40,8 +40,8 @@ void ProcessMenu(MenuInfo* info, u32 nMenus) {
                 DebugClear();
                 Debug("%s: %s!", name, (*function)() == 0 ? "succeeded" : "failed");
                 Debug("");
-                Debug("Press any key to return to menu.");
-                InputWait();
+                Debug("Press SELECT to return, START to reboot.");
+                while(!(pad_state = InputWait() & (BUTTON_SELECT | BUTTON_START)));
                 drawMenu = true;
                 break;
             }
