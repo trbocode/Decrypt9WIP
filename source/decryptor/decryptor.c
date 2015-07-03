@@ -148,8 +148,6 @@ u32 DecryptTitlekeysFile(void)
         return 1;
     FileClose();
 
-    Debug("Done!");
-
     return 0;
 }
 
@@ -165,7 +163,7 @@ u32 DecryptTitlekeysNand(void)
     if (GetTicketData(tick_buf) != 0)
         return 1;
     
-    Debug("Decrypting Title Keys...");
+    Debug("Searching for Title Keys...");
     
     memset(tkey_buf, 0, 0x10);
     for (u32 i = 0x158; i < (2 * TICKET_SIZE) - 0x200; i += 0x200) {
@@ -177,9 +175,8 @@ u32 DecryptTitlekeysNand(void)
             for (exid = 0x18; exid < 0x10 + nKeys * 0x20; exid += 0x20)
                 if (memcmp(titleId, tkey_buf + exid, 8) == 0)
                     break;
-            if (exid < nKeys * 0x20)
+            if (exid < 0x10 + nKeys * 0x20)
                 continue; // continue if already dumped
-            DecryptTitlekey(titlekey, titleId, commonKeyIndex);
             memset(tkey_buf + 0x10 + nKeys * 0x20, 0x00, 0x20);
             memcpy(tkey_buf + 0x10 + nKeys * 0x20 + 0x00, &commonKeyIndex, 4);
             memcpy(tkey_buf + 0x10 + nKeys * 0x20 + 0x08, titleId, 8);
@@ -187,11 +184,12 @@ u32 DecryptTitlekeysNand(void)
             nKeys++;
         }
     }
+    memcpy(tkey_buf, &nKeys, 4);
     
-    Debug("Decrypted %u unique Title Keys", nKeys);
+    Debug("Found %u unique Title Keys", nKeys);
     
     if(nKeys > 0) {
-        if (!DebugFileCreate("/decTitleKeys.bin", true))
+        if (!DebugFileCreate("/encTitleKeys.bin", true))
             return 1;
         if (!DebugFileWrite(tkey_buf, 0x10 + nKeys * 0x20, 0))
             return 1;
@@ -200,7 +198,7 @@ u32 DecryptTitlekeysNand(void)
         return 1;
     }
 
-    return 0;
+    return DecryptTitlekeysFile();
 }
 
 u32 NcchPadgen()
