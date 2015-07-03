@@ -14,7 +14,9 @@
 #define FONT_COLOR (RGB(0xFF, 0xFF, 0xFF))
 
 #define START_Y 10
-#define END_Y   230
+#define END_Y   (SCREEN_HEIGHT - 10)
+#define START_X 10
+#define END_X   (SCREEN_WIDTH - 10)
 
 static int current_y = START_Y;
 
@@ -82,15 +84,15 @@ void Debug(const char *format, ...)
     va_list va;
 
     va_start(va, format);
-    vsnprintf(str, 256, format, va);
+    vsnprintf(str, ((END_X - START_X) / 8) + 1, format, va);
     va_end(va);
     
     if (current_y >= END_Y) {
         DebugClear();
     }
 
-    DrawString(TOP_SCREEN0, str, 10, current_y, FONT_COLOR, BG_COLOR);
-    DrawString(TOP_SCREEN1, str, 10, current_y, FONT_COLOR, BG_COLOR);
+    DrawString(TOP_SCREEN0, str, START_X, current_y, FONT_COLOR, BG_COLOR);
+    DrawString(TOP_SCREEN1, str, START_X, current_y, FONT_COLOR, BG_COLOR);
 
     current_y += 10;
 }

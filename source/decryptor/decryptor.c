@@ -241,8 +241,12 @@ u32 NcchPadgen()
     if (!DebugFileRead(info, 16, 0))
         return 1;
 
-    if (!info->n_entries || info->n_entries > MAX_ENTRIES || (info->ncch_info_version != 0xF0000004)) {
-        Debug("Too many/few entries, or wrong version ncchinfo.bin");
+    if (!info->n_entries || info->n_entries > MAX_ENTRIES) {
+        Debug("Too many/few entries in ncchinfo.bin");
+        return 1;
+    }
+    if (info->ncch_info_version != 0xF0000004) {
+        Debug("Wrong version ncchinfo.bin");
         return 1;
     }
     if (!DebugFileRead(info->entries, info->n_entries * sizeof(NcchInfoEntry), 16))
