@@ -20,7 +20,7 @@ static int current_y = START_Y;
 
 void ClearScreen(u8* screen, int color)
 {
-    for (int i = 0; i < (SCREEN_HEIGHT * SCREEN_WIDTH); i++) {
+    for (int i = 0; i < (SCREEN_WIDTH * SCREEN_HEIGHT); i++) {
         *(screen++) = color >> 16;  // B
         *(screen++) = color >> 8;   // G
         *(screen++) = color & 0xFF; // R
@@ -30,8 +30,8 @@ void ClearScreen(u8* screen, int color)
 void DrawCharacter(u8* screen, int character, int x, int y, int color, int bgcolor)
 {
     for (int yy = 0; yy < 8; yy++) {
-        int xDisplacement = (x * BYTES_PER_PIXEL * SCREEN_WIDTH);
-        int yDisplacement = ((SCREEN_WIDTH - (y + yy) - 1) * BYTES_PER_PIXEL);
+        int xDisplacement = (x * BYTES_PER_PIXEL * SCREEN_HEIGHT);
+        int yDisplacement = ((SCREEN_HEIGHT - (y + yy) - 1) * BYTES_PER_PIXEL);
         u8* screenPos = screen + xDisplacement + yDisplacement;
 
         u8 charPos = font[character * 8 + yy];
@@ -45,7 +45,7 @@ void DrawCharacter(u8* screen, int character, int x, int y, int color, int bgcol
                 *(screenPos + 1) = bgcolor >> 8;   // G
                 *(screenPos + 2) = bgcolor & 0xFF; // R
             }
-            screenPos += BYTES_PER_PIXEL * SCREEN_WIDTH;
+            screenPos += BYTES_PER_PIXEL * SCREEN_HEIGHT;
         }
     }
 }
@@ -98,7 +98,7 @@ void Debug(const char *format, ...)
 void ShowProgress(u32 current, u32 total)
 {
     if (total > 0)
-        DrawStringF(SCREEN_HEIGHT - 40, SCREEN_WIDTH - 20, "%i%%", current / (total/100));
+        DrawStringF(SCREEN_WIDTH - 40, SCREEN_HEIGHT - 20, "%i%%", current / (total/100));
     else
-        DrawStringF(SCREEN_HEIGHT - 40, SCREEN_WIDTH - 20, "    ");
+        DrawStringF(SCREEN_WIDTH - 40, SCREEN_HEIGHT - 20, "    ");
 }
