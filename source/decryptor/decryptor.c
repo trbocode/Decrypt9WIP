@@ -49,19 +49,19 @@ u32 DecryptBuffer(DecryptBufferInfo *info)
     return 0;
 }
 
-u32 DecryptTitlekey(u8* titlekey, u8* titleId, u32 index)
+u32 DecryptTitlekey(TitleKeyEntry* entry)
 {
-    u8 ctr[16];
+    u8 ctr[16]; // aligned?
     u8 keyY[16];
     
     memset(ctr, 0, 16);
-    memcpy(ctr, titleId, 8);
-    memcpy(keyY, (void *)common_keyy[index], 16);
+    memcpy(ctr, entry->titleId, 8);
+    memcpy(keyY, (void *)common_keyy[entry->commonKeyIndex], 16);
     
     set_ctr(AES_BIG_INPUT|AES_NORMAL_INPUT, ctr);
     setup_aeskey(0x3D, AES_BIG_INPUT|AES_NORMAL_INPUT, keyY);
     use_aeskey(0x3D);
-    aes_decrypt(titlekey, titlekey, ctr, 1, AES_CBC_DECRYPT_MODE);
+    aes_decrypt(entry->encryptedTitleKey, entry->encryptedTitleKey, ctr, 1, AES_CBC_DECRYPT_MODE);
     
     return 0;
 }
@@ -139,7 +139,7 @@ u32 DecryptTitlekeysFile(void)
 
     Debug("Decrypting Title Keys...");
     for (u32 i = 0; i < info->n_entries; i++)
-        DecryptTitlekey(info->entries[i].encryptedTitleKey, info->entries[i].titleId, info->entries[i].commonKeyIndex);
+        DecryptTitlekey(&(info->entries[i]));
 
     if (!DebugFileCreate("/decTitleKeys.bin", true))
         return 1;
@@ -153,52 +153,53 @@ u32 DecryptTitlekeysFile(void)
 
 u32 DecryptTitlekeysNand(void)
 {
-    u8* tick_buf = BUFFER_ADDRESS;
-    u8* tkey_buf = BUFFER_ADDRESS + (2* TICKET_SIZE);
+    u8* buffer = BUFFER_ADDRESS;
+    EncKeysInfo *info = (EncKeysInfo*) 0x20316000;
     u32 nKeys = 0;
     u8* titlekey;
     u8* titleId;
     u32 commonKeyIndex;
     
-    if (GetTicketData(tick_buf) != 0)
+    if (GetTicketData(buffer) != 0)
         return 1;
     
-    Debug("Searching for Title Keys...");
+    Debug("Decrypting Title Keys...");
     
-    memset(tkey_buf, 0, 0x10);
+    memset(info, 0, 0x10);
     for (u32 i = 0x158; i < (2 * TICKET_SIZE) - 0x200; i += 0x200) {
-        if(memcmp(tick_buf + i, (u8*) "Root-CA00000003-XS0000000c", 26) == 0) {
+        if(memcmp(buffer + i, (u8*) "Root-CA00000003-XS0000000c", 26) == 0) {
             u32 exid;
-            titleId = tick_buf + i + 0x9C;
-            commonKeyIndex = *(tick_buf + i + 0xB1);
-            titlekey = tick_buf + i + 0x7F; // <- will get written to
-            for (exid = 0x18; exid < 0x10 + nKeys * 0x20; exid += 0x20)
-                if (memcmp(titleId, tkey_buf + exid, 8) == 0)
+            titleId = buffer + i + 0x9C;
+            commonKeyIndex = *(buffer + i + 0xB1);
+            titlekey = buffer + i + 0x7F; // <- will get written to
+            for (exid = 0; exid < nKeys; exid++)
+                if (memcmp(titleId, info->entries[exid].titleId, 8) == 0)
                     break;
-            if (exid < 0x10 + nKeys * 0x20)
+            if (exid < nKeys)
                 continue; // continue if already dumped
-            memset(tkey_buf + 0x10 + nKeys * 0x20, 0x00, 0x20);
-            memcpy(tkey_buf + 0x10 + nKeys * 0x20 + 0x00, &commonKeyIndex, 4);
-            memcpy(tkey_buf + 0x10 + nKeys * 0x20 + 0x08, titleId, 8);
-            memcpy(tkey_buf + 0x10 + nKeys * 0x20 + 0x10, titlekey, 16);
+            memset(&(info->entries[nKeys]), 0, sizeof(TitleKeyEntry));
+            memcpy(info->entries[nKeys].titleId, titleId, 8);
+            memcpy(info->entries[nKeys].encryptedTitleKey, titlekey, 16);
+            info->entries[nKeys].commonKeyIndex = commonKeyIndex;
+            DecryptTitlekey(&(info->entries[nKeys]));
             nKeys++;
         }
     }
-    memcpy(tkey_buf, &nKeys, 4);
+    info->n_entries = nKeys;
     
-    Debug("Found %u unique Title Keys", nKeys);
+    Debug("Decrypted %u unique Title Keys", nKeys);
     
     if(nKeys > 0) {
-        if (!DebugFileCreate("/encTitleKeys.bin", true))
+        if (!DebugFileCreate("/decTitleKeys.bin", true))
             return 1;
-        if (!DebugFileWrite(tkey_buf, 0x10 + nKeys * 0x20, 0))
+        if (!DebugFileWrite(info, 0x10 + nKeys * 0x20, 0))
             return 1;
         FileClose();
     } else {
         return 1;
     }
 
-    return DecryptTitlekeysFile();
+    return 0;
 }
 
 u32 NcchPadgen()
