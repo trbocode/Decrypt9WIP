@@ -1,10 +1,12 @@
 #include "fs.h"
 
 #include <stdio.h>
+#include <string.h>
 #include "fatfs/ff.h"
 
 static FATFS fs;
 static FIL file;
+static DIR dir;
 
 bool InitFS()
 {
@@ -25,7 +27,6 @@ bool FileOpen(const char* path)
 {
     unsigned flags = FA_READ | FA_WRITE | FA_OPEN_EXISTING;
     #ifdef WORK_DIR
-    f_mkdir(WORK_DIR);
     char workpath[256];
     snprintf(workpath, 256, "%s/%s", WORK_DIR, (path[0] == '/') ? path + 1 : path);
     bool ret = (f_open(&file, workpath, flags) == FR_OK);
@@ -79,6 +80,38 @@ size_t FileGetSize()
 void FileClose()
 {
     f_close(&file);
+}
+
+bool DirOpen(const char* path)
+{
+    #ifdef WORK_DIR
+    char workpath[256];
+    snprintf(workpath, 256, "%s/%s", WORK_DIR, (path[0] == '/') ? path + 1 : path);
+    bool ret = (f_opendir(&dir, workpath) == FR_OK);
+    #else
+    bool ret = (f_opendir(&dir, path) == FR_OK);
+    #endif
+    return ret;
+}
+
+bool DirRead(char* filename)
+{
+    FILINFO fno;
+    bool ret = false;
+    while (f_readdir(&dir, &fno) == FR_OK) {
+        if (fno.fname[0] != 0) break;
+        if ((fno.fname[0] != '.') && !(fno.fattrib & AM_DIR)) {
+            ret = true;
+            break;
+        }
+    }
+    if (ret) strcpy(filename, fno.fname); // only short filenames
+    return ret;
+}
+
+void DirClose()
+{
+    f_closedir(&dir);
 }
 
 static uint64_t ClustersToBytes(FATFS* fs, DWORD clusters)
