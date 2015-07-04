@@ -34,3 +34,6 @@ uint64_t RemainingStorageSpace();
 void FileClose();
 
 void DirClose();
+
+bool FileOpenSplash(const char* path);
+size_t FileReadSplash(void* buf, size_t size, size_t foffset);
