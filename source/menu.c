@@ -13,8 +13,8 @@ int TOP_Current = 0;
 
 void Reboot()
 {
-    i2cWriteRegister(I2C_DEV_MCU, 0x20, 1 << 2);
-    while(true);
+	i2cWriteRegister(I2C_DEV_MCU, 0x20, 1 << 2);
+	while(true);
 }
 
 void PowerOff()
@@ -94,108 +94,130 @@ int MainMenu()
 				}
 			}
 			else if (menu_idx == 3) {
-				if(pad_state & BUTTON_UP) {
-				ConsoleInit();
-				ConsoleSetTitle("NAND Restore");
-				ConsoleShow();
-				Debug("Restore NAND: %s!", RestoreNand() == 0 ? "succeeded" : "failed");	//menu3.bin
-				}
-				else 
-				{
-				ConsoleInit();
-				ConsoleSetTitle("NAND Dumper");
-				ConsoleShow();
-				Debug("NAND Padgen: %s!", DumpNand() == 0 ? "succeeded" : "failed");	//menu3.bin
-				}
-				Debug("Press B to exit");
-				while (true) {
-					if (InputWait() & BUTTON_B) {
-						DebugClear();
+				TOP_Current = 0;
+				DrawBottomSplash("/3ds/Decrypt9/UI/nand0.bin"); //backup / restore selection
+				InputWait();
+			   
+				u32 pad_state = InputWait();
+			   
+				if(pad_state & BUTTON_Y) {
+					DrawBottomSplash("/3ds/Decrypt9/UI/nand1.bin"); //restore yes / no
+					InputWait();
+				   
+					if(InputWait() & BUTTON_A) { //restore nand
+						DrawBottomSplash("/3ds/Decrypt9/UI/nand3.bin");
+						ConsoleInit();
+						ConsoleSetTitle("NAND Restore");
+						ConsoleShow();
+						Debug("Restore NAND: %s!", RestoreNand() == 0 ? "succeeded" : "failed");    //menu3.bin
+						Debug("Press B to exit");
+						while (true) {
+							if (InputWait() & BUTTON_B) {
+								DebugClear();
+								break;
+							}
+						}
+					}
+					else if (pad_state & BUTTON_B) { //quit restore
 						break;
 					}
 				}
+				else if(pad_state & BUTTON_X) { //dump nand
+						DrawBottomSplash("/3ds/Decrypt9/UI/nand2.bin");
+						ConsoleInit();
+						ConsoleSetTitle("NAND Dumper");
+						ConsoleShow();
+						Debug("NAND Padgen: %s!", DumpNand() == 0 ? "succeeded" : "failed");    //menu3.bin
+						Debug("Press B to exit");
+						while (true) {
+							if (InputWait() & BUTTON_B) {
+								DebugClear();
+								break;
+							}
+						}
+					}
+				}
+				else if (menu_idx == 4) {
+					ConsoleInit();
+					ConsoleSetTitle("Decrypt NAND Partitions");
+					ConsoleShow();
+				  Debug("Decrypt NAND Partitions: %s!", DecryptNandPartitions() == 0 ? "succeeded" : "failed");   //menu4.bin
+					Debug("Press B to exit");
+					while (true) {
+						if (InputWait() & BUTTON_B) {
+							DebugClear();
+							break;
+						}
+					}
+				}
+				else if (menu_idx == 5) {
+					ConsoleInit();
+					ConsoleSetTitle("Decrypt NAND System Titles");
+					ConsoleShow();
+					Debug("Decrypt NAND Partitions: %s!", DecryptNandSystemTitles() == 0 ? "succeeded" : "failed");   //menu5.bin
+					Debug("Press B to exit");
+					while (true) {
+						if (InputWait() & BUTTON_B) {
+							DebugClear();
+							break;
+						}
+					}
+				}
+				else if (menu_idx == 6) {
+					ConsoleInit();
+					ConsoleSetTitle("Decrypt Titlekeys File");
+					ConsoleShow();
+					Debug("Titlekey Decryption: %s!", DecryptTitlekeysFile() == 0 ? "succeeded" : "failed");	//menu6.bin
+					Debug("Press B to exit");
+					while (true) {
+						if (InputWait() & BUTTON_B) {
+							DebugClear();
+							break;
+						}
+					}
+				}
+				else if (menu_idx == 7) {
+					ConsoleInit();
+					ConsoleSetTitle("Decrypt Titlekeys Nand");
+					ConsoleShow();	
+					Debug("Titlekey Decryptor: %s!", DecryptTitlekeysNand() == 0 ? "succeeded" : "failed");  //menu7.bin
+					Debug("Press B to exit");
+					while (true) {
+						if (InputWait() & BUTTON_B) {
+							DebugClear();
+							break;
+						}
+					}
+				}
+				else if (menu_idx == 8) {
+					ConsoleInit();
+					ConsoleSetTitle("Ticket Dumper");
+					ConsoleShow();
+					Debug("Ticket Dump: %s!", DumpTicket() == 0 ? "succeeded" : "failed");    //menu8.bin
+					Debug("Press B to exit");
+					while (true) {
+						if (InputWait() & BUTTON_B) {
+							DebugClear();
+							break;
+						}
+					}
+				}
+	/*			else if (menu_idx == 9) { //Not Implemented yet
+					ConsoleInit();
+					ConsoleSetTitle("Game Cart Dumper");
+					ConsoleShow();	
+				//	Debug("Dump Game: %s!", DumpGame() == 0 ? "succeeded" : "failed");  //menu9.bin
+					Debug("Press B to exit");
+					while (true) {
+						if (InputWait() & BUTTON_B) {
+							DebugClear();
+							break;
+						}
+					}
+				}*/
 			}
-			else if (menu_idx == 4) {
-				ConsoleInit();
-				ConsoleSetTitle("Decrypt NAND Partitions");
-				ConsoleShow();
-			  Debug("Decrypt NAND Partitions: %s!", DecryptNandPartitions() == 0 ? "succeeded" : "failed");   //menu4.bin
-				Debug("Press B to exit");
-				while (true) {
-					if (InputWait() & BUTTON_B) {
-						DebugClear();
-						break;
-					}
-				}
-			}
-			else if (menu_idx == 5) {
-				ConsoleInit();
-				ConsoleSetTitle("Decrypt NAND System Titles");
-				ConsoleShow();
-				Debug("Decrypt NAND Partitions: %s!", DecryptNandSystemTitles() == 0 ? "succeeded" : "failed");   //menu5.bin
-				Debug("Press B to exit");
-				while (true) {
-					if (InputWait() & BUTTON_B) {
-						DebugClear();
-						break;
-					}
-				}
-			}
-			else if (menu_idx == 6) {
-				ConsoleInit();
-				ConsoleSetTitle("Decrypt Titlekeys File");
-				ConsoleShow();
-				Debug("Titlekey Decryption: %s!", DecryptTitlekeysFile() == 0 ? "succeeded" : "failed");	//menu6.bin
-				Debug("Press B to exit");
-				while (true) {
-					if (InputWait() & BUTTON_B) {
-						DebugClear();
-						break;
-					}
-				}
-			}
-			else if (menu_idx == 7) {
-				ConsoleInit();
-				ConsoleSetTitle("Decrypt Titlekeys Nand");
-				ConsoleShow();	
-				Debug("Titlekey Decryptor: %s!", DecryptTitlekeysNand() == 0 ? "succeeded" : "failed");  //menu7.bin
-				Debug("Press B to exit");
-				while (true) {
-					if (InputWait() & BUTTON_B) {
-						DebugClear();
-						break;
-					}
-				}
-			}
-			else if (menu_idx == 8) {
-				ConsoleInit();
-				ConsoleSetTitle("Ticket Dumper");
-				ConsoleShow();
-				Debug("Ticket Dump: %s!", DumpTicket() == 0 ? "succeeded" : "failed");    //menu8.bin
-				Debug("Press B to exit");
-				while (true) {
-					if (InputWait() & BUTTON_B) {
-						DebugClear();
-						break;
-					}
-				}
-			}
-/*			else if (menu_idx == 9) { //Not Implemented yet
-				ConsoleInit();
-				ConsoleSetTitle("Game Cart Dumper");
-				ConsoleShow();	
-			//	Debug("Dump Game: %s!", DumpGame() == 0 ? "succeeded" : "failed");  //menu9.bin
-				Debug("Press B to exit");
-				while (true) {
-					if (InputWait() & BUTTON_B) {
-						DebugClear();
-						break;
-					}
-				}
-			}*/
 		}
-	}
-	
+
 poweroff:
 	DeinitFS();
 	PowerOff();
@@ -203,8 +225,7 @@ poweroff:
 
 
 reboot:
-    DeinitFS();
-    Reboot();
-    return 0;
-	
+	DeinitFS();
+	Reboot();
+	return 0;
 }
