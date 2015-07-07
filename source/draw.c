@@ -78,25 +78,25 @@ void DebugClear()
 {
     ClearScreen(TOP_SCREEN0, BG_COLOR);
     ClearScreen(TOP_SCREEN1, BG_COLOR);
-	DrawUI();
+    DrawUI();
     current_y = START_Y;
 }
 
 void ConsoleClear()
 {
-	ClearScreen(TOP_SCREEN0, BG_COLOR);
-	ClearScreen(TOP_SCREEN1, BG_COLOR);
-	ConsoleShow();
-	current_y = START_Y;
+    ClearScreen(TOP_SCREEN0, BG_COLOR);
+    ClearScreen(TOP_SCREEN1, BG_COLOR);
+    ConsoleShow();
+    current_y = START_Y;
 }
 
 void DebugClearAll()
 {
-	ClearScreen(TOP_SCREEN0, RGB(0, 0, 0));
-	ClearScreen(TOP_SCREEN1, RGB(0, 0, 0));
-	ClearScreen(BOT_SCREEN0, RGB(0, 0, 0));
-	ClearScreen(BOT_SCREEN1, RGB(0, 0, 0));
-	current_y = START_Y;
+    ClearScreen(TOP_SCREEN0, RGB(0, 0, 0));
+    ClearScreen(TOP_SCREEN1, RGB(0, 0, 0));
+    ClearScreen(BOT_SCREEN0, RGB(0, 0, 0));
+    ClearScreen(BOT_SCREEN1, RGB(0, 0, 0));
+    current_y = START_Y;
 }
 
 void Debug(const char *format, ...)
@@ -109,7 +109,7 @@ void Debug(const char *format, ...)
     va_end(va);
     
     if (current_y >= END_Y) {
-		ConsoleClear();
+        ConsoleClear();
     }
 
     DrawString(TOP_SCREEN0, str, START_X, current_y, RGB(255, 255, 255), RGB(0, 0, 0));
@@ -127,58 +127,58 @@ void ShowProgress(u32 current, u32 total)
 }
 
 void DrawTopSplash(char splash_file[]) {
-	unsigned int n = 0, bin_size;
-	FileOpenSplash(splash_file);
-	//Load the spash image
-	bin_size = 0;
-	while ((n = FileReadSplash((void*)((u32)TOP_SCREEN0 + bin_size), 0x100000, bin_size)) > 0) {
-		bin_size += n;
-	}
-	u32 *fb1 = (u32*)TOP_SCREEN0;
-	u32 *fb2 = (u32*)TOP_SCREEN1;
-	for (n = 0; n < bin_size; n += 4){
-		*fb2++ = *fb1++; //for some reason, removing *fb1++ fixes bottom screen colors!
-	}
-	FileClose();
+    unsigned int n = 0, bin_size;
+    FileOpenSplash(splash_file);
+    //Load the spash image
+    bin_size = 0;
+    while ((n = FileReadSplash((void*)((u32)TOP_SCREEN0 + bin_size), 0x100000, bin_size)) > 0) {
+        bin_size += n;
+    }
+    u32 *fb1 = (u32*)TOP_SCREEN0;
+    u32 *fb2 = (u32*)TOP_SCREEN1;
+    for (n = 0; n < bin_size; n += 4){
+        *fb2++ = *fb1++; //for some reason, removing *fb1++ fixes bottom screen colors!
+    }
+    FileClose();
 }
 
 void DrawBottomSplash(char splash_file[]) {
-	unsigned int n = 0, bin_size;
-	FileOpenSplash(splash_file);
-	//Load the spash image
-	bin_size = 0;
-	while ((n = FileReadSplash((void*)((u32)BOT_SCREEN0 + bin_size), 0x100000, bin_size)) > 0) {
-		bin_size += n;
-	}
-	u32 *fb1 = (u32*)BOT_SCREEN0;
-	u32 *fb2 = (u32*)BOT_SCREEN1;
-	for (n = 0; n < bin_size; n += 4){
-		*fb2++ = *fb1++;
-	}
-	FileClose();
+    unsigned int n = 0, bin_size;
+    FileOpenSplash(splash_file);
+    //Load the spash image
+    bin_size = 0;
+    while ((n = FileReadSplash((void*)((u32)BOT_SCREEN0 + bin_size), 0x100000, bin_size)) > 0) {
+        bin_size += n;
+    }
+    u32 *fb1 = (u32*)BOT_SCREEN0;
+    u32 *fb2 = (u32*)BOT_SCREEN1;
+    for (n = 0; n < bin_size; n += 4){
+        *fb2++ = *fb1++;
+    }
+    FileClose();
 }
 
 inline void WriteByte(int address, u8 value) {
-	*((u8*)address) = value;
+    *((u8*)address) = value;
 }
 
 void DrawPixel(int x, int y, int color, int screen){
-	if(color != TRANSPARENT){
-		int cord = 720 * x + 720 -(y * 3);
-		int address  = cord + screen;
-		WriteByte(address, color >> 16);
-		WriteByte(address+1, color >> 8);
-		WriteByte(address+2, color & 0xFF);
-	}
+    if(color != TRANSPARENT){
+        int cord = 720 * x + 720 -(y * 3);
+        int address  = cord + screen;
+        WriteByte(address, color >> 16);
+        WriteByte(address+1, color >> 8);
+        WriteByte(address+2, color & 0xFF);
+    }
 }
 
 void DrawUI()
 {
-	DrawTopSplash("/3ds/Decrypt9/UI/menuTOP.bin"); //TOP SCREEN
-	DrawFreeSpace();
+    DrawTopSplash("/3ds/Decrypt9/UI/menuTOP.bin"); //TOP SCREEN
+    DrawFreeSpace();
 }
 
 void DrawFreeSpace()
 {
-	DrawStringF(50, 220, "Remaining SD storage space: %llu MiB", RemainingStorageSpace() / 1024 / 1024);
+    DrawStringF(50, 220, "Remaining SD storage space: %llu MiB", RemainingStorageSpace() / 1024 / 1024);
 }

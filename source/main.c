@@ -12,25 +12,25 @@
 
 void Initialize()
 {
-	memset(TOP_SCREEN0, 0x00, SCREEN_SIZE);
-	memset(TOP_SCREEN1, 0x00, SCREEN_SIZE);
-	ConsoleSetXY(0, 0);
-	ConsoleSetWH(398, 238);
-	ConsoleSetBorderColor(PURPLE);
-	ConsoleSetTextColor(WHITE);
-	ConsoleSetBackgroundColor(BLACK);
-	ConsoleSetSpacing(2);
-	ConsoleSetBorderWidth(2);
+    memset(TOP_SCREEN0, 0x00, SCREEN_SIZE);
+    memset(TOP_SCREEN1, 0x00, SCREEN_SIZE);
+    ConsoleSetXY(0, 0);
+    ConsoleSetWH(398, 238);
+    ConsoleSetBorderColor(PURPLE);
+    ConsoleSetTextColor(WHITE);
+    ConsoleSetBackgroundColor(BLACK);
+    ConsoleSetSpacing(2);
+    ConsoleSetBorderWidth(2);
 }
 
 int main()
 {
-	InitFS();
-	DebugClearAll();
+    InitFS();
+    DebugClearAll();
     Initialize();
-	
-	while (true)
-	{
-		MainMenu(); //Load main menu!
-	}
+    
+    while (true)
+    {
+        MainMenu(); //Load main menu!
+    }
 }
