@@ -30,24 +30,24 @@ int MainMenu()
         //DRAW BOTTOM GUI
         char path[] = "/3ds/Decrypt9/UI/menu0.bin";
         path[21] = menu_idx + 48;
-        DrawBottomSplash(path);	//BOTTOM SCREEN
+        DrawBottomSplash(path); //BOTTOM SCREEN
         if (TOP_Current == 0) {
-            DrawTopSplash("/3ds/Decrypt9/UI/menuTOP.bin");	//TOP SCREEN
+            DrawTopSplash("/3ds/Decrypt9/UI/menuTOP.bin"); //TOP SCREEN
             DrawFreeSpace();
             TOP_Current = 1;
         }
         u32 pad_state = InputWait();
-        if (pad_state & BUTTON_START) {		//REBOOT
+        if (pad_state & BUTTON_START) { //REBOOT
             goto reboot;
         } 
-        if (pad_state & BUTTON_SELECT) {	//POWER OFF
+        if (pad_state & BUTTON_SELECT) { //POWER OFF
             goto poweroff;
         }
-        if ((pad_state & BUTTON_RIGHT) && menu_idx != MENU_ITEMS - 1)	//MOVE RIGHT
+        if (pad_state & (BUTTON_RIGHT | BUTTON_R1) && menu_idx != MENU_ITEMS - 1) //MOVE RIGHT / DPAD RIGHT or RIGHT TRIGGER
         {
             menu_idx++;
         }
-        else if ((pad_state & BUTTON_LEFT) && menu_idx != 0)	//MOVE LEFT
+        else if (pad_state & (BUTTON_LEFT | BUTTON_L1) && menu_idx != 0) //MOVE LEFT / DPAD LEFT or LEFT TRIGGER
         {
             menu_idx--;
         }
@@ -57,7 +57,7 @@ int MainMenu()
                 ConsoleInit();
                 ConsoleSetTitle("NCCH Xorpad Generator");
                 ConsoleShow();
-                Debug("NCCH Padgen: %s!", NcchPadgen() == 0 ? "succeeded" : "failed");	//menu0.bin
+                Debug("NCCH Padgen: %s!", NcchPadgen() == 0 ? "succeeded" : "failed"); //menu0.bin
                 Debug("Press B to exit");
                 while (true) {
                     if (InputWait() & BUTTON_B) {
@@ -70,7 +70,7 @@ int MainMenu()
                 ConsoleInit();
                 ConsoleSetTitle("SD Xorpad Generator");
                 ConsoleShow();
-                Debug("SD Padgen: %s!", SdPadgen() == 0 ? "succeeded" : "failed");	//menu1.bin
+                Debug("SD Padgen: %s!", SdPadgen() == 0 ? "succeeded" : "failed"); //menu1.bin
                 Debug("Press B to exit");
                 while (true) {
                     if (InputWait() & BUTTON_B) {
@@ -83,7 +83,7 @@ int MainMenu()
                 ConsoleInit();
                 ConsoleSetTitle("NAND fat16 Xorpad Generator");
                 ConsoleShow();
-                Debug("NAND Padgen: %s!", NandPadgen() == 0 ? "succeeded" : "failed");	//menu2.bin
+                Debug("NAND Padgen: %s!", NandPadgen() == 0 ? "succeeded" : "failed"); //menu2.bin
                 Debug("Press B to exit");
                 while (true) {
                     if (InputWait() & BUTTON_B) {
@@ -108,7 +108,7 @@ int MainMenu()
                         ConsoleInit();
                         ConsoleSetTitle("NAND Restore");
                         ConsoleShow();
-                        Debug("Restore NAND: %s!", RestoreNand() == 0 ? "succeeded" : "failed");    //menu3.bin
+                        Debug("Restore NAND: %s!", RestoreNand() == 0 ? "succeeded" : "failed"); //menu3.bin
                         Debug("Press B to exit");
                         while (true) {
                             if (InputWait() & BUTTON_B) {
@@ -126,7 +126,7 @@ int MainMenu()
                         ConsoleInit();
                         ConsoleSetTitle("NAND Dumper");
                         ConsoleShow();
-                        Debug("NAND Padgen: %s!", DumpNand() == 0 ? "succeeded" : "failed");    //menu3.bin
+                        Debug("NAND Padgen: %s!", DumpNand() == 0 ? "succeeded" : "failed"); //menu3.bin
                         Debug("Press B to exit");
                         while (true) {
                             if (InputWait() & BUTTON_B) {
@@ -140,7 +140,7 @@ int MainMenu()
                     ConsoleInit();
                     ConsoleSetTitle("Decrypt NAND Partitions");
                     ConsoleShow();
-                  Debug("Decrypt NAND Partitions: %s!", DecryptNandPartitions() == 0 ? "succeeded" : "failed");   //menu4.bin
+                  Debug("Decrypt NAND Partitions: %s!", DecryptNandPartitions() == 0 ? "succeeded" : "failed"); //menu4.bin
                     Debug("Press B to exit");
                     while (true) {
                         if (InputWait() & BUTTON_B) {
@@ -153,7 +153,7 @@ int MainMenu()
                     ConsoleInit();
                     ConsoleSetTitle("Decrypt NAND System Titles");
                     ConsoleShow();
-                    Debug("Decrypt NAND Partitions: %s!", DecryptNandSystemTitles() == 0 ? "succeeded" : "failed");   //menu5.bin
+                    Debug("Decrypt NAND Partitions: %s!", DecryptNandSystemTitles() == 0 ? "succeeded" : "failed"); //menu5.bin
                     Debug("Press B to exit");
                     while (true) {
                         if (InputWait() & BUTTON_B) {
@@ -166,7 +166,7 @@ int MainMenu()
                     ConsoleInit();
                     ConsoleSetTitle("Decrypt Titlekeys File");
                     ConsoleShow();
-                    Debug("Titlekey Decryption: %s!", DecryptTitlekeysFile() == 0 ? "succeeded" : "failed");	//menu6.bin
+                    Debug("Titlekey Decryption: %s!", DecryptTitlekeysFile() == 0 ? "succeeded" : "failed"); //menu6.bin
                     Debug("Press B to exit");
                     while (true) {
                         if (InputWait() & BUTTON_B) {
@@ -179,7 +179,7 @@ int MainMenu()
                     ConsoleInit();
                     ConsoleSetTitle("Decrypt Titlekeys Nand");
                     ConsoleShow();	
-                    Debug("Titlekey Decryptor: %s!", DecryptTitlekeysNand() == 0 ? "succeeded" : "failed");  //menu7.bin
+                    Debug("Titlekey Decryptor: %s!", DecryptTitlekeysNand() == 0 ? "succeeded" : "failed"); //menu7.bin
                     Debug("Press B to exit");
                     while (true) {
                         if (InputWait() & BUTTON_B) {
@@ -192,7 +192,7 @@ int MainMenu()
                     ConsoleInit();
                     ConsoleSetTitle("Ticket Dumper");
                     ConsoleShow();
-                    Debug("Ticket Dump: %s!", DumpTicket() == 0 ? "succeeded" : "failed");    //menu8.bin
+                    Debug("Ticket Dump: %s!", DumpTicket() == 0 ? "succeeded" : "failed"); //menu8.bin
                     Debug("Press B to exit");
                     while (true) {
                         if (InputWait() & BUTTON_B) {
@@ -205,7 +205,7 @@ int MainMenu()
                     ConsoleInit();
                     ConsoleSetTitle("Game Cart Dumper");
                     ConsoleShow();	
-                    Debug("Dump Game: %s!", DumpGame() == 0 ? "succeeded" : "failed");  //menu9.bin
+                    Debug("Dump Game: %s!", DumpGame() == 0 ? "succeeded" : "failed"); //menu9.bin
                     Debug("Press B to exit");
                     while (true) {
                         if (InputWait() & BUTTON_B) {
