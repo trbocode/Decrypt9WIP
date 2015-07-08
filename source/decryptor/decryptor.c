@@ -67,7 +67,13 @@ u32 DecryptBuffer(DecryptBufferInfo *info)
 
 u32 DecryptTitlekey(TitleKeyEntry* entry)
 {
-    u8 ctr[16]; // aligned?
+    DecryptBufferInfo info = {.keyslot = 0x3D, .setKeyY = 1, .size = 16, .buffer = entry->encryptedTitleKey, .mode = AES_CNT_TITLEKEY_MODE};
+    memset(info.CTR, 0, 16);
+    memcpy(info.CTR, entry->titleId, 8);
+    memcpy(info.keyY, (void *)common_keyy[entry->commonKeyIndex], 16);
+    
+    DecryptBuffer(&info);
+    /*u8 ctr[16]; // aligned?
     u8 keyY[16];
     
     memset(ctr, 0, 16);
@@ -77,7 +83,7 @@ u32 DecryptTitlekey(TitleKeyEntry* entry)
     set_ctr(ctr);
     setup_aeskey(0x3D, AES_BIG_INPUT|AES_NORMAL_INPUT, keyY);
     use_aeskey(0x3D);
-    aes_decrypt(entry->encryptedTitleKey, entry->encryptedTitleKey, ctr, 1, AES_CNT_TITLEKEY_MODE);
+    aes_decrypt(entry->encryptedTitleKey, entry->encryptedTitleKey, ctr, 1, AES_CNT_TITLEKEY_MODE);*/
     
     return 0;
 }
