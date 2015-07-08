@@ -436,6 +436,47 @@ u32 DecryptNandToFile(char* filename, u32 offset, u32 size, PartitionInfo* parti
     return 0;
 }
 
+u32 EncryptMemToNand(u8* buffer, u32 offset, u32 size, PartitionInfo* partition)
+{
+    DecryptBufferInfo info = {.keyslot = partition->keyslot, .setKeyY = 0, .size = size, .buffer = buffer, .mode = partition->mode};
+    if(GetNandCtr(info.CTR, offset) != 0)
+        return 1;
+
+    u32 n_sectors = size / NAND_SECTOR_SIZE;
+    u32 start_sector = offset / NAND_SECTOR_SIZE;
+    DecryptBuffer(&info);
+    sdmmc_nand_writesectors(start_sector, n_sectors, buffer);
+
+    return 0;
+}
+
+u32 EncryptFileToNand(char* filename, u32 offset, u32 size, PartitionInfo* partition)
+{
+    u8* buffer = BUFFER_ADDRESS;
+
+    if (!DebugFileOpen(filename))
+        return 1;
+    
+    if (FileGetSize() != size) {
+        Debug("%s has wrong size", filename);
+        FileClose();
+        return 1;
+    }
+
+    for (u32 i = 0; i < size; i += NAND_SECTOR_SIZE * SECTORS_PER_READ) {
+        u32 read_bytes = min(NAND_SECTOR_SIZE * SECTORS_PER_READ, (size - i));
+        ShowProgress(i, size);
+        if(!DebugFileRead(buffer, read_bytes, i))
+            return 1;
+        EncryptMemToNand(buffer, offset + i, read_bytes, partition);
+    }
+
+    ShowProgress(0, 0);
+    FileClose();
+
+    return 0;
+}
+
 u32 NandPadgen()
 {
     u32 keyslot;
@@ -529,7 +570,7 @@ u32 DecryptNandPartitions() {
         if ( !(o3ds && (p == 6)) && !(!o3ds && (p == 5)) ) { // skip unavailable partitions (O3DS CTRNAND / N3DS CTRNAND)
             Debug("Dumping & Decrypting %s, size (MB): %u", partitions[p].name, partitions[p].size / (1024 * 1024));
             snprintf(filename, 256, "/%s.bin", partitions[p].name);
-            result += DecryptNandToFile(filename, partitions[p].offset, partitions[p].size, &partitions[p]);
+            result |= DecryptNandToFile(filename, partitions[p].offset, partitions[p].size, &partitions[p]);
         }
     }
 
@@ -543,7 +584,6 @@ u32 DecryptNandSystemTitles() {
     u32 ctrnand_size = ctrnand_info->size;
     char filename[256];
     u32 nTitles = 0;
-    
     
     Debug("Seeking for 'NCCH'...");
     for (u32 i = 0; i < ctrnand_size; i += NAND_SECTOR_SIZE) {
@@ -600,5 +640,21 @@ u32 RestoreNand()
     FileClose();
 
     return 0;
+}
+
+u32 EncryptNandPartitions() {
+    u32 result = 1;
+    char filename[256];
+    bool o3ds = (GetUnitPlatform() == PLATFORM_3DS);
+
+    for (u32 p = 0; p < 7; p++) {
+        if ( !(o3ds && (p == 6)) && !(!o3ds && (p == 5)) ) { // skip unavailable partitions (O3DS CTRNAND / N3DS CTRNAND)
+            Debug("Encrypting & injecting %s, size (MB): %u", partitions[p].name, partitions[p].size / (1024 * 1024));
+            snprintf(filename, 256, "/%s.bin", partitions[p].name);
+            result &= EncryptFileToNand(filename, partitions[p].offset, partitions[p].size, &partitions[p]);
+        }
+    }
+
+    return result;
 }
 

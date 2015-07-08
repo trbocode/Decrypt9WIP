@@ -47,7 +47,7 @@ MenuInfo menu[] =
         "!DANGER_ZONE!",
         {
             { "NAND Restore", &RestoreNand },
-            { NULL, NULL },
+            { "NAND Partition Inject", &EncryptNandPartitions},
             { NULL, NULL },
             { NULL, NULL }
         }

@@ -93,3 +93,6 @@ u32 CreatePad(PadInfo *info);
 u32 GetNandCtr(u8* ctr, u32 offset);
 u32 DecryptNandToMem(u8* buffer, u32 offset, u32 size, PartitionInfo* partition);
 u32 DecryptNandToFile(char* filename, u32 offset, u32 size, PartitionInfo* partition);
+
+u32 EncryptMemToNand(u8* buffer, u32 offset, u32 size, PartitionInfo* partition);
+u32 EncryptFileToNand(char* filename, u32 offset, u32 size, PartitionInfo* partition);
