@@ -6,7 +6,8 @@ ifeq ($(strip $(DEVKITARM)),)
 $(error "Please set DEVKITARM in your environment. export DEVKITARM=<path to>devkitARM")
 endif
 
-include $(DEVKITARM)/ds_rules
+TOPDIR ?= $(CURDIR)
+include $(DEVKITARM)/3ds_rules
 
 #---------------------------------------------------------------------------------
 # TARGET is the name of the output
@@ -14,48 +15,50 @@ include $(DEVKITARM)/ds_rules
 # SOURCES is a list of directories containing source code
 # DATA is a list of directories containing data files
 # INCLUDES is a list of directories containing header files
-# SPECS is the directory containing the important build and link files
+#
+# NO_SMDH: if set to anything, no SMDH file is generated.
+# APP_TITLE is the name of the app stored in the SMDH file (Optional)
+# APP_DESCRIPTION is the description of the app stored in the SMDH file (Optional)
+# APP_AUTHOR is the author of the app stored in the SMDH file (Optional)
+# ICON is the filename of the icon (.png), relative to the project folder.
+#   If not set, it attempts to use one of the following (in this order):
+#     - <Project name>.png
+#     - icon.png
+#     - <libctru folder>/default_icon.png
 #---------------------------------------------------------------------------------
-export TARGET		:=	$(shell basename $(CURDIR))
+TARGET		:=	Decrypt9
 BUILD		:=	build
-SOURCES		:=	source source/fatfs source/decryptor source/abstraction
+SOURCES		:=	source
 DATA		:=	data
-INCLUDES	:=	include source source/fatfs
-
-#---------------------------------------------------------------------------------
-# Setup some defines
-#---------------------------------------------------------------------------------
+INCLUDES	:=	include
+APP_TITLE	:=	Decrypt9 - Bootstrap-MOD
+APP_DESCRIPTION :=	Xorpad Generation + Other tools
+APP_AUTHOR	:=	Archshift with mods by Shadowtrance & d0k3
 
 #---------------------------------------------------------------------------------
 # options for code generation
 #---------------------------------------------------------------------------------
-ARCH	:=	-mthumb -mthumb-interwork
+ARCH	:=	-march=armv6k -mtune=mpcore -mfloat-abi=hard
 
-CFLAGS	:=	-g -Wall -O2\
-			-march=armv5te -mtune=arm946e-s -fomit-frame-pointer\
-			-ffast-math -std=c99\
+CFLAGS	:=	-g -Wall -O3 -mword-relocations \
+			-fomit-frame-pointer -ffast-math \
 			$(ARCH)
 
-CFLAGS	+=	$(INCLUDE) -DEXEC_$(EXEC_METHOD) -DARM9
+CFLAGS	+=	$(INCLUDE) -DARM11 -D_3DS -DARM_ARCH -w
 
-CXXFLAGS	:= $(CFLAGS) -fno-rtti -fno-exceptions
+CXXFLAGS	:= $(CFLAGS) -fno-rtti -fno-exceptions -std=gnu++11 -w
 
-ASFLAGS	:=	-g $(ARCH) -DEXEC_$(EXEC_METHOD)
-LDFLAGS	=	-nostartfiles -g $(ARCH) -Wl,-Map,$(TARGET).map
+ASFLAGS	:=	-g $(ARCH)
+LDFLAGS	=	-specs=3dsx.specs -g $(ARCH) -Wl,-Map,$(notdir $*.map)
 
-ifeq ($(EXEC_METHOD),GATEWAY)
-	LDFLAGS += --specs=../gateway.specs
-else ifeq ($(EXEC_METHOD),BOOTSTRAP)
-	LDFLAGS += --specs=../bootstrap.specs
-endif
-
-LIBS	:=
+LIBS	:= -lctru -lm
 
 #---------------------------------------------------------------------------------
 # list of directories containing libraries, this must be the top level containing
 # include and lib
 #---------------------------------------------------------------------------------
-LIBDIRS	:=
+LIBDIRS	:= $(CTRULIB)
+
 
 #---------------------------------------------------------------------------------
 # no real need to edit anything past this point unless you need to add additional
@@ -64,9 +67,8 @@ LIBDIRS	:=
 ifneq ($(BUILD),$(notdir $(CURDIR)))
 #---------------------------------------------------------------------------------
 
-export OUTPUT_C	:=	$(CURDIR)/brahma_loader/data
-export OUTPUT_D	:=	$(CURDIR)/output
-export OUTPUT	:=	$(OUTPUT_D)/$(TARGET)
+export OUTPUT	:=	$(CURDIR)/$(TARGET)
+export TOPDIR	:=	$(CURDIR)
 
 export VPATH	:=	$(foreach dir,$(SOURCES),$(CURDIR)/$(dir)) \
 			$(foreach dir,$(DATA),$(CURDIR)/$(dir))
@@ -92,7 +94,7 @@ else
 endif
 #---------------------------------------------------------------------------------
 
-export OFILES	:= $(addsuffix .o,$(BINFILES)) \
+export OFILES	:=	$(addsuffix .o,$(BINFILES)) \
 			$(CPPFILES:.cpp=.o) $(CFILES:.c=.o) $(SFILES:.s=.o)
 
 export INCLUDE	:=	$(foreach dir,$(INCLUDES),-I$(CURDIR)/$(dir)) \
@@ -101,30 +103,33 @@ export INCLUDE	:=	$(foreach dir,$(INCLUDES),-I$(CURDIR)/$(dir)) \
 
 export LIBPATHS	:=	$(foreach dir,$(LIBDIRS),-L$(dir)/lib)
 
-.PHONY: $(BUILD) clean all gateway bootstrap
+ifeq ($(strip $(ICON)),)
+	icons := $(wildcard *.png)
+	ifneq (,$(findstring $(TARGET).png,$(icons)))
+		export APP_ICON := $(TOPDIR)/$(TARGET).png
+	else
+		ifneq (,$(findstring icon.png,$(icons)))
+			export APP_ICON := $(TOPDIR)/icon.png
+		endif
+	endif
+else
+	export APP_ICON := $(TOPDIR)/$(ICON)
+endif
+
+.PHONY: $(BUILD) clean all
 
 #---------------------------------------------------------------------------------
-all: $(OUTPUT_D) bootstrap
+all: $(BUILD)
 
-$(OUTPUT_D):
+$(BUILD):
+	@echo $(SFILES)
 	@[ -d $@ ] || mkdir -p $@
-
-gateway: $(OUTPUT_D)
-	@[ -d $(BUILD) ] || mkdir -p $(BUILD)
-	@make --no-print-directory -C $(BUILD) -f $(CURDIR)/Makefile EXEC_METHOD=GATEWAY
-	cp tools/LauncherTemplate.dat $(OUTPUT_D)/Launcher.dat
-	python tools/insert.py $(OUTPUT_D)/Launcher.dat $(OUTPUT).bin 0x16D8D0
-
-bootstrap: $(OUTPUT_D)
-	@[ -d $(BUILD) ] || mkdir -p $(BUILD)
-	@make --no-print-directory -C $(BUILD) -f $(CURDIR)/Makefile EXEC_METHOD=BOOTSTRAP
-	cp $(OUTPUT).bin payload.bin
-	mv payload.bin $(OUTPUT_C)
+	@make --no-print-directory -C $(BUILD) -f $(CURDIR)/Makefile
 
 #---------------------------------------------------------------------------------
 clean:
 	@echo clean ...
-	@rm -fr $(BUILD) $(OUTPUT_D)
+	@rm -fr $(BUILD) $(TARGET).3dsx $(OUTPUT).smdh $(TARGET).elf
 
 
 #---------------------------------------------------------------------------------
@@ -135,18 +140,35 @@ DEPENDS	:=	$(OFILES:.o=.d)
 #---------------------------------------------------------------------------------
 # main targets
 #---------------------------------------------------------------------------------
-$(OUTPUT).bin	:	$(OUTPUT).elf
+ifeq ($(strip $(NO_SMDH)),)
+.PHONY: all
+all	:	$(OUTPUT).3dsx $(OUTPUT).smdh
+endif
+cpu.o cpu_threaded.o: CFLAGS += -Wno-unused-variable -Wno-unused-label
+$(OUTPUT).3dsx	:	$(OUTPUT).elf
 $(OUTPUT).elf	:	$(OFILES)
 
-
 #---------------------------------------------------------------------------------
-%.bin: %.elf
-	@$(OBJCOPY) -O binary $< $@
-	@echo built ... $(notdir $@)
+# you need a rule like this for each extension you use as binary data
+#---------------------------------------------------------------------------------
+%.bin.o	:	%.bin
+#---------------------------------------------------------------------------------
+	@echo $(notdir $<)
+	@$(bin2o)
 
+# WARNING: This is not the right way to do this! TODO: Do it right!
+#---------------------------------------------------------------------------------
+%.vsh.o	:	%.vsh
+#---------------------------------------------------------------------------------
+	@echo $(notdir $<)
+	@python $(AEMSTRO)/aemstro_as.py $< ../$(notdir $<).shbin
+	@bin2s ../$(notdir $<).shbin | $(PREFIX)as -o $@
+	@echo "extern const u8" `(echo $(notdir $<).shbin | sed -e 's/^\([0-9]\)/_\1/' | tr . _)`"_end[];" > `(echo $(notdir $<).shbin | tr . _)`.h
+	@echo "extern const u8" `(echo $(notdir $<).shbin | sed -e 's/^\([0-9]\)/_\1/' | tr . _)`"[];" >> `(echo $(notdir $<).shbin | tr . _)`.h
+	@echo "extern const u32" `(echo $(notdir $<).shbin | sed -e 's/^\([0-9]\)/_\1/' | tr . _)`_size";" >> `(echo $(notdir $<).shbin | tr . _)`.h
+	@rm ../$(notdir $<).shbin
 
 -include $(DEPENDS)
-
 
 #---------------------------------------------------------------------------------------
 endif
