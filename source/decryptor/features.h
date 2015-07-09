@@ -11,4 +11,5 @@ u32 DecryptNandPartitions(void);
 u32 DecryptNandSystemTitles(void);
 
 u32 RestoreNand(void);
+u32 EncryptNandPartitions(void);
 //u32 DumpGame(void); //Not Implemented yet
