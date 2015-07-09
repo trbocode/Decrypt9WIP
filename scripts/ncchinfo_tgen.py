@@ -14,7 +14,7 @@
 #   4 bytes   Size in MB(rounded up)
 #   8 bytes   Reserved
 #   4 bytes   Uses 7x crypto? (0 or 1)
-# 112 bytes   Output file name in UTF-8 (format used: "/titleId.partitionName.sectionName.xorpad")
+# 112 bytes   Output file name in UTF-8 (format used: "/fileName.partitionName.sectionName.xorpad")
 #####
 
 import os
@@ -227,7 +227,7 @@ def parseNCCHSection(header, type, uses7xCrypto, doPrint, tab):
     return struct.pack('<16s16sIIII', str(counter), str(keyY), sectionMb, 0, 0, uses7xCrypto)
 
 def genOutName(titleId, partitionName, sectionName):
-    outName = b'/%s.%s.%s.xorpad' % (fh.name, partitionName, sectionName)
+    outName = b'/%s.%s.%s.xorpad' % (os.path.basename(fh.name), partitionName, sectionName)
     if len(outName) > 112:
         print "Output file name too large. This shouldn't happen."
         sys.exit()
