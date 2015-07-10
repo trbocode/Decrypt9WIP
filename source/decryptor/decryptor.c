@@ -45,7 +45,9 @@ static PartitionInfo partitions[] = {
 
 u32 DecryptBuffer(DecryptBufferInfo *info)
 {
-    u8* ctr = info->CTR;
+    u8 ctr[16] __attribute__((aligned(32)));
+    memcpy(ctr, info->CTR, 16);
+
     u8* buffer = info->buffer;
     u32 size = info->size;
     u32 mode = info->mode;
