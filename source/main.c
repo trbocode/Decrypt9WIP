@@ -10,8 +10,6 @@
 #include "i2c.h"
 #include "decryptor/features.h"
 
-// don't ever even think about enabling this unless you know exactly what you do
-// #define DANGER_ZONE
 
 MenuInfo menu[] =
 {
