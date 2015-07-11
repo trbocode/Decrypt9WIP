@@ -176,6 +176,10 @@ u32 DecryptTitlekeysNand(void)
                 nKeys++;
             }
         }
+        if (nKeys == MAX_ENTRIES) {
+            Debug("Maximum number of titlekeys found");
+            break;
+        }
     }
     info->n_entries = nKeys;
     ShowProgress(0, 0);
