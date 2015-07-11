@@ -100,7 +100,7 @@ u32 DecryptTitlekeysFile(void)
 {
     EncKeysInfo *info = (EncKeysInfo*)0x20316000;
 
-    if (!DebugFileOpen("/encTitleKeys.bin"))
+    if (!DebugFileOpen("encTitleKeys.bin"))
         return 1;
     
     if (!DebugFileRead(info, 16, 0))
@@ -122,7 +122,7 @@ u32 DecryptTitlekeysFile(void)
     for (u32 i = 0; i < info->n_entries; i++)
         DecryptTitlekey(&(info->entries[i]));
 
-    if (!DebugFileCreate("/decTitleKeys.bin", true))
+    if (!DebugFileCreate("decTitleKeys.bin", true))
         return 1;
 
     if (!DebugFileWrite(info, info->n_entries * sizeof(TitleKeyEntry) + 16, 0))
@@ -187,7 +187,7 @@ u32 DecryptTitlekeysNand(void)
     Debug("Decrypted %u unique Title Keys", nKeys);
     
     if(nKeys > 0) {
-        if (!DebugFileCreate("/decTitleKeys.bin", true))
+        if (!DebugFileCreate("decTitleKeys.bin", true))
             return 1;
         if (!DebugFileWrite(info, 0x10 + nKeys * 0x20, 0))
             return 1;
@@ -206,7 +206,7 @@ u32 NcchPadgen()
     NcchInfo *info = (NcchInfo*)0x20316000;
     SeedInfo *seedinfo = (SeedInfo*)0x20400000;
 
-    if (DebugFileOpen("/slot0x25KeyX.bin")) {
+    if (DebugFileOpen("slot0x25KeyX.bin")) {
         u8 slot0x25KeyX[16] = {0};
         if (!DebugFileRead(&slot0x25KeyX, 16, 0))
             return 1;
@@ -217,7 +217,7 @@ u32 NcchPadgen()
         Debug("7.x game decryption will fail on less than 7.x!");
     }
 
-    if (DebugFileOpen("/seeddb.bin")) {
+    if (DebugFileOpen("seeddb.bin")) {
         if (!DebugFileRead(seedinfo, 16, 0))
             return 1;
         if (!seedinfo->n_entries || seedinfo->n_entries > MAX_ENTRIES) {
@@ -232,7 +232,7 @@ u32 NcchPadgen()
         Debug("9.x seed crypto game decryption will fail!");
     }
 
-    if (!DebugFileOpen("/ncchinfo.bin"))
+    if (!DebugFileOpen("ncchinfo.bin"))
         return 1;
     if (!DebugFileRead(info, 16, 0))
         return 1;
@@ -309,7 +309,7 @@ u32 SdPadgen()
     u8 movable_seed[0x120] = {0};
 
     // Load console 0x34 keyY from movable.sed if present on SD card
-    if (DebugFileOpen("/movable.sed")) {
+    if (DebugFileOpen("movable.sed")) {
         if (!DebugFileRead(&movable_seed, 0x120, 0))
             return 1;
         FileClose();
@@ -321,7 +321,7 @@ u32 SdPadgen()
         use_aeskey(0x34);
     }
 
-    if (!DebugFileOpen("/SDinfo.bin"))
+    if (!DebugFileOpen("SDinfo.bin"))
         return 1;
     if (!DebugFileRead(info, 4, 0))
         return 1;
@@ -524,7 +524,7 @@ u32 NandPadgen()
     Debug("Creating NAND FAT16 xorpad. Size (MB): %u", nand_size);
     Debug("Filename: nand.fat16.xorpad");
 
-    PadInfo padInfo = {.keyslot = keyslot, .setKeyY = 0, .size_mb = nand_size, .filename = "/nand.fat16.xorpad"};
+    PadInfo padInfo = {.keyslot = keyslot, .setKeyY = 0, .size_mb = nand_size, .filename = "nand.fat16.xorpad"};
     if(GetNandCtr(padInfo.CTR, 0xB930000) != 0)
         return 1;
 
@@ -575,7 +575,7 @@ u32 DumpNand()
 
     Debug("Dumping System NAND. Size (MB): %u", nand_size / (1024 * 1024));
 
-    if (!DebugFileCreate("/NAND.bin", true))
+    if (!DebugFileCreate("NAND.bin", true))
         return 1;
 
     u32 n_sectors = nand_size / NAND_SECTOR_SIZE;
@@ -600,7 +600,7 @@ u32 DecryptNandPartitions() {
     for (u32 p = 0; p < 7; p++) {
         if ( !(o3ds && (p == 6)) && !(!o3ds && (p == 5)) ) { // skip unavailable partitions (O3DS CTRNAND / N3DS CTRNAND)
             Debug("Dumping & Decrypting %s, size (MB): %u", partitions[p].name, partitions[p].size / (1024 * 1024));
-            snprintf(filename, 256, "/%s.bin", partitions[p].name);
+            snprintf(filename, 256, "%s.bin", partitions[p].name);
             result |= DecryptNandToFile(filename, partitions[p].offset, partitions[p].size, &partitions[p]);
         }
     }
@@ -617,7 +617,7 @@ u32 DumpNandSystemTitles() {
     u32 nTitles = 0;
     
     
-    DirMake("/D9titles");
+    DirMake("D9titles");
     Debug("Seeking for 'NCCH'...");
     for (u32 i = 0; i < ctrnand_size; i += NAND_SECTOR_SIZE) {
         ShowProgress(i, ctrnand_size);
@@ -629,7 +629,7 @@ u32 DumpNandSystemTitles() {
                 Debug("Found at 0x%08x, but invalid size", ctrnand_offset + i + 0x100);
                 continue;
             }
-            snprintf(filename, 256, "/D9titles/%08X%08X.app",  *((unsigned int*)(buffer + 0x10C)), *((unsigned int*)(buffer + 0x108)));
+            snprintf(filename, 256, "D9titles/%08X%08X.app",  *((unsigned int*)(buffer + 0x10C)), *((unsigned int*)(buffer + 0x108)));
             if (FileOpen(filename)) {
                 FileClose();
                 Debug("Found duplicate at 0x%08X", ctrnand_offset + i + 0x100, size);
@@ -656,7 +656,7 @@ u32 RestoreNand()
     u8* buffer = BUFFER_ADDRESS;
     u32 nand_size;
 
-    if (!DebugFileOpen("/NAND.bin"))
+    if (!DebugFileOpen("NAND.bin"))
         return 1;
     nand_size = FileGetSize();
     
@@ -684,7 +684,7 @@ u32 EncryptNandPartitions() {
     for (u32 p = 0; p < 7; p++) {
         if ( !(o3ds && (p == 6)) && !(!o3ds && (p == 5)) ) { // skip unavailable partitions (O3DS CTRNAND / N3DS CTRNAND)
             Debug("Encrypting & injecting %s, size (MB): %u", partitions[p].name, partitions[p].size / (1024 * 1024));
-            snprintf(filename, 256, "/%s.bin", partitions[p].name);
+            snprintf(filename, 256, "%s.bin", partitions[p].name);
             result &= EncryptFileToNand(filename, partitions[p].offset, partitions[p].size, &partitions[p]);
         }
     }

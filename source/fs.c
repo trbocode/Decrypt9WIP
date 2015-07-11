@@ -15,7 +15,12 @@ bool InitFS()
     *(u32*)0x10000020 = 0;
     *(u32*)0x10000020 = 0x340;
 #endif
-    return f_mount(&fs, "0:", 0) == FR_OK;
+    bool ret = (f_mount(&fs, "0:", 0) == FR_OK);
+    #ifdef WORKDIR
+    f_mkdir(WORKDIR);
+    f_chdir(WORKDIR);
+    #endif
+    return ret;
 }
 
 void DeinitFS()
@@ -26,13 +31,7 @@ void DeinitFS()
 bool FileOpen(const char* path)
 {
     unsigned flags = FA_READ | FA_WRITE | FA_OPEN_EXISTING;
-    #ifdef WORK_DIR
-    char workpath[256];
-    snprintf(workpath, 256, "%s/%s", WORK_DIR, (path[0] == '/') ? path + 1 : path);
-    bool ret = (f_open(&file, workpath, flags) == FR_OK);
-    #else
     bool ret = (f_open(&file, path, flags) == FR_OK);
-    #endif
     f_lseek(&file, 0);
     f_sync(&file);
     return ret;
@@ -41,15 +40,8 @@ bool FileOpen(const char* path)
 bool FileCreate(const char* path, bool truncate)
 {
     unsigned flags = FA_READ | FA_WRITE;
-    flags |= truncate ? FA_CREATE_ALWAYS : FA_OPEN_ALWAYS;
-    #ifdef WORK_DIR
-    f_mkdir(WORK_DIR);
-    char workpath[256];
-    snprintf(workpath, 256, "%s/%s", WORK_DIR, (path[0] == '/') ? path + 1 : path);
-    bool ret = (f_open(&file, workpath, flags) == FR_OK);
-    #else
+    flags |= truncate ? FA_CREATE_ALWAYS : FA_OPEN_ALWAYS
     bool ret = (f_open(&file, path, flags) == FR_OK);
-    #endif
     f_lseek(&file, 0);
     f_sync(&file);
     return ret;
@@ -84,27 +76,14 @@ void FileClose()
 
 bool DirMake(const char* path)
 {
-    #ifdef WORK_DIR
-    f_mkdir(WORK_DIR);
-    char workpath[256];
-    snprintf(workpath, 256, "%s/%s", WORK_DIR, (path[0] == '/') ? path + 1 : path);
-    FRESULT res = f_mkdir(workpath);
-    #else
     FRESULT res = f_mkdir(path);
-    #endif
     bool ret = (res == FR_OK) || (res == FR_EXIST);
     return ret;
 }
 
 bool DirOpen(const char* path)
 {
-    #ifdef WORK_DIR
-    char workpath[256];
-    snprintf(workpath, 256, "%s/%s", WORK_DIR, (path[0] == '/') ? path + 1 : path);
-    bool ret = (f_opendir(&dir, workpath) == FR_OK);
-    #else
     bool ret = (f_opendir(&dir, path) == FR_OK);
-    #endif
     return ret;
 }
 
