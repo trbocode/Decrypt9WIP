@@ -11,7 +11,8 @@
 #include "draw.h"
 #include "console.h"
 
-#define BG_COLOR   (RGB(48, 48, 48))
+#define BG_COLOR   (RGB(0, 0, 0))
+#define BG_M_COLOR   (RGB(48, 48, 48))
 #define FONT_COLOR (RGB(0xFF, 0xFF, 0xFF))
 
 #define START_Y 30
@@ -61,7 +62,7 @@ void DrawString(u8* screen, const char *str, int x, int y, int color, int bgcolo
         DrawCharacter(screen, str[i], x + i * 8, y, color, bgcolor);
 }
 
-void DrawStringF(int x, int y, const char *format, ...)
+void DrawStringF(int x, int y, const char *format, ...) //Percentage display background
 {
     char str[256] = {};
     va_list va;
@@ -72,6 +73,19 @@ void DrawStringF(int x, int y, const char *format, ...)
 
     DrawString(TOP_SCREEN0, str, x, y, FONT_COLOR, BG_COLOR);
     DrawString(TOP_SCREEN1, str, x, y, FONT_COLOR, BG_COLOR);
+}
+
+void DrawStringM(int x, int y, const char *format, ...) //Alternate DrawStringF for main screen 'space' background
+{
+    char str[256] = {};
+    va_list va;
+
+    va_start(va, format);
+    vsnprintf(str, 256, format, va);
+    va_end(va);
+
+    DrawString(TOP_SCREEN0, str, x, y, FONT_COLOR, BG_M_COLOR);
+    DrawString(TOP_SCREEN1, str, x, y, FONT_COLOR, BG_M_COLOR);
 }
 
 void DebugClear()
@@ -180,5 +194,5 @@ void DrawUI()
 
 void DrawFreeSpace()
 {
-    DrawStringF(50, 220, "Remaining SD storage space: %llu MiB", RemainingStorageSpace() / 1024 / 1024);
+    DrawStringM(50, 220, "Remaining SD storage space: %llu MiB", RemainingStorageSpace() / 1024 / 1024);
 }
