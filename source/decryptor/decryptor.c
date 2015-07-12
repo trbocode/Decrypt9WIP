@@ -168,7 +168,7 @@ u32 DecryptTitlekeysNand(void)
         u32 read_bytes = min(NAND_SECTOR_SIZE * SECTORS_PER_READ, (size - t_offset));
         ShowProgress(t_offset, size);
         DecryptNandToMem(buffer, offset + t_offset, read_bytes, ctrnand_info);
-        for (u32 i = 0x158; i < read_bytes - 0x200; i += 0x200) {
+        for (u32 i = 0x158; i < read_bytes - NAND_SECTOR_SIZE; i += NAND_SECTOR_SIZE) {
             if(memcmp(buffer + i, (u8*) "Root-CA00000003-XS0000000c", 26) == 0) {
                 u32 exid;
                 titleId = buffer + i + 0x9C;
@@ -415,12 +415,12 @@ u32 SeekFileInNand(u32* offset, u32* size, const char* filename, PartitionInfo* 
     // - filename must be in FAT 8+3 format
     // - finds only the first file
     // - doesn't search the root dir
-    // - dirs must not exceed one cluster
+    // - dirs must not exceed 1024 entries
     // - fragmentation not supported
     
+    const static char* magic = ".          ";
+    const static char zeroes[8+3] = { 0x00 };
     u8* buffer = BUFFER_ADDRESS;
-    const char* magic = ".          ";
-    char zeroes[8+3] = { 0x00 };
     u32 p_size = partition->size;
     u32 p_offset = partition->offset;
     
@@ -434,10 +434,10 @@ u32 SeekFileInNand(u32* offset, u32* size, const char* filename, PartitionInfo* 
     
     DecryptNandToMem(buffer, p_offset, NAND_SECTOR_SIZE, partition);
     cluster_start =
-        0x200 * ( le16(buffer + 0x0E) + // FAT table start
+        NAND_SECTOR_SIZE * ( le16(buffer + 0x0E) + // FAT table start
         ( le16(buffer + 0x16) * buffer[0x10] ) ) + // FAT table size
         le16(buffer + 0x11) * 0x20; // root directory size
-    cluster_size = buffer[0x0D] * 0x200;
+    cluster_size = buffer[0x0D] * NAND_SECTOR_SIZE;
     
     for( u32 i = cluster_start; i < p_size; i += cluster_size ) {
         DecryptNandToMem(buffer, p_offset + i, NAND_SECTOR_SIZE, partition);
