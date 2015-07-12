@@ -40,7 +40,7 @@ bool FileOpen(const char* path)
 bool FileCreate(const char* path, bool truncate)
 {
     unsigned flags = FA_READ | FA_WRITE;
-    flags |= truncate ? FA_CREATE_ALWAYS : FA_OPEN_ALWAYS
+    flags |= truncate ? FA_CREATE_ALWAYS : FA_OPEN_ALWAYS;
     bool ret = (f_open(&file, path, flags) == FR_OK);
     f_lseek(&file, 0);
     f_sync(&file);
