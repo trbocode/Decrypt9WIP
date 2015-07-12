@@ -194,5 +194,8 @@ void DrawUI()
 
 void DrawFreeSpace()
 {
+    #ifdef WORKDIR
+    DrawStringM(50, 210, "Working directory: %s", WORKDIR);
+    #endif
     DrawStringM(50, 220, "Remaining SD storage space: %llu MiB", RemainingStorageSpace() / 1024 / 1024);
 }
