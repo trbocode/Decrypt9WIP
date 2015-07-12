@@ -1,7 +1,6 @@
 #include "fs.h"
+#include "draw.h"
 
-#include <stdio.h>
-#include <string.h>
 #include "fatfs/ff.h"
 
 static FATFS fs;
@@ -37,14 +36,34 @@ bool FileOpen(const char* path)
     return ret;
 }
 
+bool DebugFileOpen(const char* path) {
+    Debug("Opening %s ...", path);
+    if (!FileOpen(path)) {
+        Debug("Could not open %s!", path);
+        return false;
+    }
+    
+    return true;
+}
+
 bool FileCreate(const char* path, bool truncate)
 {
     unsigned flags = FA_READ | FA_WRITE;
-    flags |= truncate ? FA_CREATE_ALWAYS : FA_OPEN_ALWAYS
+    flags |= truncate ? FA_CREATE_ALWAYS : FA_OPEN_ALWAYS;
     bool ret = (f_open(&file, path, flags) == FR_OK);
     f_lseek(&file, 0);
     f_sync(&file);
     return ret;
+}
+
+bool DebugFileCreate(const char* path, bool truncate) {
+    Debug("Creating %s ...", path);
+    if (!FileCreate(path, truncate)) {
+        Debug("Could not create %s!", path);
+        return false;
+    }
+
+    return true;
 }
 
 size_t FileRead(void* buf, size_t size, size_t foffset)
@@ -55,6 +74,16 @@ size_t FileRead(void* buf, size_t size, size_t foffset)
     return bytes_read;
 }
 
+bool DebugFileRead(void* buf, size_t size, size_t foffset) {
+    size_t bytesRead = FileRead(buf, size, foffset);
+    if(bytesRead != size) {
+        Debug("ERROR, file is too small!");
+        return false;
+    }
+    
+    return true;
+}
+
 size_t FileWrite(void* buf, size_t size, size_t foffset)
 {
     UINT bytes_written = 0;
@@ -62,6 +91,16 @@ size_t FileWrite(void* buf, size_t size, size_t foffset)
     f_write(&file, buf, size, &bytes_written);
     f_sync(&file);
     return bytes_written;
+}
+
+bool DebugFileWrite(void* buf, size_t size, size_t foffset) {
+    size_t bytesWritten = FileWrite(buf, size, foffset);
+    if(bytesWritten != size) {
+        Debug("ERROR, SD card may be full!");
+        return false;
+    }
+    
+    return true;
 }
 
 size_t FileGetSize()
