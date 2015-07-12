@@ -22,10 +22,13 @@ size_t FileWrite(void* buf, size_t size, size_t foffset);
 /** Gets the size of the opened file */
 size_t FileGetSize();
 
+/** Creates a directory */
+bool DirMake(const char* path);
+
 /** Opens an existing directory */
 bool DirOpen(const char* path);
 
-/** Opens first / next file in directory **/
+/** Opens first / next file in directory */
 bool DirFileOpen();
 
 /** Gets remaining space on SD card in bytes */

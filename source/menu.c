@@ -182,9 +182,9 @@ int MainMenu()
                     }
                     else if (menu_idx == 5) {
                         ConsoleInit();
-                        ConsoleSetTitle("Decrypt NAND System Titles");
+                        ConsoleSetTitle("Dump Nand System Titles");
                         ConsoleShow();
-                        Debug("Decrypt NAND Partitions: %s!", DecryptNandSystemTitles() == 0 ? "succeeded" : "failed"); //menu5.bin
+                        Debug("Decrypt NAND Partitions: %s!", DumpNandSystemTitles() == 0 ? "succeeded" : "failed"); //menu5.bin
                         Debug("Press B to exit");
                         while (true) {
                             if (InputWait() & BUTTON_B) {

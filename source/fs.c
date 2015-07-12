@@ -82,6 +82,20 @@ void FileClose()
     f_close(&file);
 }
 
+bool DirMake(const char* path)
+{
+    #ifdef WORK_DIR
+    f_mkdir(WORK_DIR);
+    char workpath[256];
+    snprintf(workpath, 256, "%s/%s", WORK_DIR, (path[0] == '/') ? path + 1 : path);
+    FRESULT res = f_mkdir(workpath);
+    #else
+    FRESULT res = f_mkdir(path);
+    #endif
+    bool ret = (res == FR_OK) || (res == FR_EXIST);
+    return ret;
+}
+
 bool DirOpen(const char* path)
 {
     #ifdef WORK_DIR

@@ -608,7 +608,7 @@ u32 DecryptNandPartitions() {
     return result;
 }
 
-u32 DecryptNandSystemTitles() {
+u32 DumpNandSystemTitles() {
     u8* buffer = BUFFER_ADDRESS;
     PartitionInfo* ctrnand_info = &(partitions[(GetUnitPlatform() == PLATFORM_3DS) ? 5 : 6]);
     u32 ctrnand_offset = ctrnand_info->offset;
@@ -616,7 +616,9 @@ u32 DecryptNandSystemTitles() {
     char filename[256];
     u32 nTitles = 0;
     
-
+    if (!DirMake("D9titles"))
+        return 1;
+   
     Debug("Seeking for 'NCCH'...");
     for (u32 i = 0; i < ctrnand_size; i += NAND_SECTOR_SIZE) {
         ShowProgress(i, ctrnand_size);
@@ -628,7 +630,7 @@ u32 DecryptNandSystemTitles() {
                 Debug("Found at 0x%08x, but invalid size", ctrnand_offset + i + 0x100);
                 continue;
             }
-            snprintf(filename, 256, "/%08X%08X.app",  *((unsigned int*)(buffer + 0x10C)), *((unsigned int*)(buffer + 0x108)));
+            snprintf(filename, 256, "/D9titles/%08X%08X.app",  *((unsigned int*)(buffer + 0x10C)), *((unsigned int*)(buffer + 0x108)));
             if (FileOpen(filename)) {
                 FileClose();
                 Debug("Found duplicate at 0x%08X", ctrnand_offset + i + 0x100, size);
