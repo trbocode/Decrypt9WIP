@@ -616,16 +616,14 @@ u32 DumpNandSystemTitles() {
     char filename[256];
     u32 nTitles = 0;
     
-    if (!DirMake("D9titles"))
-        return 1;
-   
+    DirMake("/D9titles");
     Debug("Seeking for 'NCCH'...");
     for (u32 i = 0; i < ctrnand_size; i += NAND_SECTOR_SIZE) {
         ShowProgress(i, ctrnand_size);
         if (DecryptNandToMem(buffer, ctrnand_offset + i, NAND_SECTOR_SIZE, ctrnand_info) != 0)
             return 1;
         if (memcmp(buffer + 0x100, (u8*) "NCCH", 4) == 0) {
-            u32 size = NAND_SECTOR_SIZE * (buffer[0x104] | (buffer[0x105] << 8) | (buffer[0x106] << 16) | (buffer[0x107] << 24));
+            u32 size = NAND_SECTOR_SIZE * le32(buffer + 0x104);
             if ((size == 0) || (size > ctrnand_size - i)) {
                 Debug("Found at 0x%08x, but invalid size", ctrnand_offset + i + 0x100);
                 continue;
@@ -637,7 +635,7 @@ u32 DumpNandSystemTitles() {
                 i += size - NAND_SECTOR_SIZE;
                 continue;
             }
-            Debug("Found (%i) at 0x%08X, size: %ub", nTitles + 1, ctrnand_offset + i + 0x100, size);
+            Debug("Found (%i) at 0x%08X, size: %ukb", nTitles + 1, ctrnand_offset + i + 0x100, size / 1024);
             if (DecryptNandToFile(filename, ctrnand_offset + i, size, ctrnand_info) != 0)
                 return 1;
             i += size - NAND_SECTOR_SIZE;

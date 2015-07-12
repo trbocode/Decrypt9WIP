@@ -43,11 +43,3 @@ bool DebugFileWrite(void* buf, size_t size, size_t foffset) {
     return true;
 }
 
-bool DebugDirMake(const char* path) {
-    if (!DirMake(path)) {
-        Debug("ERROR, could not create folder!");
-        return false;
-    }
-    
-    return true;
-}
