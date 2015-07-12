@@ -28,6 +28,9 @@ void ProcessMenu(MenuInfo* info, u32 nMenus) {
             Debug("START: Reboot");
             Debug("");
             Debug("");
+            #ifdef WORKDIR
+            Debug("Working directory: %s", WORKDIR);
+            #endif
             Debug("Remaining SD storage space: %llu MiB", RemainingStorageSpace() / 1024 / 1024);
             drawMenu = false;
         }
