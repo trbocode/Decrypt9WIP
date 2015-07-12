@@ -66,6 +66,8 @@ u32 DecryptBuffer(DecryptBufferInfo *info)
         add_ctr(ctr, 0x1);
     }
     
+    memcpy(info->CTR, ctr, 16);
+    
     return 0;
 }
 
@@ -566,32 +568,24 @@ u32 NandPadgen()
 
 u32 CreatePad(PadInfo *info)
 {
-    static const uint8_t zero_buf[16] __attribute__((aligned(16))) = {0};
     u8* buffer = BUFFER_ADDRESS;
     u32 result = 0;
     
-    if (!FileCreate(info->filename, true)) // No DebugFileCreate() here - messages are already given
+    // No DebugFileCreate() here - messages are already given
+    if (!FileCreate((info->filename[0] == '/') ? info->filename + 1 : info->filename, true))
         return 1;
-
-    if(info->setKeyY)
-        setup_aeskey(info->keyslot, AES_BIG_INPUT | AES_NORMAL_INPUT, info->keyY);
-    use_aeskey(info->keyslot);
-
-    u8 ctr[16] __attribute__((aligned(32)));
-    memcpy(ctr, info->CTR, 16);
-
+        
+    DecryptBufferInfo decryptInfo = {.keyslot = info->keyslot, .setKeyY = info->setKeyY, .buffer = buffer, .mode = AES_CNT_CTRNAND_MODE};
+    memcpy(decryptInfo.CTR, info->CTR, 16);
+    if (info->setKeyY)
+        memcpy(decryptInfo.keyY, info->keyY, 16);
     u32 size_bytes = info->size_mb * 1024*1024;
     for (u32 i = 0; i < size_bytes; i += BUFFER_MAX_SIZE) {
         u32 curr_block_size = min(BUFFER_MAX_SIZE, size_bytes - i);
-
-        for (u32 j = 0; j < curr_block_size; j+= 16) {
-            set_ctr(ctr);
-            aes_decrypt((void*)zero_buf, (void*)buffer + j, ctr, 1, AES_CNT_CTRNAND_MODE);
-            add_ctr(ctr, 1);
-        }
-
+        decryptInfo.size = curr_block_size;
+        memset(buffer, 0x00, curr_block_size);
         ShowProgress(i, size_bytes);
-
+        DecryptBuffer(&decryptInfo);
         if (!DebugFileWrite((void*)buffer, curr_block_size, i)) {
             result = 1;
             break;
