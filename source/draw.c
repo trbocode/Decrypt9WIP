@@ -63,7 +63,7 @@ void DrawString(u8* screen, const char *str, int x, int y, int color, int bgcolo
 
 void DrawStringF(int x, int y, const char *format, ...)
 {
-    char str[256];
+    char str[256] = {};
     va_list va;
 
     va_start(va, format);
@@ -101,7 +101,7 @@ void DebugClearAll()
 
 void Debug(const char *format, ...)
 {
-    char str[256];
+    char str[256] = {};
     va_list va;
 
     va_start(va, format);
