@@ -411,7 +411,7 @@ u32 DecryptNandToMem(u8* buffer, u32 offset, u32 size, PartitionInfo* partition)
     if(GetNandCtr(info.CTR, offset) != 0)
         return 1;
 
-    u32 n_sectors = size / NAND_SECTOR_SIZE;
+    u32 n_sectors = (size + NAND_SECTORSIZE - 1) / NAND_SECTOR_SIZE;
     u32 start_sector = offset / NAND_SECTOR_SIZE;
     sdmmc_nand_readsectors(start_sector, n_sectors, buffer);
     DecryptBuffer(&info);
@@ -446,7 +446,7 @@ u32 EncryptMemToNand(u8* buffer, u32 offset, u32 size, PartitionInfo* partition)
     if(GetNandCtr(info.CTR, offset) != 0)
         return 1;
 
-    u32 n_sectors = size / NAND_SECTOR_SIZE;
+    u32 n_sectors = (size  + NAND_SECTORSIZE - 1) / NAND_SECTOR_SIZE;
     u32 start_sector = offset / NAND_SECTOR_SIZE;
     DecryptBuffer(&info);
     sdmmc_nand_writesectors(start_sector, n_sectors, buffer);
