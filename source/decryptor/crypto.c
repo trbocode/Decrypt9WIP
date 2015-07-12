@@ -11,7 +11,6 @@ void setup_aeskeyX(u8 keyslot, void* keyx)
     *REG_AESKEYXFIFO = _keyx[3];
 }
 
-
 void setup_aeskey(u32 keyno, int value, void* key)
 {
     volatile u32* aes_regs[] =
