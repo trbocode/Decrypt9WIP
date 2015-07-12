@@ -690,12 +690,16 @@ u32 DumpNandSystemTitles() {
 u32 RestoreNand()
 {
     u8* buffer = BUFFER_ADDRESS;
-    u32 nand_size;
+    u32 nand_size = (GetUnitPlatform() == PLATFORM_3DS) ? 0x3AF00000 : 0x4D800000;
     u32 result = 0;
 
     if (!DebugFileOpen("NAND.bin"))
         return 1;
-    nand_size = FileGetSize();
+    if (nand_size != FileGetSize()) {
+        FileClose();
+        Debug("NAND backup has the wrong size!");
+        return 1;
+    };
     
     Debug("Restoring System NAND. Size (MB): %u", nand_size / (1024 * 1024));
 
