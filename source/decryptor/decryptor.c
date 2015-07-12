@@ -51,7 +51,9 @@ u32 DecryptBuffer(DecryptBufferInfo *info)
     u32 mode = info->mode;
 
     if (info->setKeyY) {
-        setup_aeskey(info->keyslot, AES_BIG_INPUT | AES_NORMAL_INPUT, info->keyY);
+        u8 keyY[16] __attribute__((aligned(32)));
+        memcpy(keyY, info->keyY, 16);
+        setup_aeskey(info->keyslot, AES_BIG_INPUT | AES_NORMAL_INPUT, keyY);
         info->setKeyY = 0;
     }
     use_aeskey(info->keyslot);
