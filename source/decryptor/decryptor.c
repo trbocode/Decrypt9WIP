@@ -434,9 +434,9 @@ u32 SeekFileInNand(u32* offset, u32* size, const char* filename, PartitionInfo* 
     
     DecryptNandToMem(buffer, p_offset, NAND_SECTOR_SIZE, partition);
     cluster_start =
-        NAND_SECTOR_SIZE * ( le16(buffer + 0x0E) + // FAT table start
-        ( le16(buffer + 0x16) * buffer[0x10] ) ) + // FAT table size
-        le16(buffer + 0x11) * 0x20; // root directory size
+        NAND_SECTOR_SIZE * ( *((u16*) (buffer + 0x0E)) + // FAT table start
+        ( *((u16*) (buffer + 0x16)) * buffer[0x10] ) ) + // FAT table size
+       *((u16*) (buffer + 0x11)) * 0x20; // root directory size
     cluster_size = buffer[0x0D] * NAND_SECTOR_SIZE;
     
     for( u32 i = cluster_start; i < p_size; i += cluster_size ) {
@@ -445,8 +445,8 @@ u32 SeekFileInNand(u32* offset, u32* size, const char* filename, PartitionInfo* 
             DecryptNandToMem(buffer, p_offset + i, cluster_size, partition);
             for (u32 j = 0; j < cluster_size; j += 0x20) {
                 if (memcmp(filename, buffer + j, 8+3) == 0) {
-                    *offset = p_offset + cluster_start + (le16(buffer + j + 0x1A) - 2) * cluster_size;
-                    *size = le32(buffer + j + 0x1C);
+                    *offset = p_offset + cluster_start + (*((u16*) (buffer + j + 0x1A)) - 2) * cluster_size;
+                    *size = *((u32*) (buffer + j + 0x1C));
                     if (*size > 0) {
                         found = 1;
                         break;
