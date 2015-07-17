@@ -31,6 +31,7 @@ bool DirMake(const char* path);
 
 /** Opens an existing directory */
 bool DirOpen(const char* path);
+bool DebugDirOpen(const char* path);
 
 /** Reads file name from directory */
 bool DirRead(char* fname, int fsize);

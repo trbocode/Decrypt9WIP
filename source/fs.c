@@ -128,6 +128,16 @@ bool DirOpen(const char* path)
     return ret;
 }
 
+bool DebugDirOpen(const char* path) {
+    Debug("Opening %s ...", path);
+    if (!DirOpen(path)) {
+        Debug("Could not open %s!", path);
+        return false;
+    }
+    
+    return true;
+}
+
 bool DirRead(char* fname, int fsize)
 {
     FILINFO fno;
