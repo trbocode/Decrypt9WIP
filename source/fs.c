@@ -128,18 +128,19 @@ bool DirOpen(const char* path)
     return ret;
 }
 
-bool DirRead(char* filename)
+bool DirRead(char* fname, int fsize)
 {
     FILINFO fno;
+    fno.lfname = fname;
+    fno.lfsize = fsize;
     bool ret = false;
     while (f_readdir(&dir, &fno) == FR_OK) {
-        if (fno.fname[0] != 0) break;
+        if (fno.fname[0] == 0) break;
         if ((fno.fname[0] != '.') && !(fno.fattrib & AM_DIR)) {
             ret = true;
             break;
         }
     }
-    if (ret) strcpy(filename, fno.fname); // only short filenames
     return ret;
 }
 

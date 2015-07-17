@@ -32,8 +32,8 @@ bool DirMake(const char* path);
 /** Opens an existing directory */
 bool DirOpen(const char* path);
 
-/** Opens first / next file in directory */
-bool DirFileOpen();
+/** Reads file name from directory */
+bool DirRead(char* fname, int fsize);
 
 /** Gets remaining space on SD card in bytes */
 uint64_t RemainingStorageSpace();
