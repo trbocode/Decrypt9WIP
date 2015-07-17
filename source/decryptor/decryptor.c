@@ -659,17 +659,17 @@ u32 DumpNandSystemTitles() {
         if (memcmp(buffer + 0x100, (u8*) "NCCH", 4) == 0) {
             u32 size = NAND_SECTOR_SIZE * le32(buffer + 0x104);
             if ((size == 0) || (size > ctrnand_size - i)) {
-                Debug("Found at 0x%08x, but invalid size", ctrnand_offset + i + 0x100);
+                Debug("Found at 0x%08x, but invalid size", ctrnand_offset + i);
                 continue;
             }
             snprintf(filename, 256, "D9titles/%08X%08X.app",  *((unsigned int*)(buffer + 0x10C)), *((unsigned int*)(buffer + 0x108)));
             if (FileOpen(filename)) {
                 FileClose();
-                Debug("Found duplicate at 0x%08X", ctrnand_offset + i + 0x100, size);
+                Debug("Found duplicate at 0x%08X", ctrnand_offset + i, size);
                 i += size - NAND_SECTOR_SIZE;
                 continue;
             }
-            Debug("Found (%i) at 0x%08X, size: %ukb", nTitles + 1, ctrnand_offset + i + 0x100, size / 1024);
+            Debug("Found (%i) at 0x%08X, size: %ukb", nTitles + 1, ctrnand_offset + i, size / 1024);
             if (DecryptNandToFile(filename, ctrnand_offset + i, size, ctrnand_info) != 0)
                 return 1;
             i += size - NAND_SECTOR_SIZE;
