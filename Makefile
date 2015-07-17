@@ -116,15 +116,19 @@ gateway: $(OUTPUT_D)
 	python tools/insert.py $(OUTPUT_D)/Launcher.dat $(OUTPUT).bin 0x16D8D0
 
 bootstrap: $(OUTPUT_D)
+	@cd $(CURDIR)/brahma_loader && mkdir -p data
 	@[ -d $(BUILD) ] || mkdir -p $(BUILD)
 	@make --no-print-directory -C $(BUILD) -f $(CURDIR)/Makefile EXEC_METHOD=BOOTSTRAP
-	cp $(OUTPUT).bin payload.bin
-	mv payload.bin $(OUTPUT_C)
+	@cp $(OUTPUT).bin payload.bin
+	@mv payload.bin $(OUTPUT_C)
+	@make -C brahma_loader
+	@rm -fr $(OUTPUT).elf
 
 #---------------------------------------------------------------------------------
 clean:
 	@echo clean ...
 	@rm -fr $(BUILD) $(OUTPUT_D)
+	cd $(CURDIR)/brahma_loader && make clean
 
 
 #---------------------------------------------------------------------------------
