@@ -475,7 +475,7 @@ u32 DecryptNandToMem(u8* buffer, u32 offset, u32 size, PartitionInfo* partition)
     return 0;
 }
 
-u32 DecryptNandToFile(char* filename, u32 offset, u32 size, PartitionInfo* partition)
+u32 DecryptNandToFile(const char* filename, u32 offset, u32 size, PartitionInfo* partition)
 {
     u8* buffer = BUFFER_ADDRESS;
     u32 result = 0;
@@ -513,7 +513,7 @@ u32 EncryptMemToNand(u8* buffer, u32 offset, u32 size, PartitionInfo* partition)
     return 0;
 }
 
-u32 EncryptFileToNand(char* filename, u32 offset, u32 size, PartitionInfo* partition)
+u32 EncryptFileToNand(const char* filename, u32 offset, u32 size, PartitionInfo* partition)
 {
     u8* buffer = BUFFER_ADDRESS;
     u32 result = 0;
