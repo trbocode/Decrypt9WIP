@@ -293,7 +293,7 @@ u32 NcchPadgen()
             if (!found_seed)
             {
                 Debug("Failed to find seed in seeddb.bin");
-                return 0;
+                return 1;
             }
             u8 sha256sum[32];
             sha256_context shactx;
