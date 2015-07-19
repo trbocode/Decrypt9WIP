@@ -651,33 +651,41 @@ u32 DumpNandSystemTitles() {
     PartitionInfo* ctrnand_info = &(partitions[(GetUnitPlatform() == PLATFORM_3DS) ? 5 : 6]);
     u32 ctrnand_offset = ctrnand_info->offset;
     u32 ctrnand_size = ctrnand_info->size;
+    u32 cluster_start = 0x25200;
+    u32 cluster_size = NAND_SECTOR_SIZE * 0x40;
     char filename[256];
     u32 nTitles = 0;
     
     
+   if (GetUnitPlatform() == PLATFORM_3DS) {
+       cluster_start = 0x33600;
+       cluster_size = NAND_SECTOR_SIZE * 0x20;
+   }
+    
     DirMake("D9titles");
     Debug("Seeking for 'NCCH'...");
-    for (u32 i = 0; i < ctrnand_size; i += NAND_SECTOR_SIZE) {
+    for (u32 i = cluster_start; i < ctrnand_size; i += cluster_size) {
         ShowProgress(i, ctrnand_size);
         if (DecryptNandToMem(buffer, ctrnand_offset + i, NAND_SECTOR_SIZE, ctrnand_info) != 0)
             return 1;
         if (memcmp(buffer + 0x100, (u8*) "NCCH", 4) == 0) {
-            u32 size = NAND_SECTOR_SIZE * le32(buffer + 0x104);
+            u32 size = *((u32*) (buffer + 0x104)) * NAND_SECTOR_SIZE;
             if ((size == 0) || (size > ctrnand_size - i)) {
                 Debug("Found at 0x%08x, but invalid size", ctrnand_offset + i);
                 continue;
             }
-            snprintf(filename, 256, "D9titles/%08X%08X.app",  *((unsigned int*)(buffer + 0x10C)), *((unsigned int*)(buffer + 0x108)));
+            snprintf(filename, 256, "D9titles/%08X%08X_%08X.app",
+                *((unsigned int*)(buffer + 0x10C)), *((unsigned int*)(buffer + 0x108)), (unsigned int) (ctrnand_offset + i));
             if (FileOpen(filename)) {
                 FileClose();
                 Debug("Found duplicate at 0x%08X", ctrnand_offset + i, size);
-                i += size - NAND_SECTOR_SIZE;
+                i += cluster_size * (size / cluster_size);
                 continue;
             }
             Debug("Found (%i) at 0x%08X, size: %ukb", nTitles + 1, ctrnand_offset + i, size / 1024);
             if (DecryptNandToFile(filename, ctrnand_offset + i, size, ctrnand_info) != 0)
                 return 1;
-            i += size - NAND_SECTOR_SIZE;
+            i += cluster_size * (size / cluster_size);
             nTitles++;
         }
     }
