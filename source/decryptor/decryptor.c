@@ -89,7 +89,7 @@ u32 DumpTicket() {
     u32 size;
     
     Debug("Searching for ticket.db...");
-    if (SeekFileInNand(&offset, &size, "TICKET  DB ", ctrnand_info) != 0) {
+    if (SeekFileInNand(&offset, &size, NULL, "TICKET  DB ", ctrnand_info) != 0) {
         Debug("Failed!");
         return 1;
     }
@@ -156,7 +156,7 @@ u32 DecryptTitlekeysNand(void)
     u32 size;
     
     Debug("Searching for ticket.db...");
-    if (SeekFileInNand(&offset, &size, "TICKET  DB ", ctrnand_info) != 0) {
+    if (SeekFileInNand(&offset, &size, NULL, "TICKET  DB ", ctrnand_info) != 0) {
         Debug("Failed!");
         return 1;
     }
@@ -408,7 +408,7 @@ u32 GetNandCtr(u8* ctr, u32 offset)
     return 0;
 }
 
-u32 SeekFileInNand(u32* offset, u32* size, const char* filename, PartitionInfo* partition)
+u32 SeekFileInNand(u32* offset, u32* size, u32* seekpos, const char* filename, PartitionInfo* partition)
 {
     // poor mans NAND FAT file seeker:
     // - can't handle long filenames
@@ -438,17 +438,23 @@ u32 SeekFileInNand(u32* offset, u32* size, const char* filename, PartitionInfo* 
         ( *((u16*) (buffer + 0x16)) * buffer[0x10] ) ) + // FAT table size
        *((u16*) (buffer + 0x11)) * 0x20; // root directory size
     cluster_size = buffer[0x0D] * NAND_SECTOR_SIZE;
-    
-    for( u32 i = cluster_start; i < p_size; i += cluster_size ) {
+	if (seekpos != NULL) {
+		if (cluster_start > *seekpos)
+			*seekpos = cluster_start;
+	}
+
+    for( u32 i = (seekpos == NULL) ? cluster_start : *seekpos; i < p_size; i += cluster_size ) {
         DecryptNandToMem(buffer, p_offset + i, NAND_SECTOR_SIZE, partition);
         if (memcmp(buffer, magic, 8+3) == 0) {
             DecryptNandToMem(buffer, p_offset + i, cluster_size, partition);
             for (u32 j = 0; j < cluster_size; j += 0x20) {
-                if (memcmp(filename, buffer + j, 8+3) == 0) {
+                if (memcmp(buffer + j, filename, 8+3) == 0) {
                     *offset = p_offset + cluster_start + (*((u16*) (buffer + j + 0x1A)) - 2) * cluster_size;
                     *size = *((u32*) (buffer + j + 0x1C));
                     if (*size > 0) {
                         found = 1;
+						if (seekpos != NULL)
+							*seekpos = i + cluster_size;
                         break;
                     }
                 } else if (memcmp(buffer + j, zeroes, 8+3) == 0)
