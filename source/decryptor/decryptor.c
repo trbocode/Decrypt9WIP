@@ -710,7 +710,7 @@ u32 DecryptNcch(const char* filename, u32 offset)
             FileClose();
             for (u32 i = 0; i < 10; i++) {
                 if(memcmp(buffer + (i*0x10), ".code", 5) == 0) {
-                    offset_code = *((u32*) buffer + (i*0x10) + 0x8);
+                    offset_code = *((u32*) buffer + (i*0x10) + 0x8) + 0x200;
                     size_code = *((u32*) buffer + (i*0x10) + 0xC);
                     break;
                 }
