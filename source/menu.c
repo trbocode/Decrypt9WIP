@@ -234,9 +234,9 @@ int MainMenu()
                 }
                 else if (menu_idx == 9) {
                     ConsoleInit();
-                    ConsoleSetTitle("Game Decryptor");
+                    ConsoleSetTitle("CTR ROM Decryptor");
                     ConsoleShow();
-                    Debug("Dump Game: %s!", DecryptTitles() == 0 ? "succeeded" : "failed"); //menu9.bin
+                    Debug("Decrypt ROM: %s!", DecryptTitles() == 0 ? "succeeded" : "failed"); //menu9.bin
                     Debug("Press B to exit");
                     while (true) {
                     if (InputWait() & BUTTON_B) {
