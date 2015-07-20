@@ -659,7 +659,6 @@ u32 DecryptNcch(const char* filename, u32 offset)
             Debug("Need seeddb.bin to decrypt!");
             return 1;
         }
-        return 1;
     }
     
     // basic setup of DecryptBufferInfo structs
