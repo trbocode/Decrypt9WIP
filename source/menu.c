@@ -8,7 +8,7 @@
 
 //variables needed for menu gui
 int menu_idx = 0;
-#define MENU_ITEMS 9 //10 when uncart is implemented
+#define MENU_ITEMS 10 //11 when uncart is implemented
 int TOP_Current = 0;
 
 void Reboot()
@@ -232,11 +232,11 @@ int MainMenu()
                         }
                     }
                 }
-/*              else if (menu_idx == 9) { //Not Implemented yet
+                else if (menu_idx == 9) {
                     ConsoleInit();
-                    ConsoleSetTitle("Game Cart Dumper");
+                    ConsoleSetTitle("Game Decryptor");
                     ConsoleShow();
-                    Debug("Dump Game: %s!", DumpGame() == 0 ? "succeeded" : "failed"); //menu9.bin
+                    Debug("Dump Game: %s!", DecryptTitles() == 0 ? "succeeded" : "failed"); //menu9.bin
                     Debug("Press B to exit");
                     while (true) {
                     if (InputWait() & BUTTON_B) {
@@ -244,9 +244,22 @@ int MainMenu()
                         break;
                     }
                 }
-            }*/
+            }
+/*          else if (menu_idx == 10) { //Not Implemented yet
+                    ConsoleInit();
+                    ConsoleSetTitle("Game Cart Dumper");
+                    ConsoleShow();
+                    Debug("Dump Game: %s!", DumpGame() == 0 ? "succeeded" : "failed"); //menu10.bin
+                    Debug("Press B to exit");
+                    while (true) {
+                        if (InputWait() & BUTTON_B) {
+                            DebugClear();
+                            break;
+                        }
+                    }
+                }*/
+            }
         }
-    }
 
 poweroff:
     DeinitFS();
