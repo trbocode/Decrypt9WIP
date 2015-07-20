@@ -413,7 +413,6 @@ u32 SeekFileInNand(u32* offset, u32* size, u32* seekpos, const char* filename, P
     // poor mans NAND FAT file seeker:
     // - can't handle long filenames
     // - filename must be in FAT 8+3 format
-    // - finds only the first file
     // - doesn't search the root dir
     // - dirs must not exceed 1024 entries
     // - fragmentation not supported
@@ -436,13 +435,13 @@ u32 SeekFileInNand(u32* offset, u32* size, u32* seekpos, const char* filename, P
     cluster_start =
         NAND_SECTOR_SIZE * ( *((u16*) (buffer + 0x0E)) + // FAT table start
         ( *((u16*) (buffer + 0x16)) * buffer[0x10] ) ) + // FAT table size
-       *((u16*) (buffer + 0x11)) * 0x20; // root directory size
+        *((u16*) (buffer + 0x11)) * 0x20; // root directory size
     cluster_size = buffer[0x0D] * NAND_SECTOR_SIZE;
-	if (seekpos != NULL) {
-		if (cluster_start > *seekpos)
-			*seekpos = cluster_start;
-	}
-
+    if (seekpos != NULL) {
+        if (cluster_start > *seekpos)
+            *seekpos = cluster_start;
+    }
+    
     for( u32 i = (seekpos == NULL) ? cluster_start : *seekpos; i < p_size; i += cluster_size ) {
         DecryptNandToMem(buffer, p_offset + i, NAND_SECTOR_SIZE, partition);
         if (memcmp(buffer, magic, 8+3) == 0) {
@@ -453,8 +452,8 @@ u32 SeekFileInNand(u32* offset, u32* size, u32* seekpos, const char* filename, P
                     *size = *((u32*) (buffer + j + 0x1C));
                     if (*size > 0) {
                         found = 1;
-						if (seekpos != NULL)
-							*seekpos = i + cluster_size;
+                        if (seekpos != NULL)
+                            *seekpos = i + cluster_size;
                         break;
                     }
                 } else if (memcmp(buffer + j, zeroes, 8+3) == 0)
@@ -551,266 +550,278 @@ u32 EncryptFileToNand(const char* filename, u32 offset, u32 size, PartitionInfo*
 
 u32 DecryptSdToSd(const char* filename, u32 offset, u32 size, DecryptBufferInfo* info)
 {
-	u8* buffer = BUFFER_ADDRESS;
-	u32 result = 0;
+    u8* buffer = BUFFER_ADDRESS;
+    u32 result = 0;
 
-	// No DebugFileOpen() - at this point the file has already been checked enough
-	if (!FileOpen(filename))
-		return 1;
+    // No DebugFileOpen() - at this point the file has already been checked enough
+    if (!FileOpen(filename)) 
+        return 1;
 
-	info->buffer = buffer;
-	for (u32 i = 0; i < size; i += BUFFER_MAX_SIZE) {
-		u32 read_bytes = min(BUFFER_MAX_SIZE, (size - i));
-		ShowProgress(i, size);
-		if (!DebugFileRead(buffer, read_bytes, offset + i)) {
-			result = 1;
-			break;
-		}
-		info->size = read_bytes;
-		DecryptBuffer(info);
-		if (!DebugFileWrite(buffer, read_bytes, offset + i)) {
-			result = 1;
-			break;
-		}
-	}
+    info->buffer = buffer;
+    for (u32 i = 0; i < size; i += BUFFER_MAX_SIZE) {
+        u32 read_bytes = min(BUFFER_MAX_SIZE, (size - i));
+        ShowProgress(i, size);
+        if(!DebugFileRead(buffer, read_bytes, offset + i)) {
+            result = 1;
+            break;
+        }
+        info->size = read_bytes;
+        DecryptBuffer(info);
+        if(!DebugFileWrite(buffer, read_bytes, offset + i)) {
+            result = 1;
+            break;
+        }
+    }
 
-	ShowProgress(0, 0);
-	FileClose();
+    ShowProgress(0, 0);
+    FileClose();
 
-	return result;
+    return result;
 }
 
 u32 DecryptNcch(const char* filename, u32 offset)
 {
-	NcchHeader* ncch = (NcchHeader*)0x20316200;
-	u8* buffer = (u8*)0x20316400;
-	DecryptBufferInfo info0 = { .setKeyY = 1, .keyslot = 0x2C, .mode = AES_CNT_CTRNAND_MODE };
-	DecryptBufferInfo info1 = { .setKeyY = 1, .mode = AES_CNT_CTRNAND_MODE };
-	u8 seedKeyY[16] = { 0x00 };
-
-	if (!FileOpen(filename)) // already checked this file
-		return 1;
-	if (!DebugFileRead((void*)ncch, 0x200, offset)) {
-		FileClose();
-		return 1;
-	}
-	FileClose();
-
-	Debug("Name %s", ncch->productCode);
-	Debug("Maker %04X", ncch->makercode);
-	Debug("Version %i", ncch->version);
-	Debug("Sizes %u/%u/%u", ncch->size_exthdr, ncch->size_exefs, ncch->size_romfs);
-	// check if encrypted
-	if (ncch->flags[7] & 0x04)
-		return 0;
-
-	u32 uses7xCrypto = ncch->flags[3];
-	u32 usesSeedCrypto = ncch->flags[7] & 0x20;
-	u32 uses0x0ACrypto = (ncch->flags[3] == 0x0A);
-
-	// check / setup 7x crypto
-	if (uses7xCrypto && (GetUnitPlatform() == PLATFORM_3DS)) {
-		if (uses0x0ACrypto) {
-			Debug("Can only be decrypted on N3DS!");
-			return 1;
-		}
-		if (FileOpen("slot0x25KeyX.bin")) {
-			u8 slot0x25KeyX[16] = { 0 };
-			if (FileRead(&slot0x25KeyX, 16, 0) != 16) {
-				Debug("slot0x25keyX.bin is corrupt!");
-				FileClose();
-				return 1;
-			}
-			FileClose();
-			setup_aeskeyX(0x25, slot0x25KeyX);
-		}
-		else {
-			Debug("Need slot0x25KeyX.bin on O3DS!");
-			return 1;
-		}
-	}
-
-	// check / setup seed crypto
-	if (usesSeedCrypto) {
-		Debug("Seed crypto not implemented yet!");
-		return 1;
-		if (FileOpen("seeddb.bin")) {
-			SeedInfoEntry* entry = (SeedInfoEntry*)buffer;
-			u32 found = 0;
-			for (u32 i = 0x10;; i += 0x20) {
-				if (FileRead(entry, 0x20, i) != 0x20)
-					break;
-				if (entry->titleId == ncch->partitionId) {
-					found = 1;
-				}
-			}
-			FileClose();
-		}
-		else {
-			Debug("Need seeddb.bin to decrypt!");
-			return 1;
-		}
-		return 1;
-	}
-
-	// basic setup of DecryptBufferInfo structs
-	memset(info0.CTR, 0x00, 16);
-	if (ncch->version == 1) {
-		memcpy(info0.CTR, &(ncch->partitionId), 8);
-	}
-	else {
-		for (u32 i = 0; i < 8; i++)
-			info0.CTR[i] = ((u8*)&(ncch->partitionId))[7 - i];
-	}
-	memcpy(info1.CTR, info0.CTR, 8);
-	memcpy(info0.keyY, ncch->signature, 16);
-	memcpy(info1.keyY, (usesSeedCrypto) ? seedKeyY : ncch->signature, 16);
-	info1.keyslot = (uses0x0ACrypto) ? 0x18 : ((uses7xCrypto) ? 0x25 : 0x2C);
-
-	// process ExHeader
-	if (ncch->size_exthdr > 0) {
-		memset(info0.CTR + 12, 0x00, 4);
-		if (ncch->version == 1)
-			add_ctr(info0.CTR, 0x200); // exHeader offset
-		else
-			info0.CTR[8] = 1;
-		DecryptSdToSd(filename, offset + 0x200, 0x800, &info0);
-	}
-
-	// process ExeFS
-	if (ncch->size_exefs > 0) {
-		u32 offset_byte = ncch->offset_exefs * 0x200;
-		u32 size_byte = ncch->size_exefs * 0x200;
-		memset(info0.CTR + 12, 0x00, 4);
-		if (ncch->version == 1)
-			add_ctr(info0.CTR, offset_byte);
-		else
-			info0.CTR[8] = 2;
-		if (uses7xCrypto || usesSeedCrypto) {
-			u32 offset_code = 0;
-			u32 size_code = 0;
-			// find .code offset and size
-			DecryptSdToSd(filename, offset + offset_byte, 0x200, &info0);
-			if (!FileOpen(filename));
-			return 1;
-			if (!DebugFileRead(buffer, offset + offset_byte, 0x200)) {
-				FileClose();
-				return 1;
-			}
-			FileClose();
-			for (u32 i = 0; i < 10; i++) {
-				if (memcmp(buffer + (i * 0x10), ".code", 5) == 0) {
-					offset_code = *((u32*)buffer + (i * 0x10) + 0x8);
-					size_code = *((u32*)buffer + (i * 0x10) + 0xC);
-					break;
-				}
-			}
-			// special ExeFS decryption routine (only .code has new encryption)
-			if (size_code > 0) {
-				DecryptSdToSd(filename, offset + offset_byte + 0x200, offset_code - 0x200, &info0);
-				memcpy(info1.CTR, info0.CTR, 16);
-				info0.setKeyY = info1.setKeyY = 1;
-				DecryptSdToSd(filename, offset + offset_byte + offset_code, size_code, &info1);
-				memcpy(info0.CTR, info1.CTR, 16);
-				DecryptSdToSd(filename,
-					offset + offset_byte + offset_code + size_code,
-					size_byte - (offset_code + size_code), &info0);
-			}
-			else {
-				DecryptSdToSd(filename, offset + offset_byte + 0x200, size_byte - 0x200, &info0);
-			}
-		}
-		else {
-			DecryptSdToSd(filename, offset + offset_byte, size_byte, &info0);
-		}
-	}
-
-	// process RomFS
-	if (ncch->size_romfs > 0) {
-		u32 offset_byte = ncch->offset_romfs * 0x200;
-		u32 size_byte = ncch->size_romfs * 0x200;
-		memset(info1.CTR + 12, 0x00, 4);
-		if (ncch->version == 1)
-			add_ctr(info1.CTR, offset_byte);
-		else
-			info1.CTR[8] = 3;
-		info1.setKeyY = 1;
-		DecryptSdToSd(filename, offset + offset_byte, size_byte, &info1);
-	}
-
-	// set NCCH header flags
-	ncch->flags[3] = 0;
-	ncch->flags[7] &= 0x20 ^ 0xFF;
-	ncch->flags[7] |= 0x04;
-
-	// write header back
-	if (!FileOpen(filename))
-		return 1;
-	if (!DebugFileWrite((void*)ncch, 0x200, offset)) {
-		FileClose();
-		return 1;
-	}
-	FileClose();
-
-
-	return 0;
+    NcchHeader* ncch = (NcchHeader*) 0x20316200;
+    u8* buffer = (u8*) 0x20316400;
+    DecryptBufferInfo info0 = {.setKeyY = 1, .keyslot = 0x2C, .mode = AES_CNT_CTRNAND_MODE};
+    DecryptBufferInfo info1 = {.setKeyY = 1, .mode = AES_CNT_CTRNAND_MODE};
+    u8 seedKeyY[16] = { 0x00 };
+    
+    if (!FileOpen(filename)) // already checked this file
+        return 1;
+    if (!DebugFileRead((void*) ncch, 0x200, offset)) {
+        FileClose();
+        return 1;
+    }
+    FileClose();
+    
+    // check if encrypted
+    if (ncch->flags[7] & 0x04) {
+        Debug("Partition is not encrypted!");
+        return 0;
+    }
+    
+    u32 uses7xCrypto = ncch->flags[3];
+    u32 usesSeedCrypto = ncch->flags[7] & 0x20;
+    u32 uses0x0ACrypto = (ncch->flags[3] == 0x0A);
+    
+    Debug("Product Code: %s", ncch->productCode);
+    Debug("Crypto Flags: %s%s%s%s", (uses7xCrypto) ? "7x " : "", (uses0x0ACrypto) ? "7x0x0A " : "", (usesSeedCrypto) ? "Seed " : "", (!uses7xCrypto && !usesSeedCrypto) ? "none" : "" );
+    
+    // check / setup 7x crypto
+    if (uses7xCrypto && (GetUnitPlatform() == PLATFORM_3DS)) {
+        if (uses0x0ACrypto) {
+            Debug("Can only be decrypted on N3DS!");
+            return 1;
+        }
+        if (FileOpen("slot0x25KeyX.bin")) {
+            u8 slot0x25KeyX[16] = {0};
+            if (FileRead(&slot0x25KeyX, 16, 0) != 16) {
+                Debug("slot0x25keyX.bin is corrupt!");
+                FileClose();
+                return 1;
+            }
+            FileClose();
+            setup_aeskeyX(0x25, slot0x25KeyX);
+        } else {
+            Debug("Need slot0x25KeyX.bin on O3DS!");
+            return 1;
+        }
+    }
+    
+    // check / setup seed crypto
+    if (usesSeedCrypto) {
+        if (FileOpen("seeddb.bin")) {
+            SeedInfoEntry* entry = (SeedInfoEntry*) buffer;
+            u32 found = 0;
+            for (u32 i = 0x10;; i += 0x20) {
+                if (FileRead(entry, 0x20, i) != 0x20)
+                    break;
+                if (entry->titleId == ncch->partitionId) {
+                    u8 keydata[32];
+                    memcpy(keydata, ncch->signature, 16);
+                    memcpy(keydata + 16, entry->external_seed, 16);
+                    u8 sha256sum[32];
+                    sha256_context shactx;
+                    sha256_starts(&shactx);
+                    sha256_update(&shactx, keydata, 32);
+                    sha256_finish(&shactx, sha256sum);
+                    memcpy(seedKeyY, sha256sum, 16);
+                    found = 1;
+                }
+            }
+            FileClose();
+            if (!found) {
+                Debug("Seed not found in seeddb.bin!");
+                return 1;
+            }
+        } else {
+            Debug("Need seeddb.bin to decrypt!");
+            return 1;
+        }
+        return 1;
+    }
+    
+    // basic setup of DecryptBufferInfo structs
+    memset(info0.CTR, 0x00, 16);
+    if (ncch->version == 1) {
+        memcpy(info0.CTR, &(ncch->partitionId), 8);
+    } else {
+        for (u32 i = 0; i < 8; i++)
+            info0.CTR[i] = ((u8*) &(ncch->partitionId))[7-i];
+    }
+    memcpy(info1.CTR, info0.CTR, 8);
+    memcpy(info0.keyY, ncch->signature, 16);
+    memcpy(info1.keyY, (usesSeedCrypto) ? seedKeyY : ncch->signature, 16);
+    info1.keyslot = (uses0x0ACrypto) ? 0x18 : ((uses7xCrypto) ? 0x25 : 0x2C);
+    
+    // process ExHeader
+    if (ncch->size_exthdr > 0) {
+        Debug("Decrypting ExtHeader (%ub)...", 0x800);
+        memset(info0.CTR + 12, 0x00, 4);
+        if (ncch->version == 1)
+            add_ctr(info0.CTR, 0x200); // exHeader offset
+        else
+            info0.CTR[8] = 1;
+        DecryptSdToSd(filename, offset + 0x200, 0x800, &info0);
+    }
+    
+    // process ExeFS
+    if (ncch->size_exefs > 0) {
+        u32 offset_byte = ncch->offset_exefs * 0x200;
+        u32 size_byte = ncch->size_exefs * 0x200;
+        Debug("Decrypting ExeFS (%ukB)...", size_byte / 1024);
+        memset(info0.CTR + 12, 0x00, 4);
+        if (ncch->version == 1)
+            add_ctr(info0.CTR, offset_byte);
+        else
+            info0.CTR[8] = 2;
+        if (uses7xCrypto || usesSeedCrypto) {
+            u32 offset_code = 0;
+            u32 size_code = 0;
+            // find .code offset and size
+            DecryptSdToSd(filename, offset + offset_byte, 0x200, &info0);
+            if(!FileOpen(filename));
+                return 1;
+            if(!DebugFileRead(buffer, offset + offset_byte, 0x200)) {
+                FileClose();
+                return 1;
+            }
+            FileClose();
+            for (u32 i = 0; i < 10; i++) {
+                if(memcmp(buffer + (i*0x10), ".code", 5) == 0) {
+                    offset_code = *((u32*) buffer + (i*0x10) + 0x8);
+                    size_code = *((u32*) buffer + (i*0x10) + 0xC);
+                    break;
+                }
+            }
+            // special ExeFS decryption routine (only .code has new encryption)
+            if (size_code > 0) {
+                DecryptSdToSd(filename, offset + offset_byte + 0x200, offset_code - 0x200, &info0);
+                memcpy(info1.CTR, info0.CTR, 16);
+                info0.setKeyY = info1.setKeyY = 1;
+                DecryptSdToSd(filename, offset + offset_byte + offset_code, size_code, &info1);
+                memcpy(info0.CTR, info1.CTR, 16);
+                DecryptSdToSd(filename,
+                    offset + offset_byte + offset_code + size_code,
+                    size_byte - (offset_code + size_code), &info0);
+            } else {
+                DecryptSdToSd(filename, offset + offset_byte + 0x200, size_byte - 0x200, &info0);
+            }
+        } else {
+            DecryptSdToSd(filename, offset + offset_byte, size_byte, &info0);
+        }
+    }
+    
+    // process RomFS
+    if (ncch->size_romfs > 0) {
+        u32 offset_byte = ncch->offset_romfs * 0x200;
+        u32 size_byte = ncch->size_romfs * 0x200;
+        Debug("Decrypting RomFS (%uMB)...", size_byte / (1024 * 1024));
+        memset(info1.CTR + 12, 0x00, 4);
+        if (ncch->version == 1)
+            add_ctr(info1.CTR, offset_byte);
+        else
+            info1.CTR[8] = 3;
+        info1.setKeyY = 1;
+        DecryptSdToSd(filename, offset + offset_byte, size_byte, &info1);
+    }
+    
+    // set NCCH header flags
+    ncch->flags[3] = 0x00;
+    ncch->flags[7] &= 0x20^0xFF;
+    ncch->flags[7] |= 0x04;
+    
+    // write header back
+    if (!FileOpen(filename))
+        return 1;
+    if (!DebugFileWrite((void*) ncch, 0x200, offset)) {
+        FileClose();
+        return 1;
+    }
+    FileClose();
+    
+    
+    return 0;
 }
 
 u32 DecryptTitles()
 {
-	u8* buffer = (u8*)0x20316000;
-	char filename[256];
-	u32 result = 1;
-
-	if (!DebugDirOpen("D9titles"))
-		return 1;
-
-	memcpy(filename, "D9titles/", 9);
-	while (DirRead(filename + 9, 256 - 9)) {
-		if (!DebugFileOpen(filename))
-			continue;
-		if (!DebugFileRead(buffer, 0x200, 0x0)) {
-			FileClose();
-			continue;
-		}
-		FileClose();
-		if (memcmp(buffer + 0x100, "NCCH", 4) == 0) {
-			Debug("Found NCCH %08X%08X", *((unsigned int*)(buffer + 0x10C)), *((unsigned int*)(buffer + 0x108)));
-			Debug("Decrypting File...");
-			if (DecryptNcch(filename, 0x00) == 0) {
-				Debug("Done!");
-				result = 0;
-			}
-			else
-				Debug("Failed!");
-		}
-		else if (memcmp(buffer + 0x100, "NCSD", 4) == 0) {
-			Debug("Found NCSD %08X%08X", *((unsigned int*)(buffer + 0x10C)), *((unsigned int*)(buffer + 0x108)));
-			Debug("Decrypting File...");
-			u32 p;
-			for (p = 0; p < 8; p++) {
-				u32 offset = *((u32*)(buffer + 0x120 + (p * 0x8))) * 0x200;
-				u32 size = *((u32*)(buffer + 0x124 + (p * 0x8))) * 0x200;
-				if (size > 0) {
-					if (DecryptNcch(filename, offset) != 0) {
-						Debug("Failed!");
-						break;
-					}
-				}
-			}
-			if (p == 8) {
-				Debug("Done!");
-				result = 0;
-			}
-		}
-		else {
-			Debug("Not a NCCH/NCSD container file!");
-		}
-	}
-	DirClose();
-
-
-	return result;
+    u8* buffer = (u8*) 0x20316000;
+    char filename[256];
+    u32 n_processed = 0;
+    
+    if (!DirOpen("D9titles")) {
+        Debug("Could not open work directory!");
+        return 1;
+    }
+    
+    memcpy(filename, "D9titles/", 9);
+    while (DirRead(filename + 9, 256 - 9)) {
+        if (!DebugFileOpen(filename))
+            continue;
+        if (!DebugFileRead(buffer, 0x200, 0x0)) {
+            FileClose();
+            continue;
+        }
+        FileClose();
+        
+        if (memcmp(buffer + 0x100, "NCCH", 4) == 0) {
+            Debug("Found NCCH %08X%08X", *((unsigned int*) (buffer + 0x10C)), *((unsigned int*) (buffer + 0x108)));
+            if (DecryptNcch(filename, 0x00) == 0) {
+                Debug("Done!");
+                n_processed++;
+            } else
+                Debug("Failed!");
+        } else if (memcmp(buffer + 0x100, "NCSD", 4) == 0) {
+            Debug("Found NCSD %08X%08X", *((unsigned int*) (buffer + 0x10C)), *((unsigned int*) (buffer + 0x108)));
+            u32 p;
+            for (p = 0; p < 8; p++) {
+                u32 offset = *((u32*) (buffer + 0x120 + (p*0x8))) * 0x200;
+                u32 size = *((u32*) (buffer + 0x124 + (p*0x8))) * 0x200;
+                if ( size > 0 ) {
+                    if (DecryptNcch(filename, offset) != 0) {
+                        Debug("Failed!");
+                        break;
+                    }
+                }
+            }
+            if ( p == 8 ) {
+                Debug("Done!");
+                n_processed++;
+            }
+        } else {
+            Debug("Not a NCCH/NCSD container file!");
+        }
+    }
+    
+    DirClose();
+    
+    if (n_processed)
+        Debug("Successfully processed %u files", n_processed);
+    
+    
+    return !(n_processed);
 }
 
 u32 NandPadgen()
@@ -922,12 +933,11 @@ u32 DumpNandSystemTitles() {
     u32 nTitles = 0;
     
     
-    if (GetUnitPlatform() == PLATFORM_3DS) {
-        cluster_start = 0x33600;
-        cluster_size = NAND_SECTOR_SIZE * 0x20;
-
-	}
-
+   if (GetUnitPlatform() == PLATFORM_3DS) {
+       cluster_start = 0x33600;
+       cluster_size = NAND_SECTOR_SIZE * 0x20;
+   }
+    
     DirMake("D9titles");
     Debug("Seeking for 'NCCH'...");
     for (u32 i = cluster_start; i < ctrnand_size; i += cluster_size) {
@@ -940,8 +950,8 @@ u32 DumpNandSystemTitles() {
                 Debug("Found at 0x%08x, but invalid size", ctrnand_offset + i);
                 continue;
             }
-			snprintf(filename, 256, "D9titles/%08X%08X_%08X.app",
-				*((unsigned int*)(buffer + 0x10C)), *((unsigned int*)(buffer + 0x108)), (unsigned int)(ctrnand_offset + i));
+            snprintf(filename, 256, "D9titles/%08X%08X_%08X.app",
+                *((unsigned int*)(buffer + 0x10C)), *((unsigned int*)(buffer + 0x108)), (unsigned int) (ctrnand_offset + i));
             if (FileOpen(filename)) {
                 FileClose();
                 Debug("Found duplicate at 0x%08X", ctrnand_offset + i, size);
@@ -951,7 +961,7 @@ u32 DumpNandSystemTitles() {
             Debug("Found (%i) at 0x%08X, size: %ukb", nTitles + 1, ctrnand_offset + i, size / 1024);
             if (DecryptNandToFile(filename, ctrnand_offset + i, size, ctrnand_info) != 0)
                 return 1;
-			i += cluster_size * (size / cluster_size);
+            i += cluster_size * (size / cluster_size);
             nTitles++;
         }
     }
