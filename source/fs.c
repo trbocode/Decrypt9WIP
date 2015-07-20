@@ -145,6 +145,8 @@ bool DirRead(char* fname, int fsize)
     while (f_readdir(&dir, &fno) == FR_OK) {
         if (fno.fname[0] == 0) break;
         if ((fno.fname[0] != '.') && !(fno.fattrib & AM_DIR)) {
+            if (fname[0] == 0)
+                strcpy(fname, fno.fname);
             ret = true;
             break;
         }
