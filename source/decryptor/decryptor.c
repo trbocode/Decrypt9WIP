@@ -781,6 +781,8 @@ u32 DecryptTitles()
     u8* buffer = (u8*) 0x20316000;
     char filename[256];
     u32 n_processed = 0;
+    u32 n_failed = 0;
+    u32 n_unknown = 0;
     
     if (!DirOpen("D9titles")) {
         Debug("Could not open work directory!");
@@ -802,35 +804,36 @@ u32 DecryptTitles()
             if (DecryptNcch(filename, 0x00) == 0) {
                 Debug("Done!");
                 n_processed++;
-            } else
+            } else {
                 Debug("Failed!");
+                n_failed++;
+            }
         } else if (memcmp(buffer + 0x100, "NCSD", 4) == 0) {
             Debug("Found NCSD %08X%08X", *((unsigned int*) (buffer + 0x10C)), *((unsigned int*) (buffer + 0x108)));
             u32 p;
             for (p = 0; p < 8; p++) {
                 u32 offset = *((u32*) (buffer + 0x120 + (p*0x8))) * 0x200;
                 u32 size = *((u32*) (buffer + 0x124 + (p*0x8))) * 0x200;
-                if ( size > 0 ) {
-                    if (DecryptNcch(filename, offset) != 0) {
-                        Debug("Failed!");
-                        break;
-                    }
-                }
+                if ((size > 0) && (DecryptNcch(filename, offset) != 0))
+                    break;
             }
             if ( p == 8 ) {
                 Debug("Done!");
                 n_processed++;
+            } else {
+                Debug("Failed!");
+                n_failed++;
             }
         } else {
             Debug("Not a NCCH/NCSD container file!");
+            n_unknown++;
         }
     }
     
     DirClose();
     
     if (n_processed)
-        Debug("Successfully processed %u files", n_processed);
-    
+        Debug("%ux decrypted / %u failed / %U unknown", n_processed, n_failed, n_unknown);
     
     return !(n_processed);
 }
