@@ -502,52 +502,6 @@ u32 DecryptNandToFile(const char* filename, u32 offset, u32 size, PartitionInfo*
     return result;
 }
 
-#ifdef DANGER_ZONE
-u32 EncryptMemToNand(u8* buffer, u32 offset, u32 size, PartitionInfo* partition)
-{
-    DecryptBufferInfo info = {.keyslot = partition->keyslot, .setKeyY = 0, .size = size, .buffer = buffer, .mode = partition->mode};
-    if(GetNandCtr(info.CTR, offset) != 0)
-        return 1;
-
-    u32 n_sectors = (size + NAND_SECTOR_SIZE - 1) / NAND_SECTOR_SIZE;
-    u32 start_sector = offset / NAND_SECTOR_SIZE;
-    DecryptBuffer(&info);
-    sdmmc_nand_writesectors(start_sector, n_sectors, buffer);
-
-    return 0;
-}
-
-u32 EncryptFileToNand(const char* filename, u32 offset, u32 size, PartitionInfo* partition)
-{
-    u8* buffer = BUFFER_ADDRESS;
-    u32 result = 0;
-
-    if (!DebugFileOpen(filename))
-        return 1;
-    
-    if (FileGetSize() != size) {
-        Debug("%s has wrong size", filename);
-        FileClose();
-        return 1;
-    }
-
-    for (u32 i = 0; i < size; i += NAND_SECTOR_SIZE * SECTORS_PER_READ) {
-        u32 read_bytes = min(NAND_SECTOR_SIZE * SECTORS_PER_READ, (size - i));
-        ShowProgress(i, size);
-        if(!DebugFileRead(buffer, read_bytes, i)) {
-            result = 1;
-            break;
-        }
-        EncryptMemToNand(buffer, offset + i, read_bytes, partition);
-    }
-
-    ShowProgress(0, 0);
-    FileClose();
-
-    return result;
-}
-#endif
-
 u32 DecryptSdToSd(const char* filename, u32 offset, u32 size, DecryptBufferInfo* info)
 {
     u8* buffer = BUFFER_ADDRESS;
@@ -937,6 +891,50 @@ u32 DecryptNandPartitions() {
 }
 
 #ifdef DANGER_ZONE
+u32 EncryptMemToNand(u8* buffer, u32 offset, u32 size, PartitionInfo* partition)
+{
+    DecryptBufferInfo info = {.keyslot = partition->keyslot, .setKeyY = 0, .size = size, .buffer = buffer, .mode = partition->mode};
+    if(GetNandCtr(info.CTR, offset) != 0)
+        return 1;
+
+    u32 n_sectors = (size + NAND_SECTOR_SIZE - 1) / NAND_SECTOR_SIZE;
+    u32 start_sector = offset / NAND_SECTOR_SIZE;
+    DecryptBuffer(&info);
+    sdmmc_nand_writesectors(start_sector, n_sectors, buffer);
+
+    return 0;
+}
+
+u32 EncryptFileToNand(const char* filename, u32 offset, u32 size, PartitionInfo* partition)
+{
+    u8* buffer = BUFFER_ADDRESS;
+    u32 result = 0;
+
+    if (!DebugFileOpen(filename))
+        return 1;
+    
+    if (FileGetSize() != size) {
+        Debug("%s has wrong size", filename);
+        FileClose();
+        return 1;
+    }
+
+    for (u32 i = 0; i < size; i += NAND_SECTOR_SIZE * SECTORS_PER_READ) {
+        u32 read_bytes = min(NAND_SECTOR_SIZE * SECTORS_PER_READ, (size - i));
+        ShowProgress(i, size);
+        if(!DebugFileRead(buffer, read_bytes, i)) {
+            result = 1;
+            break;
+        }
+        EncryptMemToNand(buffer, offset + i, read_bytes, partition);
+    }
+
+    ShowProgress(0, 0);
+    FileClose();
+
+    return result;
+}
+
 u32 RestoreNand()
 {
     u8* buffer = BUFFER_ADDRESS;
