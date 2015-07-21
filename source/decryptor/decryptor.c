@@ -597,6 +597,7 @@ u32 DecryptNcch(const char* filename, u32 offset)
     DecryptBufferInfo info0 = {.setKeyY = 1, .keyslot = 0x2C, .mode = AES_CNT_CTRNAND_MODE};
     DecryptBufferInfo info1 = {.setKeyY = 1, .mode = AES_CNT_CTRNAND_MODE};
     u8 seedKeyY[16] = { 0x00 };
+    u32 result = 0;
     
     if (!FileOpen(filename)) // already checked this file
         return 1;
@@ -693,7 +694,7 @@ u32 DecryptNcch(const char* filename, u32 offset)
             add_ctr(info0.CTR, 0x200); // exHeader offset
         else
             info0.CTR[8] = 1;
-        DecryptSdToSd(filename, offset + 0x200, 0x800, &info0);
+        result |= DecryptSdToSd(filename, offset + 0x200, 0x800, &info0);
     }
     
     // process ExeFS
@@ -710,7 +711,7 @@ u32 DecryptNcch(const char* filename, u32 offset)
             u32 offset_code = 0;
             u32 size_code = 0;
             // find .code offset and size
-            DecryptSdToSd(filename, offset + offset_byte, 0x200, &info0);
+            result |= DecryptSdToSd(filename, offset + offset_byte, 0x200, &info0);
             if(!FileOpen(filename))
                 return 1;
             if(!DebugFileRead(buffer, 0x200, offset + offset_byte)) {
@@ -727,19 +728,19 @@ u32 DecryptNcch(const char* filename, u32 offset)
             }
             // special ExeFS decryption routine (only .code has new encryption)
             if (size_code > 0) {
-                DecryptSdToSd(filename, offset + offset_byte + 0x200, offset_code - 0x200, &info0);
+                result |= DecryptSdToSd(filename, offset + offset_byte + 0x200, offset_code - 0x200, &info0);
                 memcpy(info1.CTR, info0.CTR, 16); // this depends on the exeFS file offsets being aligned (which they are)
                 add_ctr(info0.CTR, size_code / 0x10);
                 info0.setKeyY = info1.setKeyY = 1;
-                DecryptSdToSd(filename, offset + offset_byte + offset_code, size_code, &info1);
-                DecryptSdToSd(filename,
+                result |= DecryptSdToSd(filename, offset + offset_byte + offset_code, size_code, &info1);
+                result |= DecryptSdToSd(filename,
                     offset + offset_byte + offset_code + size_code,
                     size_byte - (offset_code + size_code), &info0);
             } else {
-                DecryptSdToSd(filename, offset + offset_byte + 0x200, size_byte - 0x200, &info0);
+                result |= DecryptSdToSd(filename, offset + offset_byte + 0x200, size_byte - 0x200, &info0);
             }
         } else {
-            DecryptSdToSd(filename, offset + offset_byte, size_byte, &info0);
+            result |= DecryptSdToSd(filename, offset + offset_byte, size_byte, &info0);
         }
     }
     
@@ -754,7 +755,7 @@ u32 DecryptNcch(const char* filename, u32 offset)
         else
             info1.CTR[8] = 3;
         info1.setKeyY = 1;
-        DecryptSdToSd(filename, offset + offset_byte, size_byte, &info1);
+        result |= DecryptSdToSd(filename, offset + offset_byte, size_byte, &info1);
     }
     
     // set NCCH header flags
@@ -772,7 +773,7 @@ u32 DecryptNcch(const char* filename, u32 offset)
     FileClose();
     
     
-    return 0;
+    return result;
 }
 
 u32 DecryptTitles()
