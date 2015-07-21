@@ -551,6 +551,7 @@ u32 EncryptFileToNand(const char* filename, u32 offset, u32 size, PartitionInfo*
 u32 DecryptSdToSd(const char* filename, u32 offset, u32 size, DecryptBufferInfo* info)
 {
     u8* buffer = BUFFER_ADDRESS;
+    u32 offset_16 = offset % 16;
     u32 result = 0;
 
     // No DebugFileOpen() - at this point the file has already been checked enough
@@ -558,7 +559,17 @@ u32 DecryptSdToSd(const char* filename, u32 offset, u32 size, DecryptBufferInfo*
         return 1;
 
     info->buffer = buffer;
-    for (u32 i = 0; i < size; i += BUFFER_MAX_SIZE) {
+    if (offset_16) { // handle offset alignment / this assumes the data is >= 16 byte
+        if(!DebugFileRead(buffer + offset_16, 16 - offset_16, offset)) {
+            result = 1;
+        }
+        info->size = 16;
+        DecryptBuffer(info);
+        if(!DebugFileWrite(buffer + offset_16, 16 - offset_16, offset)) {
+            result = 1;
+        }
+    }
+    for (u32 i = (offset_16) ? (16 - offset_16) : 0; i < size; i += BUFFER_MAX_SIZE) {
         u32 read_bytes = min(BUFFER_MAX_SIZE, (size - i));
         ShowProgress(i, size);
         if(!DebugFileRead(buffer, read_bytes, offset + i)) {
@@ -717,10 +728,10 @@ u32 DecryptNcch(const char* filename, u32 offset)
             // special ExeFS decryption routine (only .code has new encryption)
             if (size_code > 0) {
                 DecryptSdToSd(filename, offset + offset_byte + 0x200, offset_code - 0x200, &info0);
-                memcpy(info1.CTR, info0.CTR, 16);
+                memcpy(info1.CTR, info0.CTR, 16); // this depends on the exeFS file offsets being aligned (which they are)
+                add_ctr(info0.CTR, size_code / 0x10);
                 info0.setKeyY = info1.setKeyY = 1;
                 DecryptSdToSd(filename, offset + offset_byte + offset_code, size_code, &info1);
-                memcpy(info0.CTR, info1.CTR, 16);
                 DecryptSdToSd(filename,
                     offset + offset_byte + offset_code + size_code,
                     size_byte - (offset_code + size_code), &info0);
