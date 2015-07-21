@@ -27,7 +27,6 @@ MenuInfo menu[] =
         {
             { "NAND Backup", &DumpNand },
             { "NAND Partition Dump", &DecryptNandPartitions },
-            // { "System Titles Dump", &DumpNandSystemTitles },
             { "Decrypt Titles", &DecryptTitles },
             { NULL, NULL }
         }
