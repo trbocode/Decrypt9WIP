@@ -8,7 +8,7 @@
 
 //variables needed for menu gui
 int menu_idx = 0;
-#define MENU_ITEMS 10 //11 when uncart is implemented
+#define MENU_ITEMS 9 //10 when uncart is implemented
 int TOP_Current = 0;
 
 void Reboot()
@@ -182,9 +182,9 @@ int MainMenu()
                     }
                     else if (menu_idx == 5) {
                         ConsoleInit();
-                        ConsoleSetTitle("Dump Nand System Titles");
+                        ConsoleSetTitle("Decrypt Titlekeys File");
                         ConsoleShow();
-                        Debug("Decrypt NAND Partitions: %s!", DumpNandSystemTitles() == 0 ? "succeeded" : "failed"); //menu5.bin
+                        Debug("Titlekey Decryption: %s!", DecryptTitlekeysFile() == 0 ? "succeeded" : "failed"); //menu5.bin
                         Debug("Press B to exit");
                         while (true) {
                             if (InputWait() & BUTTON_B) {
@@ -195,9 +195,9 @@ int MainMenu()
                     }
                     else if (menu_idx == 6) {
                         ConsoleInit();
-                        ConsoleSetTitle("Decrypt Titlekeys File");
-                        ConsoleShow();
-                        Debug("Titlekey Decryption: %s!", DecryptTitlekeysFile() == 0 ? "succeeded" : "failed"); //menu6.bin
+                        ConsoleSetTitle("Decrypt Titlekeys Nand");
+                        ConsoleShow();	
+                        Debug("Titlekey Decryptor: %s!", DecryptTitlekeysNand() == 0 ? "succeeded" : "failed"); //menu6.bin
                         Debug("Press B to exit");
                         while (true) {
                             if (InputWait() & BUTTON_B) {
@@ -208,22 +208,9 @@ int MainMenu()
                     }
                     else if (menu_idx == 7) {
                         ConsoleInit();
-                        ConsoleSetTitle("Decrypt Titlekeys Nand");
-                        ConsoleShow();	
-                        Debug("Titlekey Decryptor: %s!", DecryptTitlekeysNand() == 0 ? "succeeded" : "failed"); //menu7.bin
-                        Debug("Press B to exit");
-                        while (true) {
-                            if (InputWait() & BUTTON_B) {
-                                DebugClear();
-                                break;
-                            }
-                        }
-                    }
-                    else if (menu_idx == 8) {
-                        ConsoleInit();
                         ConsoleSetTitle("Ticket Dumper");
                         ConsoleShow();
-                        Debug("Ticket Dump: %s!", DumpTicket() == 0 ? "succeeded" : "failed"); //menu8.bin
+                        Debug("Ticket Dump: %s!", DumpTicket() == 0 ? "succeeded" : "failed"); //menu7.bin
                         Debug("Press B to exit");
                         while (true) {
                         if (InputWait() & BUTTON_B) {
@@ -232,11 +219,11 @@ int MainMenu()
                         }
                     }
                 }
-                else if (menu_idx == 9) {
+                else if (menu_idx == 8) {
                     ConsoleInit();
                     ConsoleSetTitle("CTR ROM Decryptor");
                     ConsoleShow();
-                    Debug("Decrypt ROM: %s!", DecryptTitles() == 0 ? "succeeded" : "failed"); //menu9.bin
+                    Debug("Decrypt ROM: %s!", DecryptTitles() == 0 ? "succeeded" : "failed"); //menu8.bin
                     Debug("Press B to exit");
                     while (true) {
                     if (InputWait() & BUTTON_B) {
@@ -245,11 +232,11 @@ int MainMenu()
                     }
                 }
             }
-/*          else if (menu_idx == 10) { //Not Implemented yet
+/*          else if (menu_idx == 9) { //Not Implemented yet
                     ConsoleInit();
                     ConsoleSetTitle("Game Cart Dumper");
                     ConsoleShow();
-                    Debug("Dump Game: %s!", DumpGame() == 0 ? "succeeded" : "failed"); //menu10.bin
+                    Debug("Dump Game: %s!", DumpGame() == 0 ? "succeeded" : "failed"); //menu9.bin
                     Debug("Press B to exit");
                     while (true) {
                         if (InputWait() & BUTTON_B) {
