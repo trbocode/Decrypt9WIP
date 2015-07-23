@@ -13,9 +13,6 @@
 #define BUFFER_ADDRESS      ((u8*) 0x21000000)
 #define BUFFER_MAX_SIZE     (1 * 1024 * 1024)
 
-// see: http://3dbrew.org/wiki/Memory_layout#ARM9_ITCM
-#define NAND_CID            ((u8*) 0x01FFCD84)
-
 #define NAND_SECTOR_SIZE    0x200
 #define SECTORS_PER_READ    (BUFFER_MAX_SIZE / NAND_SECTOR_SIZE)
 
@@ -385,22 +382,53 @@ u32 SdPadgen()
 
 u32 GetNandCtr(u8* ctr, u32 offset)
 {
-    if (offset >= 0x0B100000) { // CTRNAND/AGBSAVE region
-        u8 sha256sum[32];
-        sha256_context shactx;
-        sha256_starts(&shactx);
-        sha256_update(&shactx, NAND_CID, 16);
-        sha256_finish(&shactx, sha256sum);
-        memcpy(ctr, sha256sum, 0x10);
-    } else { // TWL region
-        u8 sha1sum[20];
-        sha1_context shactx;
-        sha1_starts(&shactx);
-        sha1_update(&shactx, NAND_CID, 16);
-        sha1_finish(&shactx, sha1sum);
-        for(u32 i = 0; i < 16; i++) // little endian and reversed order
-            ctr[i] = sha1sum[15-i];
+    static const char* versions[] = {"4.x", "5.x", "6.x", "7.x", "8.x", "9.x"};
+    static const u8* version_ctrs[] = {
+        (u8*)0x080D7CAC,
+        (u8*)0x080D858C,
+        (u8*)0x080D748C,
+        (u8*)0x080D740C,
+        (u8*)0x080D74CC,
+        (u8*)0x080D794C
+    };
+    static const u32 version_ctrs_len = sizeof(version_ctrs) / sizeof(u32);
+    static u8* ctr_start = NULL;
+    
+    if (ctr_start == NULL) {
+        for (u32 i = 0; i < version_ctrs_len; i++) {
+            if (*(u32*)version_ctrs[i] == 0x5C980) {
+                Debug("System version %s", versions[i]);
+                ctr_start = (u8*) version_ctrs[i] + 0x30;
+            }
+        }
+        
+        // If value not in previous list start memory scanning (test range)
+        if (ctr_start == NULL) {
+            for (u8* c = (u8*) 0x080D8FFF; c > (u8*) 0x08000000; c--) {
+                if (*(u32*)c == 0x5C980 && *(u32*)(c + 1) == 0x800005C9) {
+                    ctr_start = c + 0x30;
+                    Debug("CTR Start 0x%08X", ctr_start);
+                    break;
+                }
+            }
+        }
+            
+        if (ctr_start == NULL) {
+            Debug("CTR Start not found!");
+            return 1;
+        }
     }
+    
+    // the CTR is stored backwards in memory
+    if (offset >= 0x0B100000) { // CTRNAND/AGBSAVE region
+        for (u32 i = 0; i < 16; i++)
+            ctr[i] = *(ctr_start + (0xF - i));
+    } else { // TWL region
+        for (u32 i = 0; i < 16; i++)
+            ctr[i] = *(ctr_start + 0x88 + (0xF - i));
+    }
+    
+    // increment counter
     add_ctr(ctr, offset / 0x10);
 
     return 0;
