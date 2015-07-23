@@ -7,7 +7,6 @@
 #include "decryptor/decryptor.h"
 #include "decryptor/crypto.h"
 #include "decryptor/features.h"
-#include "sha1.h"
 #include "sha256.h"
 #include "fatfs/sdmmc.h"
 #include "console.h"
