@@ -7,7 +7,6 @@
 #include "decryptor/decryptor.h"
 #include "decryptor/crypto.h"
 #include "decryptor/features.h"
-#include "sha1.h"
 #include "sha256.h"
 
 #define BUFFER_ADDRESS      ((u8*) 0x21000000)
