@@ -15,6 +15,9 @@
 #define NAND_SECTOR_SIZE    0x200
 #define SECTORS_PER_READ    (BUFFER_MAX_SIZE / NAND_SECTOR_SIZE)
 
+// #define sdmmc_nand_readsectors  sdmmc_sdcard_readsectors
+// #define sdmmc_nand_writesectors sdmmc_sdcard_writesectors
+
 
 // From https://github.com/profi200/Project_CTR/blob/master/makerom/pki/prod.h#L19
 static const u8 common_keyy[6][16] = {
