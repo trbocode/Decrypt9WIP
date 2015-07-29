@@ -7,8 +7,10 @@ u32 DumpTicket(void);
 u32 DecryptTitlekeysFile(void);
 u32 DecryptTitlekeysNand(void);
 u32 DumpNand(void);
-u32 DecryptNandPartitions(void);
+u32 DecryptTwlAgbPartitions(void);
+u32 DecryptCtrPartitions(void);
 u32 DecryptTitles(void);
 
 u32 RestoreNand(void);
-u32 EncryptNandPartitions(void);
+u32 InjectTwlAgbPartitions(void);
+u32 InjectCtrPartitions(void);

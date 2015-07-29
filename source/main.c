@@ -26,9 +26,9 @@ MenuInfo menu[] =
         "NAND Options",
         {
             { "NAND Backup", &DumpNand },
-            { "NAND Partition Dump", &DecryptNandPartitions },
-            { "Decrypt Titles", &DecryptTitles },
-            { NULL, NULL }
+            { "TWL / AGB Partitions Dump", &DecryptTwlAgbPartitions },
+            { "CTR Partitions Dump", &DecryptCtrPartitions },
+            { "Decrypt Titles", &DecryptTitles }
         }
     },
     {
@@ -45,8 +45,8 @@ MenuInfo menu[] =
         "!DANGER_ZONE!",
         {
             { "NAND Restore", &RestoreNand },
-            { "NAND Partition Inject", &EncryptNandPartitions},
-            { NULL, NULL },
+            { "TWL /AGB Partitions Inject", &InjectTwlAgbPartitions},
+            { "CTR Partitions Inject", &InjectCtrPartitions},
             { NULL, NULL }
         }
     }

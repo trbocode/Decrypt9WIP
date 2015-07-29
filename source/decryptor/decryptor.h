@@ -80,10 +80,11 @@ typedef struct {
 
 typedef struct {
     char name[16];
+    u8  magic[8];
     u32 offset;
     u32 size;
     u32 keyslot;
-    u32 mode;  
+    u32 mode;
 } __attribute__((packed)) PartitionInfo;
 
 typedef struct {
@@ -127,6 +128,8 @@ u32 DecryptNandToMem(u8* buffer, u32 offset, u32 size, PartitionInfo* partition)
 u32 DecryptNandToFile(const char* filename, u32 offset, u32 size, PartitionInfo* partition);
 u32 DecryptSdToSd(const char* filename, u32 offset, u32 size, DecryptBufferInfo* info);
 u32 DecryptNcch(const char* filename, u32 offset);
+u32 DecryptNandPartition(PartitionInfo* p);
 
 u32 EncryptMemToNand(u8* buffer, u32 offset, u32 size, PartitionInfo* partition);
 u32 EncryptFileToNand(const char* filename, u32 offset, u32 size, PartitionInfo* partition);
+u32 InjectNandPartition(PartitionInfo* p);
