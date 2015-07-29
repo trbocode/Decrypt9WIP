@@ -17,6 +17,8 @@
 #define NAND_SECTOR_SIZE    0x200
 #define SECTORS_PER_READ    (BUFFER_MAX_SIZE / NAND_SECTOR_SIZE)
 
+// #define sdmmc_nand_readsectors  sdmmc_sdcard_readsectors
+// #define sdmmc_nand_writesectors sdmmc_sdcard_writesectors
 
 // From https://github.com/profi200/Project_CTR/blob/master/makerom/pki/prod.h#L19
 static const u8 common_keyy[6][16] = {
@@ -164,7 +166,7 @@ u32 DecryptTitlekeysNand(void)
         u32 read_bytes = min(NAND_SECTOR_SIZE * SECTORS_PER_READ, (size - t_offset));
         ShowProgress(t_offset, size);
         DecryptNandToMem(buffer, offset + t_offset, read_bytes, ctrnand_info);
-        for (u32 i = 0x158; i < read_bytes - NAND_SECTOR_SIZE; i += NAND_SECTOR_SIZE) {
+        for (u32 i = 0; i < read_bytes - NAND_SECTOR_SIZE; i++) {
             if(memcmp(buffer + i, (u8*) "Root-CA00000003-XS0000000c", 26) == 0) {
                 u32 exid;
                 titleId = buffer + i + 0x9C;
@@ -277,7 +279,7 @@ u32 NcchPadgen()
         PadInfo padInfo = {.setKeyY = 1, .size_mb = info->entries[i].size_mb};
         memcpy(padInfo.CTR, info->entries[i].CTR, 16);
         memcpy(padInfo.filename, info->entries[i].filename, 112);
-        if (info->entries[i].uses7xCrypto && info->entries[i].usesSeedCrypto) {
+        if (info->entries[i].usesSeedCrypto) {
             u8 keydata[32];
             memcpy(keydata, info->entries[i].keyY, 16);
             u32 found_seed = 0;

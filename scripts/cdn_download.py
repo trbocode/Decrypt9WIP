@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 # This script is old and shitty
 
 import os

@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 # This script is awful, but it 'works for me'(TM)
 
 import sys
