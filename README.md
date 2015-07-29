@@ -1,13 +1,16 @@
 # Decrypt9
-[![Build Status](https://travis-ci.org/archshift/Decrypt9.svg?branch=master)](https://travis-ci.org/archshift/Decrypt9)
 
-### Download
+### Work in progress
 
-[Nightly builds](http://builds.archshift.com/decrypt9/nightly) (sort by date)
+This is a work in progress fork of Archshifts original Decrypt9, including bleeding edge new features. Any new features will eventually get pulled into Archshifts repo:
+https://github.com/archshift/Decrypt9
+
+Discussion thread on GBAtemp:
+https://gbatemp.net/threads/download-decrypt9-wip-3dsx-launcher-dat.388831/
 
 ## Generating xorpads for encrypted files
 
-First build by running `make` in the project root. By default, it will build the browser version of Decrypt9. If you'd like to build for use with brahma or bootstrap, run `make bootstrap` instead.
+First build by running `make` in the project root. By default, it will build the brahma loader version of Decrypt9. If you'd like to build for use with bootstrap, run `make bootstrap` instead. If you'd like to build for the gateway launcher.dat browser exploit, run 'make gateway' instead.
 
 ### Decrypting gamecart dumps
 
