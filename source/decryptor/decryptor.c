@@ -165,7 +165,7 @@ u32 DecryptTitlekeysNand(void)
         u32 read_bytes = min(NAND_SECTOR_SIZE * SECTORS_PER_READ, (size - t_offset));
         ShowProgress(t_offset, size);
         DecryptNandToMem(buffer, offset + t_offset, read_bytes, ctrnand_info);
-        for (u32 i = 0x158; i < read_bytes - NAND_SECTOR_SIZE; i += NAND_SECTOR_SIZE) {
+        for (u32 i = 0; i < read_bytes - NAND_SECTOR_SIZE; i++) {
             if(memcmp(buffer + i, (u8*) "Root-CA00000003-XS0000000c", 26) == 0) {
                 u32 exid;
                 titleId = buffer + i + 0x9C;
