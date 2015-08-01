@@ -275,7 +275,7 @@ u32 NcchPadgen()
     for(u32 i = 0; i < info->n_entries; i++) {
         Debug("Creating pad number: %i. Size (MB): %i", i+1, info->entries[i].size_mb);
 
-        PadInfo padInfo = {.setKeyY = 1, .size_mb = info->entries[i].size_mb};
+        PadInfo padInfo = {.setKeyY = 1, .size_mb = info->entries[i].size_mb, .mode = AES_CNT_CTRNAND_MODE};
         memcpy(padInfo.CTR, info->entries[i].CTR, 16);
         memcpy(padInfo.filename, info->entries[i].filename, 112);
         if (info->entries[i].usesSeedCrypto) {
@@ -368,7 +368,7 @@ u32 SdPadgen()
     for(u32 i = 0; i < info->n_entries; i++) {
         Debug ("Creating pad number: %i. Size (MB): %i", i+1, info->entries[i].size_mb);
 
-        PadInfo padInfo = {.keyslot = 0x34, .setKeyY = 0, .size_mb = info->entries[i].size_mb};
+        PadInfo padInfo = {.keyslot = 0x34, .setKeyY = 0, .size_mb = info->entries[i].size_mb, .mode = AES_CNT_CTRNAND_MODE};
         memcpy(padInfo.CTR, info->entries[i].CTR, 16);
         memcpy(padInfo.filename, info->entries[i].filename, 180);
 
@@ -822,7 +822,7 @@ u32 DecryptTitles()
     return !(n_processed);
 }
 
-u32 NandPadgen()
+u32 CtrNandPadgen()
 {
     u32 keyslot;
     u32 nand_size;
@@ -838,8 +838,26 @@ u32 NandPadgen()
     Debug("Creating NAND FAT16 xorpad. Size (MB): %u", nand_size);
     Debug("Filename: nand.fat16.xorpad");
 
-    PadInfo padInfo = {.keyslot = keyslot, .setKeyY = 0, .size_mb = nand_size, .filename = "nand.fat16.xorpad"};
+    PadInfo padInfo = {.keyslot = keyslot, .setKeyY = 0, .size_mb = nand_size, .filename = "nand.fat16.xorpad", .mode = AES_CNT_CTRNAND_MODE};
     if(GetNandCtr(padInfo.CTR, 0xB930000) != 0)
+        return 1;
+
+    return CreatePad(&padInfo);
+}
+
+u32 TwlNandPadgen()
+{
+    u32 size_mb = (partitions[0].size + (1024 * 1024) - 1) / (1024 * 1024);
+    Debug("Creating TWLNAND FAT16 xorpad. Size (MB): %u", size_mb);
+    Debug("Filename: twlnand.fat16.xorpad");
+
+    PadInfo padInfo = {
+        .keyslot = partitions[0].keyslot,
+        .setKeyY = 0,
+        .size_mb = size_mb,
+        .filename = "twlnand.fat16.xorpad",
+        .mode = AES_CNT_TWLNAND_MODE};
+    if(GetNandCtr(padInfo.CTR, partitions[0].offset) != 0)
         return 1;
 
     return CreatePad(&padInfo);
@@ -854,10 +872,9 @@ u32 CreatePad(PadInfo *info)
     if (!FileCreate((info->filename[0] == '/') ? info->filename + 1 : info->filename, true))
         return 1;
         
-    DecryptBufferInfo decryptInfo = {.keyslot = info->keyslot, .setKeyY = info->setKeyY, .buffer = buffer, .mode = AES_CNT_CTRNAND_MODE};
+    DecryptBufferInfo decryptInfo = {.keyslot = info->keyslot, .setKeyY = info->setKeyY, .mode = info->mode, .buffer = buffer};
     memcpy(decryptInfo.CTR, info->CTR, 16);
-    if (info->setKeyY)
-        memcpy(decryptInfo.keyY, info->keyY, 16);
+    memcpy(decryptInfo.keyY, info->keyY, 16);
     u32 size_bytes = info->size_mb * 1024*1024;
     for (u32 i = 0; i < size_bytes; i += BUFFER_MAX_SIZE) {
         u32 curr_block_size = min(BUFFER_MAX_SIZE, size_bytes - i);

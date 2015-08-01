@@ -18,8 +18,8 @@ MenuInfo menu[] =
         {
             { "NCCH Padgen", &NcchPadgen },
             { "SD Padgen", &SdPadgen },
-            { "CTRNAND Padgen", &NandPadgen },
-            { NULL, NULL }
+            { "CTRNAND Padgen", &CtrNandPadgen },
+            { "TWLNAND Padgen", &TwlNandPadgen }
         }
     },
     {
