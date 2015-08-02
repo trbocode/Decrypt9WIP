@@ -129,6 +129,8 @@ bootstrap: $(OUTPUT_D)
 	@make --no-print-directory -C $(BUILD) -f $(CURDIR)/Makefile EXEC_METHOD=BOOTSTRAP
 	
 brahma: bootstrap
+	@[ -d $(TOPDIR)/$(LOADER)/data ] || mkdir -p $(TOPDIR)/$(LOADER)/data
+	cp $(OUTPUT).bin $(TOPDIR)/$(LOADER)/data/payload.bin
 	@make --no-print-directory -C $(TOPDIR)/$(LOADER) -f $(TOPDIR)/$(LOADER)/Makefile
 	cp $(TOPDIR)/$(LOADER)/output/$(OUTPUT_N).3dsx $(OUTPUT).3dsx
 	cp $(TOPDIR)/$(LOADER)/output/$(OUTPUT_N).smdh $(OUTPUT).smdh
@@ -137,7 +139,7 @@ brahma: bootstrap
 clean:
 	@echo clean ...
 	@make clean --no-print-directory -C $(TOPDIR)/$(LOADER) -f $(TOPDIR)/$(LOADER)/Makefile
-	@rm -fr $(BUILD) $(OUTPUT_D)
+	@rm -fr $(BUILD) $(OUTPUT_D) $(TOPDIR)/$(LOADER)/data
 
 
 #---------------------------------------------------------------------------------

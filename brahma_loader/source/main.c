@@ -1,4 +1,5 @@
 #include <3ds.h>
+#include "payload_bin.h"
 #include "brahma.h"
 
 
@@ -16,6 +17,7 @@ s32 main (void) {
 	
 	if (brahma_init()) {
 		load_arm9_payload(PAYLOAD);
+		load_arm9_payload_from_mem(payload_bin, payload_bin_size);
 		firm_reboot();
 		brahma_exit();
 	}
