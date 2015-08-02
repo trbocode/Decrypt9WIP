@@ -80,53 +80,32 @@ int MainMenu()
                     }
                 }
                 else if (menu_idx == 2) {
-                    ConsoleInit();
-                    ConsoleSetTitle("NAND fat16 Xorpad Generator");
-                    ConsoleShow();
-                    Debug("NAND Padgen: %s!", NandPadgen() == 0 ? "succeeded" : "failed"); //menu2.bin
-                    Debug("Press B to exit");
-                    while (true) {
-                        if (InputWait() & BUTTON_B) {
-                            DebugClear();
-                            break;
-                        }
-                    }
-                }
-                else if (menu_idx == 3) {
                     TOP_Current = 0;
-                    DrawBottomSplash("/3ds/Decrypt9/UI/nand0.bin"); //backup / restore selection
+                    DrawBottomSplash("/3ds/Decrypt9/UI/pad0.bin"); //selection
                     InputWait();
                     
                     u32 pad_state = InputWait();
                     
-                    if(pad_state & BUTTON_Y) {
-                        DrawBottomSplash("/3ds/Decrypt9/UI/nand1.bin"); //restore yes / no
-                        InputWait();
-                        
-                        if(InputWait() & BUTTON_A) { //restore nand
-                            DrawBottomSplash("/3ds/Decrypt9/UI/nand3.bin");
-                            ConsoleInit();
-                            ConsoleSetTitle("NAND Restore");
-                            ConsoleShow();
-                            Debug("Restore NAND: %s!", RestoreNand() == 0 ? "succeeded" : "failed"); //menu3.bin
-                            Debug("Press B to exit");
-                            while (true) {
-                                if (InputWait() & BUTTON_B) {
-                                    DebugClear();
-                                    break;
-                                }
+                    if(pad_state & BUTTON_Y) { //ctr nand fat16 xorpad
+                        DrawBottomSplash("/3ds/Decrypt9/UI/pad1.bin");
+                        ConsoleInit();
+                        ConsoleSetTitle("NAND fat16 Xorpad Generator");
+                        ConsoleShow();
+                        Debug("Restore NAND: %s!", CtrNandPadgen() == 0 ? "succeeded" : "failed"); //menu2.bin
+                        Debug("Press B to exit");
+                        while (true) {
+                            if (InputWait() & BUTTON_B) {
+                                DebugClear();
+                                break;
                             }
                         }
-                        else if (pad_state & BUTTON_B) { //quit restore
-                            break;
-                        }
                     }
-                    else if(pad_state & BUTTON_X) { //dump nand
-                        DrawBottomSplash("/3ds/Decrypt9/UI/nand2.bin");
+                    else if(pad_state & BUTTON_X) { //twl nand fat16 xorpad
+                        DrawBottomSplash("/3ds/Decrypt9/UI/pad2.bin");
                         ConsoleInit();
-                        ConsoleSetTitle("NAND Dumper");
+                        ConsoleSetTitle("TWLN fat16 Xorpad Generator");
                         ConsoleShow();
-                        Debug("NAND Padgen: %s!", DumpNand() == 0 ? "succeeded" : "failed"); //menu3.bin
+                        Debug("NAND Padgen: %s!", TwlNandPadgen() == 0 ? "succeeded" : "failed"); //menu2.bin
                         Debug("Press B to exit");
                         while (true) {
                             if (InputWait() & BUTTON_B) {
@@ -136,23 +115,23 @@ int MainMenu()
                             }
                         }
                     }
-                    else if (menu_idx == 4) {
+                    else if (menu_idx == 3) {
                         TOP_Current = 0;
-                        DrawBottomSplash("/3ds/Decrypt9/UI/npart0.bin"); //backup / restore selection
+                        DrawBottomSplash("/3ds/Decrypt9/UI/nand0.bin"); //backup / restore selection
                         InputWait();
                         
                         u32 pad_state = InputWait();
                         
                         if(pad_state & BUTTON_Y) {
-                            DrawBottomSplash("/3ds/Decrypt9/UI/npart1.bin"); //restore yes / no
+                            DrawBottomSplash("/3ds/Decrypt9/UI/nand1.bin"); //restore yes / no
                             InputWait();
                             
-                            if(InputWait() & BUTTON_A) { //restore ctr nand partitions
-                                DrawBottomSplash("/3ds/Decrypt9/UI/npart3.bin");
+                            if(InputWait() & BUTTON_A) { //restore nand
+                                DrawBottomSplash("/3ds/Decrypt9/UI/nand3.bin");
                                 ConsoleInit();
-                                ConsoleSetTitle("Restore CTR NAND Partitions");
+                                ConsoleSetTitle("NAND Restore");
                                 ConsoleShow();
-                                Debug("Restore NAND Partitions: %s!", InjectCtrPartitions() == 0 ? "succeeded" : "failed"); //menu4.bin
+                                Debug("Restore NAND: %s!", RestoreNand() == 0 ? "succeeded" : "failed"); //menu3.bin
                                 Debug("Press B to exit");
                                 while (true) {
                                     if (InputWait() & BUTTON_B) {
@@ -165,38 +144,56 @@ int MainMenu()
                                 break;
                             }
                         }
-                        else if(pad_state & BUTTON_X) { //dump ctr nand partitions
-                            DrawBottomSplash("/3ds/Decrypt9/UI/npart2.bin");
+                        else if(pad_state & BUTTON_X) { //dump nand
+                            DrawBottomSplash("/3ds/Decrypt9/UI/nand2.bin");
                             ConsoleInit();
-                            ConsoleSetTitle("Decrypt CTR NAND Partitions");
+                            ConsoleSetTitle("NAND Dumper");
                             ConsoleShow();
-                            Debug("Decrypt NAND Partitions: %s!", DecryptCtrPartitions() == 0 ? "succeeded" : "failed"); //menu4.bin
+                            Debug("NAND Padgen: %s!", DumpNand() == 0 ? "succeeded" : "failed"); //menu3.bin
                             Debug("Press B to exit");
                             while (true) {
                                 if (InputWait() & BUTTON_B) {
                                     DebugClear();
                                     break;
+                                    }
                                 }
                             }
                         }
-                    }
-                    else if (menu_idx == 5) {
-                        TOP_Current = 0;
-                        DrawBottomSplash("/3ds/Decrypt9/UI/npart4.bin"); //backup / restore selection
-                        InputWait();
-                        
-                        u32 pad_state = InputWait();
-                        
-                        if(pad_state & BUTTON_Y) {
-                            DrawBottomSplash("/3ds/Decrypt9/UI/npart5.bin"); //restore yes / no
+                        else if (menu_idx == 4) {
+                            TOP_Current = 0;
+                            DrawBottomSplash("/3ds/Decrypt9/UI/npart0.bin"); //backup / restore selection
                             InputWait();
                             
-                            if(InputWait() & BUTTON_A) { //restore twl nand partitions
-                                DrawBottomSplash("/3ds/Decrypt9/UI/npart7.bin");
+                            u32 pad_state = InputWait();
+                            
+                            if(pad_state & BUTTON_Y) {
+                                DrawBottomSplash("/3ds/Decrypt9/UI/npart1.bin"); //restore yes / no
+                                InputWait();
+                                
+                                if(InputWait() & BUTTON_A) { //restore ctr nand partitions
+                                    DrawBottomSplash("/3ds/Decrypt9/UI/npart3.bin");
+                                    ConsoleInit();
+                                    ConsoleSetTitle("Restore CTR NAND Partitions");
+                                    ConsoleShow();
+                                    Debug("Restore NAND Partitions: %s!", InjectCtrPartitions() == 0 ? "succeeded" : "failed"); //menu4.bin
+                                    Debug("Press B to exit");
+                                    while (true) {
+                                        if (InputWait() & BUTTON_B) {
+                                            DebugClear();
+                                            break;
+                                        }
+                                    }
+                                }
+                                else if (pad_state & BUTTON_B) { //quit restore
+                                    break;
+                                }
+                            }
+                            else if(pad_state & BUTTON_X) { //dump ctr nand partitions
+                                DrawBottomSplash("/3ds/Decrypt9/UI/npart2.bin");
                                 ConsoleInit();
-                                ConsoleSetTitle("Restore TWL NAND Partitions");
+                                ConsoleSetTitle("Decrypt CTR NAND Partitions");
                                 ConsoleShow();
-                                Debug("Restore NAND Partitions: %s!", InjectTwlAgbPartitions() == 0 ? "succeeded" : "failed"); //menu5.bin
+                                Debug("Decrypt NAND Partitions: %s!", DecryptCtrPartitions() == 0 ? "succeeded" : "failed"); //menu4.bin
                                 Debug("Press B to exit");
                                 while (true) {
                                     if (InputWait() & BUTTON_B) {
@@ -205,16 +202,56 @@ int MainMenu()
                                     }
                                 }
                             }
-                            else if (pad_state & BUTTON_B) { //quit restore
-                                break;
+                        }
+                        else if (menu_idx == 5) {
+                            TOP_Current = 0;
+                            DrawBottomSplash("/3ds/Decrypt9/UI/npart4.bin"); //backup / restore selection
+                            InputWait();
+                            
+                            u32 pad_state = InputWait();
+                            
+                            if(pad_state & BUTTON_Y) {
+                                DrawBottomSplash("/3ds/Decrypt9/UI/npart5.bin"); //restore yes / no
+                                InputWait();
+                                
+                                if(InputWait() & BUTTON_A) { //restore twl nand partitions
+                                    DrawBottomSplash("/3ds/Decrypt9/UI/npart7.bin");
+                                    ConsoleInit();
+                                    ConsoleSetTitle("Restore TWL NAND Partitions");
+                                    ConsoleShow();
+                                    Debug("Restore NAND Partitions: %s!", InjectTwlAgbPartitions() == 0 ? "succeeded" : "failed"); //menu5.bin
+                                    Debug("Press B to exit");
+                                    while (true) {
+                                        if (InputWait() & BUTTON_B) {
+                                            DebugClear();
+                                            break;
+                                        }
+                                    }
+                                }
+                                else if (pad_state & BUTTON_B) { //quit restore
+                                    break;
+                                }
+                            }
+                            else if(pad_state & BUTTON_X) { //dump twl nand partitions
+                                DrawBottomSplash("/3ds/Decrypt9/UI/npart6.bin");
+                                ConsoleInit();
+                                ConsoleSetTitle("Decrypt TWL NAND Partitions");
+                                ConsoleShow();
+                                Debug("Decrypt NAND Partitions: %s!", DecryptTwlAgbPartitions() == 0 ? "succeeded" : "failed"); //menu5.bin
+                                Debug("Press B to exit");
+                                while (true) {
+                                    if (InputWait() & BUTTON_B) {
+                                        DebugClear();
+                                        break;
+                                    }
+                                }
                             }
                         }
-                        else if(pad_state & BUTTON_X) { //dump twl nand partitions
-                            DrawBottomSplash("/3ds/Decrypt9/UI/npart6.bin");
+                        else if (menu_idx == 6) {
                             ConsoleInit();
-                            ConsoleSetTitle("Decrypt TWL NAND Partitions");
+                            ConsoleSetTitle("Decrypt Titlekeys File");
                             ConsoleShow();
-                            Debug("Decrypt NAND Partitions: %s!", DecryptTwlAgbPartitions() == 0 ? "succeeded" : "failed"); //menu5.bin
+                            Debug("Titlekey Decryption: %s!", DecryptTitlekeysFile() == 0 ? "succeeded" : "failed"); //menu6.bin
                             Debug("Press B to exit");
                             while (true) {
                                 if (InputWait() & BUTTON_B) {
@@ -223,38 +260,37 @@ int MainMenu()
                                 }
                             }
                         }
-                    }
-                    else if (menu_idx == 6) {
-                        ConsoleInit();
-                        ConsoleSetTitle("Decrypt Titlekeys File");
-                        ConsoleShow();
-                        Debug("Titlekey Decryption: %s!", DecryptTitlekeysFile() == 0 ? "succeeded" : "failed"); //menu6.bin
-                        Debug("Press B to exit");
-                        while (true) {
+                        else if (menu_idx == 7) {
+                            ConsoleInit();
+                            ConsoleSetTitle("Decrypt Titlekeys Nand");
+                            ConsoleShow();	
+                            Debug("Titlekey Decryptor: %s!", DecryptTitlekeysNand() == 0 ? "succeeded" : "failed"); //menu7.bin
+                            Debug("Press B to exit");
+                            while (true) {
+                                if (InputWait() & BUTTON_B) {
+                                    DebugClear();
+                                    break;
+                                }
+                            }
+                        }
+                        else if (menu_idx == 8) {
+                            ConsoleInit();
+                            ConsoleSetTitle("Ticket Dumper");
+                            ConsoleShow();
+                            Debug("Ticket Dump: %s!", DumpTicket() == 0 ? "succeeded" : "failed"); //menu8.bin
+                            Debug("Press B to exit");
+                            while (true) {
                             if (InputWait() & BUTTON_B) {
                                 DebugClear();
                                 break;
                             }
                         }
                     }
-                    else if (menu_idx == 7) {
+                    else if (menu_idx == 9) {
                         ConsoleInit();
-                        ConsoleSetTitle("Decrypt Titlekeys Nand");
-                        ConsoleShow();	
-                        Debug("Titlekey Decryptor: %s!", DecryptTitlekeysNand() == 0 ? "succeeded" : "failed"); //menu7.bin
-                        Debug("Press B to exit");
-                        while (true) {
-                            if (InputWait() & BUTTON_B) {
-                                DebugClear();
-                                break;
-                            }
-                        }
-                    }
-                    else if (menu_idx == 8) {
-                        ConsoleInit();
-                        ConsoleSetTitle("Ticket Dumper");
+                        ConsoleSetTitle("CTR ROM Decryptor");
                         ConsoleShow();
-                        Debug("Ticket Dump: %s!", DumpTicket() == 0 ? "succeeded" : "failed"); //menu8.bin
+                        Debug("Decrypt ROM: %s!", DecryptTitles() == 0 ? "succeeded" : "failed"); //menu9.bin
                         Debug("Press B to exit");
                         while (true) {
                         if (InputWait() & BUTTON_B) {
@@ -263,21 +299,8 @@ int MainMenu()
                         }
                     }
                 }
-                else if (menu_idx == 9) {
-                    ConsoleInit();
-                    ConsoleSetTitle("CTR ROM Decryptor");
-                    ConsoleShow();
-                    Debug("Decrypt ROM: %s!", DecryptTitles() == 0 ? "succeeded" : "failed"); //menu9.bin
-                    Debug("Press B to exit");
-                    while (true) {
-                    if (InputWait() & BUTTON_B) {
-                        DebugClear();
-                        break;
-                    }
-                }
             }
         }
-    }
 
 poweroff:
     DeinitFS();
