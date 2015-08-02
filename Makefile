@@ -130,10 +130,22 @@ bootstrap: $(OUTPUT_D)
 	
 brahma: bootstrap
 	@[ -d $(TOPDIR)/$(LOADER)/data ] || mkdir -p $(TOPDIR)/$(LOADER)/data
-	cp $(OUTPUT).bin $(TOPDIR)/$(LOADER)/data/payload.bin
+	@cp $(OUTPUT).bin $(TOPDIR)/$(LOADER)/data/payload.bin
 	@make --no-print-directory -C $(TOPDIR)/$(LOADER) -f $(TOPDIR)/$(LOADER)/Makefile
-	cp $(TOPDIR)/$(LOADER)/output/$(OUTPUT_N).3dsx $(OUTPUT).3dsx
-	cp $(TOPDIR)/$(LOADER)/output/$(OUTPUT_N).smdh $(OUTPUT).smdh
+	@cp $(TOPDIR)/$(LOADER)/output/$(OUTPUT_N).3dsx $(OUTPUT).3dsx
+	@cp $(TOPDIR)/$(LOADER)/output/$(OUTPUT_N).smdh $(OUTPUT).smdh
+	
+release: brahma bootstrap gateway
+	@[ -d $(TOPDIR)/release ] || mkdir -p $(TOPDIR)/release
+	@[ -d $(TOPDIR)/release/Decrypt9 ] || mkdir -p $(TOPDIR)/release/Decrypt9
+	@[ -d $(TOPDIR)/release/scripts ] || mkdir -p $(TOPDIR)/release/scripts
+	@cp $(OUTPUT_D)/Launcher.dat $(TOPDIR)/release
+	@cp $(OUTPUT).bin $(TOPDIR)/release
+	@cp $(OUTPUT).3dsx $(TOPDIR)/release/Decrypt9
+	@cp $(OUTPUT).smdh $(TOPDIR)/release/Decrypt9
+	@cp $(TOPDIR)/scripts/*.py $(TOPDIR)/release/scripts
+	@-rm -fr $(TOPDIR)/Decrypt9-brahma-d0k3-`date +'%d%m%Y'`
+	@mv --no-target-directory $(TOPDIR)/release $(TOPDIR)/Decrypt9-wip-d0k3-`date +'%d%m%Y'`
 	
 #---------------------------------------------------------------------------------
 clean:
