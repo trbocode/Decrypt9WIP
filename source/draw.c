@@ -142,10 +142,10 @@ void ShowProgress(u32 current, u32 total)
 
 void DrawTopSplash(char splash_file[]) {
     unsigned int n = 0, bin_size;
-    FileOpenSplash(splash_file);
+    FileOpen(splash_file);
     //Load the spash image
     bin_size = 0;
-    while ((n = FileReadSplash((void*)((u32)TOP_SCREEN0 + bin_size), 0x100000, bin_size)) > 0) {
+    while ((n = FileRead((void*)((u32)TOP_SCREEN0 + bin_size), 0x100000, bin_size)) > 0) {
         bin_size += n;
     }
     u32 *fb1 = (u32*)TOP_SCREEN0;
@@ -158,10 +158,10 @@ void DrawTopSplash(char splash_file[]) {
 
 void DrawBottomSplash(char splash_file[]) {
     unsigned int n = 0, bin_size;
-    FileOpenSplash(splash_file);
+    FileOpen(splash_file);
     //Load the spash image
     bin_size = 0;
-    while ((n = FileReadSplash((void*)((u32)BOT_SCREEN0 + bin_size), 0x100000, bin_size)) > 0) {
+    while ((n = FileRead((void*)((u32)BOT_SCREEN0 + bin_size), 0x100000, bin_size)) > 0) {
         bin_size += n;
     }
     u32 *fb1 = (u32*)BOT_SCREEN0;

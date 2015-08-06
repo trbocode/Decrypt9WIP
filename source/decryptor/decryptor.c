@@ -8,8 +8,6 @@
 #include "decryptor/crypto.h"
 #include "decryptor/features.h"
 #include "sha256.h"
-#include "fatfs/sdmmc.h"
-#include "console.h"
 
 #define BUFFER_ADDRESS      ((u8*) 0x21000000)
 #define BUFFER_MAX_SIZE     (1 * 1024 * 1024)
