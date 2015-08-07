@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python2
 
 #####
 #ncchinfo.bin format
@@ -176,7 +176,7 @@ def parseNCCH(fh, offs=0, idx=0, titleId='', standAlone=1):
         usesSeedCrypto = 1
         print tab + 'Uses 9.x SEED crypto'
     
-	
+    
     print ''
     
     if header.exhdrSize:
@@ -222,8 +222,8 @@ def parseNCCHSection(header, type, uses7xCrypto, usesSeedCrypto, doPrint, tab):
     
     counter = getNcchAesCounter(header, type)
     keyY = bytearray(header.signature[:16])
-    titleId = struct.unpack('<Q',(bytearray(header.programId[:8])))[0]   
-	
+    titleId = struct.unpack('<Q',(bytearray(header.programId[:8])))[0]
+    
     sectionMb = roundUp(sectionSize, 1024*1024) / (1024*1024)
     if sectionMb == 0:
         sectionMb = 1 #Should never happen, but meh.
