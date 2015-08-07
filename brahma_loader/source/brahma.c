@@ -290,7 +290,7 @@ s32 load_arm9_payload (char *filename) {
 s32 load_arm9_payload_from_mem (u8* data, u32 dsize) {
 	s32 result = 0;
 
-	if (dsize >= 8 && (dsize <= ARM9_PAYLOAD_MAX_SIZE)) {
+	if ((data != NULL) && (dsize >= 8) && (dsize <= ARM9_PAYLOAD_MAX_SIZE)) {
 		g_ext_arm9_size = dsize;
 		memcpy(g_ext_arm9_buf, data, dsize);
 		result = g_ext_arm9_loaded = 1;
@@ -449,10 +449,4 @@ s32 firm_reboot (void) {
 
 	/* we do not intend to return ... */
 	return fail_stage;
-}
-/* Changes framebuffer mode */
-void set_screen_mode(gfxScreen_t screen_top, gfxScreen_t screen_bottom) {
-    gfxSetScreenFormat(GFX_TOP, screen_top);
-    gfxSetScreenFormat(GFX_BOTTOM, screen_bottom);
-    gfxSwapBuffers();
 }

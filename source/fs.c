@@ -1,8 +1,6 @@
 #include "fs.h"
 #include "draw.h"
 
-#include <stdio.h>
-#include <string.h>
 #include "fatfs/ff.h"
 
 static FATFS fs;
@@ -180,21 +178,4 @@ uint64_t RemainingStorageSpace()
         return -1;
 
     return ClustersToBytes(&fs, free_clusters);
-}
-
-bool FileOpenSplash(const char* path)
-{
-    unsigned flags = FA_READ | FA_WRITE | FA_OPEN_EXISTING;
-    bool ret = (f_open(&file, path, flags) == FR_OK);
-    f_lseek(&file, 0);
-    f_sync(&file);
-    return ret;
-}
-
-size_t FileReadSplash(void* buf, size_t size, size_t foffset)
-{
-    UINT bytes_read = 0;
-    f_lseek(&file, foffset);
-    f_read(&file, buf, size, &bytes_read);
-    return bytes_read;
 }
