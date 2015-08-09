@@ -31,7 +31,7 @@ void ProcessEntry(MenuEntry* entry)
             break;
         }
     }
-    DrawLogo();
+    DrawSplashLogo();
 }
 
 u32 ProcessMenu(MenuEntry* menu, u32 nEntries)
@@ -39,7 +39,7 @@ u32 ProcessMenu(MenuEntry* menu, u32 nEntries)
     u32 menu_idx = 0;
     u32 pad_state;
     
-    DrawLogo();
+    DrawSplashLogo();
     
     while(true) {
         // draw top and bottom graphics

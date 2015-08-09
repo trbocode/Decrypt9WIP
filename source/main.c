@@ -59,7 +59,6 @@ int main()
     u32 result;
     
     InitFS();
-    DebugClearAll();
     Initialize();
     
     result = ProcessMenu(menu, sizeof(menu) / sizeof(MenuEntry));
