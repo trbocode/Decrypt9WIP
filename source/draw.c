@@ -22,8 +22,6 @@
 
 static int current_y = START_Y;
 
-u8 *tmpscreen = (u8*)0x26000000;
-
 void ClearScreen(u8* screen, int color)
 {
     for (int i = 0; i < (SCREEN_WIDTH * SCREEN_HEIGHT); i++) {
@@ -138,6 +136,21 @@ void ShowProgress(u32 current, u32 total)
         DrawStringF(SCREEN_WIDTH - 40, SCREEN_HEIGHT - 20, "%3i%%", current / (total/100));
     else
         DrawStringF(SCREEN_WIDTH - 40, SCREEN_HEIGHT - 20, "    ");
+}
+
+void DrawSplash(char* splash_file, u32 top_screen) {
+    char path[256];
+    
+    snprintf(path, 256, "/3ds/%s/UI/%s", APP_TITLE, splash_file);
+    FileOpen(path);
+    if (top_screen) { // Load the spash image - top screen
+        FileRead(TOP_SCREEN0, 400 * 240 * 3, 0);
+        memcpy(TOP_SCREEN1, TOP_SCREEN0, 400 * 240 * 3);
+    } else { // Load the spash image - bottom screen
+        FileRead(BOT_SCREEN0, 320 * 240 * 3, 0);
+        memcpy(BOT_SCREEN1, BOT_SCREEN0, 320 * 240 * 3);
+    }
+    FileClose();
 }
 
 void DrawTopSplash(char splash_file[]) {

@@ -43,7 +43,7 @@ CFLAGS	:=	-g -Wall -O2\
 			-ffast-math -std=c99\
 			$(ARCH)
 
-CFLAGS	+=	$(INCLUDE) -DEXEC_$(EXEC_METHOD) -DARM9
+CFLAGS	+=	$(INCLUDE) -DEXEC_$(EXEC_METHOD) -DARM9 -DAPP_TITLE=\"$(subst $(SPACE),,$(APP_TITLE))\"
 
 CXXFLAGS	:= $(CFLAGS) -fno-rtti -fno-exceptions
 
@@ -141,15 +141,15 @@ release:
 	@rm -fr $(BUILD) $(OUTPUT).bin $(OUTPUT).elf $(TOPDIR)/$(LOADER)/data
 	@make --no-print-directory brahma
 	@[ -d $(TOPDIR)/release ] || mkdir -p $(TOPDIR)/release
-	@[ -d $(TOPDIR)/release/Decrypt9 ] || mkdir -p $(TOPDIR)/release/Decrypt9
-	@[ -d $(TOPDIR)/release/Decrypt9/UI ] || mkdir -p $(TOPDIR)/release/Decrypt9/UI
+	@[ -d $(TOPDIR)/release/$(OUTPUT_N) ] || mkdir -p $(TOPDIR)/release/$(OUTPUT_N)
+	@[ -d $(TOPDIR)/release/$(OUTPUT_N)/UI ] || mkdir -p $(TOPDIR)/release/$(OUTPUT_N)/UI
 	@[ -d $(TOPDIR)/release/scripts ] || mkdir -p $(TOPDIR)/release/scripts
 	@cp $(OUTPUT_D)/Launcher.dat $(TOPDIR)/release
 	@cp $(OUTPUT).bin $(TOPDIR)/release
-	@cp $(OUTPUT).3dsx $(TOPDIR)/release/Decrypt9
-	@cp $(OUTPUT).smdh $(TOPDIR)/release/Decrypt9
+	@cp $(OUTPUT).3dsx $(TOPDIR)/release/$(OUTPUT_N)
+	@cp $(OUTPUT).smdh $(TOPDIR)/release/$(OUTPUT_N)
 	@cp $(TOPDIR)/scripts/*.py $(TOPDIR)/release/scripts
-	@cp $(TOPDIR)/UI/*.bin $(TOPDIR)/release/Decrypt9/UI
+	@cp $(TOPDIR)/UI/*.bin $(TOPDIR)/release/$(OUTPUT_N)/UI
 	
 #---------------------------------------------------------------------------------
 clean:

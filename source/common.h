@@ -25,6 +25,10 @@
     ({ __typeof__ (a) _a = (a); \
        __typeof__ (b) _b = (b); \
        _a < _b ? _a : _b; })
+    
+// customizations
+#define DANGER_ZONE
+#define WORKDIR "/Decrypt9"
 
 inline char* strupper(const char* str) {
     char* buffer = (char*)malloc(strlen(str) + 1);

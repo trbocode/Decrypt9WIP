@@ -56,5 +56,6 @@ void DrawPixel(int x, int y, int color, int screen);
 void DrawUI();
 void DrawFreeSpace();
 void DebugClearAll();
+void DrawSplash(char* splash_file, u32 top_screen);
 void DrawTopSplash(char splash_file[]);
 void DrawBottomSplash(char splash_file[]);
