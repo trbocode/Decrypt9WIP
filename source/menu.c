@@ -1,5 +1,4 @@
 #include "draw.h"
-#include "console.h"
 #include "hid.h"
 #include "menu.h"
 
@@ -20,17 +19,11 @@ void ProcessEntry(MenuEntry* entry)
     if (entry->gfxProcess != NULL) // process graphic (if available)
         DrawSplash(entry->gfxProcess, 0);
     
-    ConsoleInit();
-    ConsoleSetTitle(entry->longTitle);
-    ConsoleShow();
+    DebugSetTitle(entry->longTitle);
+    DebugClear();
     Debug("%s: %s!", entry->shortTitle, entry->function() == 0 ? "succeeded" : "failed");
     Debug("Press B to exit");
-    while (true) {
-        if (InputWait() & BUTTON_B) {
-            DebugClear();
-            break;
-        }
-    }
+    while (!(InputWait() & BUTTON_B));
     DrawSplashLogo();
 }
 

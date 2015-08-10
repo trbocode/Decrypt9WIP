@@ -39,18 +39,18 @@
 #define PURPLE      RGB(0x66, 0x00, 0xFF)
 
 void ClearScreen(unsigned char *screen, int color);
+void DrawPixel(int x, int y, int color, int screen);
 void DrawCharacter(unsigned char *screen, int character, int x, int y, int color, int bgcolor);
 
 void DrawString(unsigned char *screen, const char *str, int x, int y, int color, int bgcolor);
 void DrawStringF(int x, int y, int color, int bgcolor, const char *format, ...);
 
+void DebugInit();
+void DebugSetTitle(const char* title);
 void DebugClear();
-void ConsoleClear();
 void Debug(const char *format, ...);
 
 void ShowProgress(u32 current, u32 total);
-
-void DrawPixel(int x, int y, int color, int screen);
 
 void DrawSplash(char* splash_file, u32 use_top_screen);
 void DrawSplashLogo();

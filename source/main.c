@@ -1,6 +1,5 @@
 #include "common.h"
 #include "draw.h"
-#include "console.h"
 #include "fs.h"
 #include "menu.h"
 #include "i2c.h"
@@ -43,23 +42,12 @@ void PowerOff()
     while (true);
 }
 
-void Initialize()
-{
-    ConsoleSetXY(0, 0);
-    ConsoleSetWH(398, 238);
-    ConsoleSetBorderColor(PURPLE);
-    ConsoleSetTextColor(WHITE);
-    ConsoleSetBackgroundColor(BLACK);
-    ConsoleSetSpacing(2);
-    ConsoleSetBorderWidth(2);
-}
-
 int main()
 {
     u32 result;
     
     InitFS();
-    Initialize();
+    DebugInit();
     
     result = ProcessMenu(menu, sizeof(menu) / sizeof(MenuEntry));
     

@@ -15,12 +15,6 @@
 #define BG_M_COLOR (RGB(0x30, 0x30, 0x30))
 #define FONT_COLOR (RGB(0xFF, 0xFF, 0xFF))
 
-#define START_Y 30
-#define END_Y   (SCREEN_HEIGHT - 10)
-#define START_X 10
-#define END_X   (SCREEN_WIDTH - 10)
-
-static int current_y = START_Y;
 
 void ClearScreen(u8* screen, int color)
 {
@@ -28,6 +22,16 @@ void ClearScreen(u8* screen, int color)
         *(screen++) = color >> 16;  // B
         *(screen++) = color >> 8;   // G
         *(screen++) = color & 0xFF; // R
+    }
+}
+
+void DrawPixel(int x, int y, int color, int screen){
+    if(color != TRANSPARENT){
+        int coord = (SCREEN_HEIGHT * BYTES_PER_PIXEL * x) + (SCREEN_HEIGHT - y) * BYTES_PER_PIXEL;
+        u8* screenPos = (u8*) screen + coord;
+        *(screenPos + 0) = (color >> 16) & 0xFF;
+        *(screenPos + 1) = (color >>  8) & 0xFF;
+        *(screenPos + 2) = (color >>  0) & 0xFF;
     }
 }
 
@@ -73,38 +77,37 @@ void DrawStringF(int x, int y, int color, int bgcolor, const char *format, ...) 
     DrawString(TOP_SCREEN1, str, x, y, color, bgcolor);
 }
 
+void DebugInit()
+{
+    ConsoleSetBorderColor(PURPLE);
+    ConsoleSetTextColor(WHITE);
+    ConsoleSetBackgroundColor(BLACK);
+}
+
+void DebugSetTitle(const char* title)
+{
+    ConsoleSetTitle(title);
+}
+
 void DebugClear()
 {
     ClearScreen(TOP_SCREEN0, BG_COLOR);
     ClearScreen(TOP_SCREEN1, BG_COLOR);
-    current_y = START_Y;
-}
-
-void ConsoleClear()
-{
-    ClearScreen(TOP_SCREEN0, BG_COLOR);
-    ClearScreen(TOP_SCREEN1, BG_COLOR);
+    ConsoleInit();
     ConsoleShow();
-    current_y = START_Y;
 }
 
 void Debug(const char *format, ...)
 {
-    char str[256] = {};
+    char str[64] = {};
     va_list va;
 
     va_start(va, format);
-    vsnprintf(str, ((END_X - START_X) / 8) + 1, format, va);
+    vsnprintf(str, 64, format, va);
     va_end(va);
     
-    if (current_y >= END_Y) {
-        ConsoleClear();
-    }
-
-    DrawString(TOP_SCREEN0, str, START_X, current_y, RGB(255, 255, 255), RGB(0, 0, 0));
-    DrawString(TOP_SCREEN1, str, START_X, current_y, RGB(255, 255, 255), RGB(0, 0, 0));
-
-    current_y += 10;
+    ConsoleAddText(str);
+    ConsoleShow();
 }
 
 void ShowProgress(u32 current, u32 total)
@@ -113,16 +116,6 @@ void ShowProgress(u32 current, u32 total)
         DrawStringF(SCREEN_WIDTH - 40, SCREEN_HEIGHT - 20, FONT_COLOR, BG_COLOR, "%3i%%", current / (total/100));
     else
         DrawStringF(SCREEN_WIDTH - 40, SCREEN_HEIGHT - 20, FONT_COLOR, BG_COLOR, "    ");
-}
-
-void DrawPixel(int x, int y, int color, int screen){
-    if(color != TRANSPARENT){
-        int coord = (SCREEN_HEIGHT * BYTES_PER_PIXEL * x) + (SCREEN_HEIGHT - y) * BYTES_PER_PIXEL;
-        u8* screenPos = (u8*) screen + coord;
-        *(screenPos + 0) = (color >> 16) & 0xFF;
-        *(screenPos + 1) = (color >>  8) & 0xFF;
-        *(screenPos + 2) = (color >>  0) & 0xFF;
-    }
 }
 
 void DrawSplash(char* splash_file, u32 use_top_screen) {
