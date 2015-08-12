@@ -2,8 +2,6 @@
 
 #include "common.h"
 
-#define WORKDIR "/Decrypt9"
-
 bool InitFS();
 void DeinitFS();
 

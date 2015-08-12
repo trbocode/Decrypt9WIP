@@ -29,32 +29,28 @@
 #endif
 
 //Colors Macros
-#define BLACK 		RGB(0, 0, 0)
-#define WHITE		RGB(255, 255, 255)
-#define RED			RGB(255, 0, 0)
-#define GREEN		RGB(0, 255, 0)
-#define BLUE		RGB(0, 0, 255)
-#define GREY		RGB(0x77, 0x77, 0x77)
-#define TRANSPARENT RGB(255, 0, 255)
-#define PURPLE		RGB(102, 0, 255)
+#define BLACK       RGB(0x00, 0x00, 0x00)
+#define WHITE       RGB(0xFF, 0xFF, 0xFF)
+#define RED         RGB(0xFF, 0x00, 0x00)
+#define GREEN       RGB(0x00, 0xFF, 0x00)
+#define BLUE        RGB(0xFF, 0x00, 0xFF)
+#define GREY        RGB(0x77, 0x77, 0x77)
+#define TRANSPARENT RGB(0xFF, 0x00, 0xFF)
+#define PURPLE      RGB(0x66, 0x00, 0xFF)
 
 void ClearScreen(unsigned char *screen, int color);
+void DrawPixel(int x, int y, int color, int screen);
 void DrawCharacter(unsigned char *screen, int character, int x, int y, int color, int bgcolor);
 
 void DrawString(unsigned char *screen, const char *str, int x, int y, int color, int bgcolor);
-void DrawStringF(int x, int y, const char *format, ...);
-void DrawStringM(int x, int y, const char *format, ...);
+void DrawStringF(int x, int y, int color, int bgcolor, const char *format, ...);
 
+void DebugInit();
+void DebugSetTitle(const char* title);
 void DebugClear();
-void ConsoleClear();
 void Debug(const char *format, ...);
 
 void ShowProgress(u32 current, u32 total);
 
-void DrawPixel(int x, int y, int color, int screen);
-
-void DrawUI();
-void DrawFreeSpace();
-void DebugClearAll();
-void DrawTopSplash(char splash_file[]);
-void DrawBottomSplash(char splash_file[]);
+void DrawSplash(char* splash_file, u32 use_top_screen);
+void DrawSplashLogo();

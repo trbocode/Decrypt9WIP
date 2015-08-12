@@ -1,3 +1,16 @@
 #pragma once
 
-int MainMenu();
+#include "common.h"
+
+typedef struct {
+    u32 nSub;
+    char* longTitle;
+    char* shortTitle;
+    u32 (*function)(void);
+    char* gfxMenu;
+    char* gfxSelect;
+    char* gfxWarning;
+    char* gfxProcess;    
+} MenuEntry;
+
+u32 ProcessMenu(MenuEntry* menu, u32 nEntries);

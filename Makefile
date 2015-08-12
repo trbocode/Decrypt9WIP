@@ -16,15 +16,22 @@ include $(DEVKITARM)/ds_rules
 # INCLUDES is a list of directories containing header files
 # SPECS is the directory containing the important build and link files
 #---------------------------------------------------------------------------------
-export TARGET		:=	$(shell basename $(CURDIR))
 BUILD		:=	build
 SOURCES		:=	source source/fatfs source/decryptor source/abstraction
 DATA		:=	data
 INCLUDES	:=	include source source/fatfs
 
 #---------------------------------------------------------------------------------
-# Setup some defines
+# Include AppInfo / define Loader
 #---------------------------------------------------------------------------------
+ifneq ($(BUILD),$(notdir $(CURDIR)))
+TOPDIR ?= $(CURDIR)
+else
+TOPDIR ?= $(CURDIR)/..
+endif
+
+include $(TOPDIR)/resources/AppInfo
+LOADER			:= brahma_loader
 
 #---------------------------------------------------------------------------------
 # options for code generation
@@ -36,16 +43,18 @@ CFLAGS	:=	-g -Wall -O2\
 			-ffast-math -std=c99\
 			$(ARCH)
 
-CFLAGS	+=	$(INCLUDE) -DEXEC_$(EXEC_METHOD) -DARM9
+CFLAGS	+=	$(INCLUDE) -DEXEC_$(EXEC_METHOD) -DARM9 -DAPP_TITLE=\"$(subst $(SPACE),,$(APP_TITLE))\"
 
 CXXFLAGS	:= $(CFLAGS) -fno-rtti -fno-exceptions
 
 ASFLAGS	:=	-g $(ARCH) -DEXEC_$(EXEC_METHOD)
-LDFLAGS	=	-nostartfiles -g $(ARCH) -Wl,-Map,$(TARGET).map
+LDFLAGS	=	-nostartfiles -g $(ARCH) -Wl,-Map,$(notdir $*.map)
 
 ifeq ($(EXEC_METHOD),GATEWAY)
 	LDFLAGS += --specs=../gateway.specs
 else ifeq ($(EXEC_METHOD),BOOTSTRAP)
+	LDFLAGS += --specs=../bootstrap.specs
+else ifeq ($(EXEC_METHOD),BRAHMA)
 	LDFLAGS += --specs=../bootstrap.specs
 endif
 
@@ -64,9 +73,9 @@ LIBDIRS	:=
 ifneq ($(BUILD),$(notdir $(CURDIR)))
 #---------------------------------------------------------------------------------
 
-export OUTPUT_C	:=	$(CURDIR)/brahma_loader/data
 export OUTPUT_D	:=	$(CURDIR)/output
-export OUTPUT	:=	$(OUTPUT_D)/$(TARGET)
+export OUTPUT_N	:=	$(subst $(SPACE),,$(APP_TITLE))
+export OUTPUT	:=	$(OUTPUT_D)/$(OUTPUT_N)
 
 export VPATH	:=	$(foreach dir,$(SOURCES),$(CURDIR)/$(dir)) \
 			$(foreach dir,$(DATA),$(CURDIR)/$(dir))
@@ -101,10 +110,10 @@ export INCLUDE	:=	$(foreach dir,$(INCLUDES),-I$(CURDIR)/$(dir)) \
 
 export LIBPATHS	:=	$(foreach dir,$(LIBDIRS),-L$(dir)/lib)
 
-.PHONY: $(BUILD) clean all gateway bootstrap
+.PHONY: $(BUILD) clean all gateway bootstrap brahma release
 
 #---------------------------------------------------------------------------------
-all: $(OUTPUT_D) bootstrap
+all: $(OUTPUT_D) brahma
 
 $(OUTPUT_D):
 	@[ -d $@ ] || mkdir -p $@
@@ -116,19 +125,37 @@ gateway: $(OUTPUT_D)
 	dd if=$(OUTPUT).bin of=$(OUTPUT_D)/Launcher.dat bs=1497296 seek=1 conv=notrunc
 
 bootstrap: $(OUTPUT_D)
-	@cd $(CURDIR)/brahma_loader && mkdir -p data
 	@[ -d $(BUILD) ] || mkdir -p $(BUILD)
 	@make --no-print-directory -C $(BUILD) -f $(CURDIR)/Makefile EXEC_METHOD=BOOTSTRAP
-	@cp $(OUTPUT).bin payload.bin
-	@mv payload.bin $(OUTPUT_C)
-	@make -C brahma_loader
-	@rm -fr $(OUTPUT).elf
-
+	
+brahma: bootstrap
+	@[ -d $(TOPDIR)/$(LOADER)/data ] || mkdir -p $(TOPDIR)/$(LOADER)/data
+	@cp $(OUTPUT).bin $(TOPDIR)/$(LOADER)/data/payload.bin
+	@make --no-print-directory -C $(TOPDIR)/$(LOADER) -f $(TOPDIR)/$(LOADER)/Makefile
+	@cp $(TOPDIR)/$(LOADER)/output/$(OUTPUT_N).3dsx $(OUTPUT).3dsx
+	@cp $(TOPDIR)/$(LOADER)/output/$(OUTPUT_N).smdh $(OUTPUT).smdh
+	
+release:
+	@rm -fr $(BUILD) $(OUTPUT_D) $(TOPDIR)/release
+	@make --no-print-directory gateway
+	@rm -fr $(BUILD) $(OUTPUT).bin $(OUTPUT).elf $(TOPDIR)/$(LOADER)/data
+	@make --no-print-directory brahma
+	@[ -d $(TOPDIR)/release ] || mkdir -p $(TOPDIR)/release
+	@[ -d $(TOPDIR)/release/$(OUTPUT_N) ] || mkdir -p $(TOPDIR)/release/$(OUTPUT_N)
+	@[ -d $(TOPDIR)/release/$(OUTPUT_N)/UI ] || mkdir -p $(TOPDIR)/release/$(OUTPUT_N)/UI
+	@[ -d $(TOPDIR)/release/scripts ] || mkdir -p $(TOPDIR)/release/scripts
+	@cp $(OUTPUT_D)/Launcher.dat $(TOPDIR)/release
+	@cp $(OUTPUT).bin $(TOPDIR)/release
+	@cp $(OUTPUT).3dsx $(TOPDIR)/release/$(OUTPUT_N)
+	@cp $(OUTPUT).smdh $(TOPDIR)/release/$(OUTPUT_N)
+	@cp $(TOPDIR)/scripts/*.py $(TOPDIR)/release/scripts
+	@cp $(TOPDIR)/UI/*.bin $(TOPDIR)/release/$(OUTPUT_N)/UI
+	
 #---------------------------------------------------------------------------------
 clean:
 	@echo clean ...
-	@rm -fr $(BUILD) $(OUTPUT_D)
-	cd $(CURDIR)/brahma_loader && make clean
+	@make clean --no-print-directory -C $(TOPDIR)/$(LOADER) -f $(TOPDIR)/$(LOADER)/Makefile
+	@rm -fr $(BUILD) $(OUTPUT_D) $(TOPDIR)/$(LOADER)/data
 
 
 #---------------------------------------------------------------------------------

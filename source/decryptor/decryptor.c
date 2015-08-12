@@ -958,6 +958,7 @@ u32 DecryptCtrPartitions() {
     return result;
 }
 
+#ifdef DANGER_ZONE
 u32 EncryptMemToNand(u8* buffer, u32 offset, u32 size, PartitionInfo* partition)
 {
     DecryptBufferInfo info = {.keyslot = partition->keyslot, .setKeyY = 0, .size = size, .buffer = buffer, .mode = partition->mode};
@@ -1093,3 +1094,4 @@ u32 InjectCtrPartitions() {
     
     return result;
 }
+#endif
