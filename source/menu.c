@@ -43,9 +43,9 @@ u32 ProcessMenu(MenuEntry* menu, u32 nEntries)
             return 1;
         } else if (pad_state & BUTTON_SELECT) {
             return 2;
-        } else if (pad_state & (BUTTON_RIGHT | BUTTON_R1) && menu_idx != nEntries - 1) {
+        } else if (pad_state & (BUTTON_DOWN | BUTTON_RIGHT | BUTTON_R1) && menu_idx != nEntries - 1) {
             menu_idx += (menu[menu_idx].nSub + 1); // move right
-        } else if (pad_state & (BUTTON_LEFT | BUTTON_L1) && menu_idx != 0) {
+        } else if (pad_state & (BUTTON_UP | BUTTON_LEFT | BUTTON_L1) && menu_idx != 0) {
             menu_idx -= (menu[menu_idx-1].nSub + 1); // move left
         } else if (pad_state & BUTTON_A) { // process action
             if (menu[menu_idx].nSub == 0) { // if there are no subentries...

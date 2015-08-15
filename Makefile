@@ -16,6 +16,7 @@ include $(DEVKITARM)/ds_rules
 # INCLUDES is a list of directories containing header files
 # SPECS is the directory containing the important build and link files
 #---------------------------------------------------------------------------------
+export TARGET	:= $(shell basename $(CURDIR))
 BUILD		:=	build
 SOURCES		:=	source source/fatfs source/decryptor source/abstraction
 DATA		:=	data
@@ -113,7 +114,7 @@ export LIBPATHS	:=	$(foreach dir,$(LIBDIRS),-L$(dir)/lib)
 .PHONY: $(BUILD) clean all gateway bootstrap brahma release
 
 #---------------------------------------------------------------------------------
-all: $(OUTPUT_D) brahma
+all: $(OUTPUT_D) cakehax
 
 $(OUTPUT_D):
 	@[ -d $@ ] || mkdir -p $@
@@ -134,6 +135,12 @@ brahma: bootstrap
 	@make --no-print-directory -C $(TOPDIR)/$(LOADER) -f $(TOPDIR)/$(LOADER)/Makefile
 	@cp $(TOPDIR)/$(LOADER)/output/$(OUTPUT_N).3dsx $(OUTPUT).3dsx
 	@cp $(TOPDIR)/$(LOADER)/output/$(OUTPUT_N).smdh $(OUTPUT).smdh
+
+cakehax: $(OUTPUT_D)
+	@[ -d $(BUILD) ] || mkdir -p $(BUILD)
+	@make --no-print-directory -C $(BUILD) -f $(CURDIR)/Makefile EXEC_METHOD=GATEWAY
+	@make dir_out=$(OUTPUT_D) name=$(TARGET).dat -C CakeHax bigpayload
+	dd if=$(OUTPUT).bin of=$(OUTPUT).dat bs=512 seek=160
 	
 release:
 	@rm -fr $(BUILD) $(OUTPUT_D) $(TOPDIR)/release
@@ -156,6 +163,7 @@ clean:
 	@echo clean ...
 	@make clean --no-print-directory -C $(TOPDIR)/$(LOADER) -f $(TOPDIR)/$(LOADER)/Makefile
 	@rm -fr $(BUILD) $(OUTPUT_D) $(TOPDIR)/$(LOADER)/data
+	@make dir_out=$(OUTPUT_D) name=$(TARGET).dat -C CakeHax clean
 
 
 #---------------------------------------------------------------------------------
@@ -172,7 +180,7 @@ $(OUTPUT).elf	:	$(OFILES)
 
 #---------------------------------------------------------------------------------
 %.bin: %.elf
-	@$(OBJCOPY) -O binary $< $@
+	@$(OBJCOPY) --set-section-flags .bss=alloc,load,contents -O binary $< $@
 	@echo built ... $(notdir $@)
 
 

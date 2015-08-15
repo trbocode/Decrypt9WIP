@@ -15,3 +15,4 @@ u32 DecryptTitles(void);
 u32 RestoreNand(void);
 u32 InjectTwlAgbPartitions(void);
 u32 InjectCtrPartitions(void);
+u32 FirmPadgen(void);

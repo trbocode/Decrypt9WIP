@@ -10,7 +10,9 @@ typedef struct {
     char* gfxMenu;
     char* gfxSelect;
     char* gfxWarning;
-    char* gfxProcess;    
+    char* gfxProcess;
+	char* gfxDone;
+	char* gfxFailed;
 } MenuEntry;
 
 u32 ProcessMenu(MenuEntry* menu, u32 nEntries);
