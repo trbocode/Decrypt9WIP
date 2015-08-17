@@ -136,15 +136,14 @@ brahma: bootstrap
 	@cp $(TOPDIR)/$(LOADER)/output/$(OUTPUT_N).3dsx $(OUTPUT).3dsx
 	@cp $(TOPDIR)/$(LOADER)/output/$(OUTPUT_N).smdh $(OUTPUT).smdh
 
-cakehax: $(OUTPUT_D)
-	@[ -d $(BUILD) ] || mkdir -p $(BUILD)
-	@make --no-print-directory -C $(BUILD) -f $(CURDIR)/Makefile EXEC_METHOD=GATEWAY
+cakehax: gateway
 	@make dir_out=$(OUTPUT_D) name=$(TARGET).dat -C CakeHax bigpayload
 	dd if=$(OUTPUT).bin of=$(OUTPUT).dat bs=512 seek=160
 	
 release:
 	@rm -fr $(BUILD) $(OUTPUT_D) $(TOPDIR)/release
 	@make --no-print-directory gateway
+	@-make --no-print-directory cakehax
 	@rm -fr $(BUILD) $(OUTPUT).bin $(OUTPUT).elf $(TOPDIR)/$(LOADER)/data
 	@make --no-print-directory brahma
 	@[ -d $(TOPDIR)/release ] || mkdir -p $(TOPDIR)/release
@@ -152,6 +151,7 @@ release:
 	@[ -d $(TOPDIR)/release/$(OUTPUT_N)/UI ] || mkdir -p $(TOPDIR)/release/$(OUTPUT_N)/UI
 	@[ -d $(TOPDIR)/release/scripts ] || mkdir -p $(TOPDIR)/release/scripts
 	@cp $(OUTPUT_D)/Launcher.dat $(TOPDIR)/release
+	@-cp $(OUTPUT).dat $(TOPDIR)/release
 	@cp $(OUTPUT).bin $(TOPDIR)/release
 	@cp $(OUTPUT).3dsx $(TOPDIR)/release/$(OUTPUT_N)
 	@cp $(OUTPUT).smdh $(TOPDIR)/release/$(OUTPUT_N)
@@ -162,8 +162,8 @@ release:
 clean:
 	@echo clean ...
 	@make clean --no-print-directory -C $(TOPDIR)/$(LOADER) -f $(TOPDIR)/$(LOADER)/Makefile
+	@-make clean --no-print-directory -C $(TOPDIR)/CakeHax -f $(TOPDIR)/CakeHax/Makefile
 	@rm -fr $(BUILD) $(OUTPUT_D) $(TOPDIR)/$(LOADER)/data
-	@make dir_out=$(OUTPUT_D) name=$(TARGET).dat -C CakeHax clean
 
 
 #---------------------------------------------------------------------------------
