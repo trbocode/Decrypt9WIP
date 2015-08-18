@@ -26,8 +26,9 @@
        __typeof__ (b) _b = (b); \
        _a < _b ? _a : _b; })
     
-// don't ever even think about enabling this unless you know exactly what you do
+// customizations - careful with DANGER_ZONE!
 // #define DANGER_ZONE
+// #define WORKDIR "/Decrypt9"
 
 inline char* strupper(const char* str) {
     char* buffer = (char*)malloc(strlen(str) + 1);

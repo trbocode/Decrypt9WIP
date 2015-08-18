@@ -414,7 +414,7 @@ u32 GetNandCtr(u8* ctr, u32 offset)
                 }
             }
         }
-            
+        
         if (ctr_start == NULL) {
             Debug("CTR Start not found!");
             return 1;

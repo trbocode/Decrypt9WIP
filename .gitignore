@@ -5,7 +5,9 @@ Decrypt9.3dsx
 Decrypt9.smdh
 /brahma_loader/build
 /brahma_loader/data
+/brahma_loader/output
 /build
 /output
+/release
 
 .DS_Store
