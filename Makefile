@@ -110,7 +110,7 @@ export INCLUDE	:=	$(foreach dir,$(INCLUDES),-I$(CURDIR)/$(dir)) \
 
 export LIBPATHS	:=	$(foreach dir,$(LIBDIRS),-L$(dir)/lib)
 
-.PHONY: $(BUILD) clean all gateway bootstrap brahma
+.PHONY: $(BUILD) clean all gateway bootstrap brahma release
 
 #---------------------------------------------------------------------------------
 all: $(OUTPUT_D) brahma
@@ -135,7 +135,11 @@ brahma: bootstrap
 	@cp $(TOPDIR)/$(LOADER)/output/$(OUTPUT_N).3dsx $(OUTPUT).3dsx
 	@cp $(TOPDIR)/$(LOADER)/output/$(OUTPUT_N).smdh $(OUTPUT).smdh
 	
-release: brahma bootstrap gateway
+release:
+	@rm -fr $(BUILD) $(OUTPUT_D) $(TOPDIR)/release
+	@make --no-print-directory gateway
+	@rm -fr $(BUILD) $(OUTPUT).bin $(OUTPUT).elf $(TOPDIR)/$(LOADER)/data
+	@make --no-print-directory brahma
 	@[ -d $(TOPDIR)/release ] || mkdir -p $(TOPDIR)/release
 	@[ -d $(TOPDIR)/release/Decrypt9 ] || mkdir -p $(TOPDIR)/release/Decrypt9
 	@[ -d $(TOPDIR)/release/scripts ] || mkdir -p $(TOPDIR)/release/scripts
