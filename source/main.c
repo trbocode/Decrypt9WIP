@@ -6,6 +6,7 @@
 #include "draw.h"
 #include "fs.h"
 #include "menu.h"
+#include "hid.h"
 #include "i2c.h"
 #include "decryptor/features.h"
 
@@ -51,12 +52,18 @@ MenuInfo menu[] =
     }
     #endif
 };
-        
+
 
 void Reboot()
 {
     i2cWriteRegister(I2C_DEV_MCU, 0x20, 1 << 2);
     while(true);
+}
+
+void PowerOff()
+{
+    i2cWriteRegister(I2C_DEV_MCU, 0x20, 1 << 0);
+    while (true);
 }
 
 int main()
