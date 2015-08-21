@@ -26,8 +26,9 @@
        __typeof__ (b) _b = (b); \
        _a < _b ? _a : _b; })
     
-// customizations - careful with DANGER_ZONE!
+// customizations - careful with DANGER_ZONE and NAND_SWITCH!
 // #define DANGER_ZONE
+// #define NAND_SWITCH
 // #define WORKDIR "/Decrypt9"
 
 inline char* strupper(const char* str) {
