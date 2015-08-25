@@ -10,9 +10,6 @@ void ProcessMenu(MenuInfo* info, u32 nMenus) {
     MenuInfo* currMenu = info;
     MenuInfo* nextMenu = (nMenus > 1) ? info + 1 : NULL;
     bool drawMenu = true;
-    #ifdef NAND_SWITCH
-    bool useEmuNand = false;
-    #endif
     
     while (true) {
         if (drawMenu) {
@@ -28,15 +25,9 @@ void ProcessMenu(MenuInfo* info, u32 nMenus) {
             Debug("");
             if (nextMenu != NULL) 
                 Debug("R: %s", nextMenu->name);
-            #ifdef NAND_SWITCH
-            Debug("L: Switch NAND");
-            #endif
             Debug("START: Reboot");
             Debug("");
             Debug("");
-            #ifdef NAND_SWITCH
-            Debug("Current NAND: %s", (useEmuNand) ? "EmuNAND" : "SysNAND");
-            #endif
             #ifdef WORKDIR
             Debug("Working directory: %s", WORKDIR);
             #endif
@@ -48,9 +39,6 @@ void ProcessMenu(MenuInfo* info, u32 nMenus) {
         for (u32 i = 0; i < 4; i++) {
             char* name = currMenu->entries[i].name;
             u32 (*function)(void) = currMenu->entries[i].function;
-            #ifdef NAND_SWITCH
-            SetNand(useEmuNand);
-            #endif
             if ((pad_state & buttonCode[i]) && (name != NULL) && (function != NULL)) {
                 DebugClear();
                 Debug("%s: %s!", name, (*function)() == 0 ? "succeeded" : "failed");
@@ -65,14 +53,7 @@ void ProcessMenu(MenuInfo* info, u32 nMenus) {
             currMenu = nextMenu;
             if (++nextMenu - info >= nMenus) nextMenu -= nMenus;
             drawMenu = true;
-        }
-        #ifdef NAND_SWITCH
-        else if (pad_state & BUTTON_L1) {
-            useEmuNand = !useEmuNand;
-            drawMenu = true;
-        }
-        #endif
-        else if (pad_state & BUTTON_START) {
+        } else if (pad_state & BUTTON_START) {
             break;
         }
     }
