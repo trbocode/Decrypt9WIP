@@ -5,8 +5,8 @@
 #include "common.h"
 #include "draw.h"
 #include "fs.h"
-#include "menu.h"
 #include "hid.h"
+#include "menu.h"
 #include "i2c.h"
 #include "decryptor/features.h"
 

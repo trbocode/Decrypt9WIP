@@ -8,12 +8,13 @@
 #include "decryptor/crypto.h"
 #include "decryptor/features.h"
 #include "sha256.h"
+#include "fatfs/sdmmc.h"
 
-#define BUFFER_ADDRESS      ((u8*) 0x21000000)
-#define BUFFER_MAX_SIZE     (1 * 1024 * 1024)
+#define BUFFER_ADDRESS  ((u8*) 0x21000000)
+#define BUFFER_MAX_SIZE (1 * 1024 * 1024)
 
-#define NAND_SECTOR_SIZE    0x200
-#define SECTORS_PER_READ    (BUFFER_MAX_SIZE / NAND_SECTOR_SIZE)
+#define NAND_SECTOR_SIZE 0x200
+#define SECTORS_PER_READ (BUFFER_MAX_SIZE / NAND_SECTOR_SIZE)
 
 #define TITLES_DIR          "D9titles"
 
@@ -66,7 +67,7 @@ u32 DecryptBuffer(DecryptBufferInfo *info)
         aes_decrypt((void*) buffer, (void*) buffer, ctr, 1, mode);
         add_ctr(ctr, 0x1);
     }
-    
+
     memcpy(info->CTR, ctr, 16);
     
     return 0;
@@ -134,7 +135,6 @@ u32 DecryptTitlekeysFile(void)
 
     if (!DebugFileCreate("decTitleKeys.bin", true))
         return 1;
-
     if (!DebugFileWrite(info, info->n_entries * sizeof(TitleKeyEntry) + 16, 0)) {
         FileClose();
         return 1;
@@ -149,12 +149,10 @@ u32 DecryptTitlekeysNand(void)
     PartitionInfo* ctrnand_info = &(partitions[(GetUnitPlatform() == PLATFORM_3DS) ? 5 : 6]);
     u8* buffer = BUFFER_ADDRESS;
     EncKeysInfo *info = (EncKeysInfo*) 0x20316000;
+    
     u32 nKeys = 0;
-    u8* titlekey;
-    u8* titleId;
-    u32 commonKeyIndex;
-    u32 offset;
-    u32 size;
+    u32 offset = 0;
+    u32 size = 0;
     
     Debug("Searching for ticket.db...");
     if (SeekFileInNand(&offset, &size, NULL, "TICKET  DB ", ctrnand_info) != 0) {
@@ -172,9 +170,9 @@ u32 DecryptTitlekeysNand(void)
         for (u32 i = 0; i < read_bytes - NAND_SECTOR_SIZE; i++) {
             if(memcmp(buffer + i, (u8*) "Root-CA00000003-XS0000000c", 26) == 0) {
                 u32 exid;
-                titleId = buffer + i + 0x9C;
-                commonKeyIndex = *(buffer + i + 0xB1);
-                titlekey = buffer + i + 0x7F;
+                u8* titleId = buffer + i + 0x9C;
+                u32 commonKeyIndex = *(buffer + i + 0xB1);
+                u8* titlekey = buffer + i + 0x7F;
                 for (exid = 0; exid < nKeys; exid++)
                     if (memcmp(titleId, info->entries[exid].titleId, 8) == 0)
                         break;
@@ -317,10 +315,13 @@ u32 NcchPadgen()
         } else if (info->entries[i].uses7xCrypto == 0xB) {
             Debug("This cannot be generated yet");
             return 1;
-        } else if (info->entries[i].uses7xCrypto)
+        } else if(info->entries[i].uses7xCrypto >> 8 == 0xDEC0DE) // magic value to manually specify keyslot
+            padInfo.keyslot = info->entries[i].uses7xCrypto & 0x3F;
+        else if (info->entries[i].uses7xCrypto)
             padInfo.keyslot = 0x25;
         else
             padInfo.keyslot = 0x2C;
+        Debug("Using keyslot: %02X", padInfo.keyslot);
 
         result = CreatePad(&padInfo);
         if (!result)
@@ -464,45 +465,45 @@ u32 SeekFileInNand(u32* offset, u32* size, u32* seekpos, const char* filename, P
     
     u32 cluster_size;
     u32 cluster_start;
-    u32 found = 0;
+    bool found = false;
     
-    
-    if (strlen(filename) != 8+3)
+    if (strnlen(filename, 16) != 8+3)
         return 1;
     
     DecryptNandToMem(buffer, p_offset, NAND_SECTOR_SIZE, partition);
-    cluster_start =
-        NAND_SECTOR_SIZE * ( *((u16*) (buffer + 0x0E)) + // FAT table start
-        ( *((u16*) (buffer + 0x16)) * buffer[0x10] ) ) + // FAT table size
-        *((u16*) (buffer + 0x11)) * 0x20; // root directory size
+    
+    // good FAT header description found here: http://www.compuphase.com/mbr_fat.htm
+    u32 fat_start = NAND_SECTOR_SIZE * (*((u16*) (buffer + 0x0E)));
+    u32 fat_size = NAND_SECTOR_SIZE * (*((u16*) (buffer + 0x16)) * buffer[0x10]);
+    u32 root_size = *((u16*) (buffer + 0x11)) * 0x20;
+    cluster_start = fat_start + fat_size + root_size;
     cluster_size = buffer[0x0D] * NAND_SECTOR_SIZE;
-    if (seekpos != NULL) {
-        if (cluster_start > *seekpos)
-            *seekpos = cluster_start;
-    }
     
-    for( u32 i = (seekpos == NULL) ? cluster_start : *seekpos; i < p_size; i += cluster_size ) {
+    if (seekpos != NULL && cluster_start > *seekpos)
+        *seekpos = cluster_start;
+    
+    for (u32 i = (seekpos == NULL) ? cluster_start : *seekpos; i < p_size; i += cluster_size) {
         DecryptNandToMem(buffer, p_offset + i, NAND_SECTOR_SIZE, partition);
-        if (memcmp(buffer, magic, 8+3) == 0) {
-            DecryptNandToMem(buffer, p_offset + i, cluster_size, partition);
-            for (u32 j = 0; j < cluster_size; j += 0x20) {
-                if (memcmp(buffer + j, filename, 8+3) == 0) {
-                    *offset = p_offset + cluster_start + (*((u16*) (buffer + j + 0x1A)) - 2) * cluster_size;
-                    *size = *((u32*) (buffer + j + 0x1C));
-                    if (*size > 0) {
-                        found = 1;
-                        if (seekpos != NULL)
-                            *seekpos = i + cluster_size;
-                        break;
-                    }
-                } else if (memcmp(buffer + j, zeroes, 8+3) == 0)
+        if (memcmp(buffer, magic, 8+3) != 0)
+            continue;
+        DecryptNandToMem(buffer, p_offset + i, cluster_size, partition);
+        for (u32 j = 0; j < cluster_size; j += 0x20) {
+            if (memcmp(buffer + j, filename, 8+3) == 0) {
+                *offset = p_offset + cluster_start + (*((u16*) (buffer + j + 0x1A)) - 2) * cluster_size;
+                *size = *((u32*) (buffer + j + 0x1C));
+                if (*size > 0) {
+                    found = true;
+                    if (seekpos != NULL)
+                        *seekpos = i + cluster_size;
                     break;
-            }
-            if (found) break;
+                }
+            } else if (memcmp(buffer + j, zeroes, 8+3) == 0)
+                break;
         }
+        if (found) break;
     }
     
-    return !found;
+    return (found) ? 0 : 1;
 }
 
 u32 DecryptNandToMem(u8* buffer, u32 offset, u32 size, PartitionInfo* partition)
