@@ -15,6 +15,8 @@
 #define NAND_SECTOR_SIZE    0x200
 #define SECTORS_PER_READ    (BUFFER_MAX_SIZE / NAND_SECTOR_SIZE)
 
+#define TITLES_DIR          "D9titles"
+
 #ifdef USE_EMUNAND
 #define sdmmc_nand_readsectors  sdmmc_sdcard_readsectors
 #define sdmmc_nand_writesectors sdmmc_sdcard_writesectors
@@ -779,19 +781,21 @@ u32 DecryptNcch(const char* filename, u32 offset)
 u32 DecryptTitles()
 {
     u8* buffer = (u8*) 0x20316000;
-    char filename[256];
     u32 n_processed = 0;
     u32 n_failed = 0;
     u32 n_unknown = 0;
     
-    if (!DirOpen("D9titles")) {
-        Debug("Could not open work directory!");
-        Debug("Titles to decrypt go to /D9titles!"); // !!! unsure
+    if (!DirOpen(TITLES_DIR)) {
+        Debug("Titles to decrypt go to %s/!", TITLES_DIR);
         return 1;
     }
     
-    memcpy(filename, "D9titles/", 9);
-    while (DirRead(filename + 9, 256 - 9)) {
+    char filename[256];
+    u32 path_len = strnlen(TITLES_DIR, 128);
+    memcpy(filename, TITLES_DIR, path_len);
+    filename[path_len++] = '/';
+    
+    while (DirRead(filename + path_len, 256 - path_len)) {
         if (!DebugFileOpen(filename))
             continue;
         if (!DebugFileRead(buffer, 0x200, 0x0)) {
