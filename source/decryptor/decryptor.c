@@ -274,7 +274,7 @@ u32 NcchPadgen()
 
     Debug("Number of entries: %i", info->n_entries);
 
-    for(u32 i = 0; i < info->n_entries; i++) {
+    for (u32 i = 0; i < info->n_entries; i++) {
         Debug("Creating pad number: %i. Size (MB): %i", i+1, info->entries[i].size_mb);
 
         PadInfo padInfo = {.setKeyY = 1, .size_mb = info->entries[i].size_mb, .mode = AES_CNT_CTRNAND_MODE};
@@ -306,9 +306,16 @@ u32 NcchPadgen()
         else
             memcpy(padInfo.keyY, info->entries[i].keyY, 16);
 
-        if(info->entries[i].uses7xCrypto == 0xA) // won't work on an Old 3DS
+        if (info->entries[i].uses7xCrypto == 0xA) { 
+            if (GetUnitPlatform() == PLATFORM_3DS) { // won't work on an Old 3DS
+                Debug("This can only be generated on N3DS");
+                return 1;
+            }
             padInfo.keyslot = 0x18;
-        else if(info->entries[i].uses7xCrypto)
+        } else if (info->entries[i].uses7xCrypto == 0xB) {
+            Debug("This cannot be generated yet");
+            return 1;
+        } else if (info->entries[i].uses7xCrypto)
             padInfo.keyslot = 0x25;
         else
             padInfo.keyslot = 0x2C;
@@ -595,20 +602,27 @@ u32 DecryptNcch(const char* filename, u32 offset)
     
     // check if encrypted
     if (ncch->flags[7] & 0x04) {
-        Debug("Partition is not encrypted!");
+        Debug("Partition is not encrypted");
         return 0;
     }
     
-    u32 uses7xCrypto = ncch->flags[3];
-    u32 usesSeedCrypto = ncch->flags[7] & 0x20;
-    u32 uses0x0ACrypto = (ncch->flags[3] == 0x0A);
+    bool uses7xCrypto = ncch->flags[3];
+    bool usesSeedCrypto = ncch->flags[7] & 0x20;
+    bool usesSec3Crypto = (ncch->flags[3] == 0x0A);
+    bool usesSec4Crypto = (ncch->flags[3] == 0x0B);
     
     Debug("Product Code: %s", ncch->productCode);
-    Debug("Crypto Flags: %s%s%s%s", (uses7xCrypto) ? "7x " : "", (uses0x0ACrypto) ? "7x0x0A " : "", (usesSeedCrypto) ? "Seed " : "", (!uses7xCrypto && !usesSeedCrypto) ? "none" : "" );
+    Debug("Crypto Flags: %s%s%s%s%s", (uses7xCrypto) ? "7x " : "", (usesSec3Crypto) ? "Sec3 " : "", (usesSec4Crypto) ? "Sec4 " : "", (usesSeedCrypto) ? "Seed " : "", (!uses7xCrypto && !usesSeedCrypto) ? "none" : "" );
    
+    // check secure4 crypto
+    if (usesSec4Crypto) {
+        Debug("This cannot be decrypted yet!");
+        return 1;
+    }
+        
     // check / setup 7x crypto
     if (uses7xCrypto && (GetUnitPlatform() == PLATFORM_3DS)) {
-        if (uses0x0ACrypto) {
+        if (usesSec3Crypto) {
             Debug("Can only be decrypted on N3DS!");
             return 1;
         }
@@ -670,7 +684,7 @@ u32 DecryptNcch(const char* filename, u32 offset)
     memcpy(info1.CTR, info0.CTR, 8);
     memcpy(info0.keyY, ncch->signature, 16);
     memcpy(info1.keyY, (usesSeedCrypto) ? seedKeyY : ncch->signature, 16);
-    info1.keyslot = (uses0x0ACrypto) ? 0x18 : ((uses7xCrypto) ? 0x25 : 0x2C);
+    info1.keyslot = (usesSec3Crypto) ? 0x18 : ((uses7xCrypto) ? 0x25 : 0x2C);
     
     // process ExHeader
     if (ncch->size_exthdr > 0) {
@@ -772,6 +786,7 @@ u32 DecryptTitles()
     
     if (!DirOpen("D9titles")) {
         Debug("Could not open work directory!");
+        Debug("Titles to decrypt go to /D9titles!"); // !!! unsure
         return 1;
     }
     
