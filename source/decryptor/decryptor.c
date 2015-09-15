@@ -16,7 +16,7 @@
 #define NAND_SECTOR_SIZE 0x200
 #define SECTORS_PER_READ (BUFFER_MAX_SIZE / NAND_SECTOR_SIZE)
 
-#define TITLES_DIR          "D9titles"
+#define TITLES_DIR "D9titles"
 
 #ifdef USE_EMUNAND
 #define sdmmc_nand_readsectors  sdmmc_sdcard_readsectors
@@ -919,7 +919,7 @@ u32 CreatePad(PadInfo *info)
 u32 DumpNand()
 {
     u8* buffer = BUFFER_ADDRESS;
-    u32 nand_size = (GetUnitPlatform() == PLATFORM_3DS) ? 0x3AF00000 : 0x4D800000;
+    u32 nand_size = getMMCDevice(0)->total_size * 0x200;
     u32 result = 0;
 
     Debug("Dumping System NAND. Size (MB): %u", nand_size / (1024 * 1024));
@@ -1028,7 +1028,7 @@ u32 EncryptFileToNand(const char* filename, u32 offset, u32 size, PartitionInfo*
 u32 RestoreNand()
 {
     u8* buffer = BUFFER_ADDRESS;
-    u32 nand_size = (GetUnitPlatform() == PLATFORM_3DS) ? 0x3AF00000 : 0x4D800000;
+    u32 nand_size = getMMCDevice(0)->total_size * 0x200;
     u32 result = 0;
 
     if (!DebugFileOpen("NAND.bin"))
