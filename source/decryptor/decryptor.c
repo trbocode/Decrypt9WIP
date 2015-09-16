@@ -255,25 +255,46 @@ u32 NcchPadgen()
         FileClose();
         return 1;
     }
-
     if (!info->n_entries || info->n_entries > MAX_ENTRIES) {
         FileClose();
         Debug("Too many/few entries in ncchinfo.bin");
         return 1;
     }
-    if (info->ncch_info_version != 0xF0000004) {
+    if (info->ncch_info_version == 0xF0000004) { // ncchinfo v4
+        if (!DebugFileRead(info->entries, info->n_entries * sizeof(NcchInfoEntry), 16)) {
+            FileClose();
+            return 1;
+        }
+    } else if (info->ncch_info_version == 0xF0000003) { // ncchinfo v3
+        // read ncchinfo v3 entry & convert to ncchinfo v4
+        for (u32 i = 0; i < info->n_entries; i++) {
+            u8* entry_data = (u8*) (info->entries + i);
+            if (!DebugFileRead(entry_data, 160, 16 + (160*i))) {
+                FileClose();
+                return 1;
+            }
+            memmove(entry_data + 56, entry_data + 48, 112);
+            *(u64*) (entry_data + 48) = 0;
+        }
+    } else { // unknown file / ncchinfo version
         FileClose();
-        Debug("Wrong version ncchinfo.bin");
-        return 1;
-    }
-    if (!DebugFileRead(info->entries, info->n_entries * sizeof(NcchInfoEntry), 16)) {
-        FileClose();
+        Debug("Incompatible version ncchinfo.bin");
         return 1;
     }
     FileClose();
 
     Debug("Number of entries: %i", info->n_entries);
 
+    // detect UTF-16 and convert to UTF-8 if found
+    for (u32 i = 0; i < info->n_entries; i++) {
+        if (info->entries[i].filename[1] != '\0')
+            continue;
+        for (j = 0; j < (112 / 2); j++)
+        for (u32 j = 0; j < (112 / 2); j++)
+            info->entries[i].filename[j] = info->entries[i].filename[j];
+        memset(info->entries[i].filename + (112/2), '\0', (112/2));
+    }
+            
     for (u32 i = 0; i < info->n_entries; i++) {
         Debug("Creating pad number: %i. Size (MB): %i", i+1, info->entries[i].size_mb);
 
