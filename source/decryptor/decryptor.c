@@ -289,9 +289,8 @@ u32 NcchPadgen()
     for (u32 i = 0; i < info->n_entries; i++) {
         if (info->entries[i].filename[1] != '\0')
             continue;
-        for (j = 0; j < (112 / 2); j++)
         for (u32 j = 0; j < (112 / 2); j++)
-            info->entries[i].filename[j] = info->entries[i].filename[j];
+            info->entries[i].filename[j] = info->entries[i].filename[j*2];
         memset(info->entries[i].filename + (112/2), '\0', (112/2));
     }
             
@@ -329,12 +328,12 @@ u32 NcchPadgen()
 
         if (info->entries[i].uses7xCrypto == 0xA) { 
             if (GetUnitPlatform() == PLATFORM_3DS) { // won't work on an Old 3DS
-                Debug("This can only be generated on N3DS");
+                Debug("This can only be generated on N3DS!");
                 return 1;
             }
             padInfo.keyslot = 0x18;
         } else if (info->entries[i].uses7xCrypto == 0xB) {
-            Debug("This cannot be generated yet");
+            Debug("Secure4 xorpad cannot be generated yet!");
             return 1;
         } else if(info->entries[i].uses7xCrypto >> 8 == 0xDEC0DE) // magic value to manually specify keyslot
             padInfo.keyslot = info->entries[i].uses7xCrypto & 0x3F;
@@ -640,7 +639,7 @@ u32 DecryptNcch(const char* filename, u32 offset)
    
     // check secure4 crypto
     if (usesSec4Crypto) {
-        Debug("This cannot be decrypted yet!");
+        Debug("Secure4 cannot be decrypted yet!");
         return 1;
     }
         
@@ -979,25 +978,27 @@ u32 DecryptNandPartition(PartitionInfo* p) {
     return DecryptNandToFile(filename, p->offset, p->size, p);
 }
 
-u32 DecryptTwlAgbPartitions() {
+u32 DecryptAllNandPartitions() {
     u32 result = 0;
+    bool o3ds = (GetUnitPlatform() == PLATFORM_3DS);
     
     result |= DecryptNandPartition(&(partitions[0])); // TWLN
     result |= DecryptNandPartition(&(partitions[1])); // TWLP
     result |= DecryptNandPartition(&(partitions[2])); // AGBSAVE
-    
-    return result;
-}
-    
-u32 DecryptCtrPartitions() {
-    u32 result = 0;
-    bool o3ds = (GetUnitPlatform() == PLATFORM_3DS);
-    
     result |= DecryptNandPartition(&(partitions[3])); // FIRM0
     result |= DecryptNandPartition(&(partitions[4])); // FIRM1
     result |= DecryptNandPartition(&(partitions[(o3ds) ? 5 : 6])); // CTRNAND O3DS / N3DS
 
     return result;
+}
+
+u32 DecryptTwlNandPartition() {
+    return DecryptNandPartition(&(partitions[0])); // TWLN
+}
+    
+u32 DecryptCtrNandPartition() {
+    bool o3ds = (GetUnitPlatform() == PLATFORM_3DS);
+    return DecryptNandPartition(&(partitions[(o3ds) ? 5 : 6])); // CTRNAND O3DS / N3DS
 }
 
 #ifdef DANGER_ZONE
@@ -1051,7 +1052,7 @@ u32 RestoreNand()
     u32 nand_size = getMMCDevice(0)->total_size * 0x200;
     u32 result = 0;
 
-    if (!DebugFileOpen("NAND.bin"))
+    if (!DebugFileOpen("/NAND.bin"))
         return 1;
     if (nand_size != FileGetSize()) {
         FileClose();
@@ -1116,24 +1117,26 @@ u32 InjectNandPartition(PartitionInfo* p) {
     return EncryptFileToNand(filename, p->offset, p->size, p);
 }
 
-u32 InjectTwlAgbPartitions() {
+u32 InjectAllNandPartitions() {
     u32 result = 1;
+    bool o3ds = (GetUnitPlatform() == PLATFORM_3DS);
     
     result &= InjectNandPartition(&(partitions[0])); // TWLN
     result &= InjectNandPartition(&(partitions[1])); // TWLP
     result &= InjectNandPartition(&(partitions[2])); // AGBSAVE
-    
-    return result;
-}
-
-u32 InjectCtrPartitions() {
-    u32 result = 1;
-    bool o3ds = (GetUnitPlatform() == PLATFORM_3DS);
-    
     result &= InjectNandPartition(&(partitions[3])); // FIRM0
     result &= InjectNandPartition(&(partitions[4])); // FIRM1
     result &= InjectNandPartition(&(partitions[(o3ds) ? 5 : 6])); // CTRNAND O3DS / N3DS
     
     return result;
+}
+
+u32 InjectTwlNandPartition() {
+    return InjectNandPartition(&(partitions[0])); // TWLN
+}
+
+u32 InjectCtrNandPartition() {
+    bool o3ds = (GetUnitPlatform() == PLATFORM_3DS);
+    return InjectNandPartition(&(partitions[(o3ds) ? 5 : 6])); // CTRNAND O3DS / N3DS
 }
 #endif

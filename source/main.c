@@ -26,18 +26,18 @@ MenuInfo menu[] =
         "NAND Options",
         {
             { "NAND Backup", &DumpNand },
-            { "TWL / AGB Partitions Dump", &DecryptTwlAgbPartitions },
-            { "CTR Partitions Dump", &DecryptCtrPartitions },
-            { "Decrypt Titles", &DecryptTitles }
+            { "All Partitions Dump", &DecryptAllNandPartitions },
+            { "TWLN Partition Dump", &DecryptTwlNandPartition },
+            { "CTRNAND Partition Dump", &DecryptCtrNandPartition }
         }
     },
     {
-        "Titlekey Options",
+        "Titles Options",
         {
             { "Titlekey Decrypt (file)", &DecryptTitlekeysFile },
             { "Titlekey Decrypt (NAND)", &DecryptTitlekeysNand },
             { "Ticket Dump", &DumpTicket },
-            { NULL, NULL }
+            { "Decrypt Titles", &DecryptTitles }
         }
     },
     #ifdef DANGER_ZONE
@@ -45,9 +45,9 @@ MenuInfo menu[] =
         "!DANGER_ZONE!",
         {
             { "NAND Restore", &RestoreNand },
-            { "TWL /AGB Partitions Inject", &InjectTwlAgbPartitions},
-            { "CTR Partitions Inject", &InjectCtrPartitions},
-            { NULL, NULL }
+            { "Available Partitions Inject", &InjectAllNandPartitions},
+            { "TWL Partition Inject", &InjectTwlNandPartition},
+            { "CTRNAND Partition Inject", &InjectCtrNandPartition}
         }
     }
     #endif
