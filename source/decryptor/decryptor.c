@@ -107,7 +107,7 @@ u32 DecryptTitlekeysFile(void)
 {
     EncKeysInfo *info = (EncKeysInfo*)0x20316000;
 
-    if (!DebugFileOpen("encTitleKeys.bin"))
+    if (!DebugFileOpen("/encTitleKeys.bin"))
         return 1;
     
     if (!DebugFileRead(info, 16, 0)) {
@@ -133,7 +133,7 @@ u32 DecryptTitlekeysFile(void)
     for (u32 i = 0; i < info->n_entries; i++)
         DecryptTitlekey(&(info->entries[i]));
 
-    if (!DebugFileCreate("decTitleKeys.bin", true))
+    if (!DebugFileCreate("/decTitleKeys.bin", true))
         return 1;
     if (!DebugFileWrite(info, info->n_entries * sizeof(TitleKeyEntry) + 16, 0)) {
         FileClose();
@@ -197,7 +197,7 @@ u32 DecryptTitlekeysNand(void)
     Debug("Decrypted %u unique Title Keys", nKeys);
     
     if(nKeys > 0) {
-        if (!DebugFileCreate("decTitleKeys.bin", true))
+        if (!DebugFileCreate("/decTitleKeys.bin", true))
             return 1;
         if (!DebugFileWrite(info, 0x10 + nKeys * 0x20, 0)) {
             FileClose();
@@ -218,7 +218,7 @@ u32 NcchPadgen()
     NcchInfo *info = (NcchInfo*)0x20316000;
     SeedInfo *seedinfo = (SeedInfo*)0x20400000;
 
-    if (DebugFileOpen("slot0x25KeyX.bin")) {
+    if (DebugFileOpen("/slot0x25KeyX.bin")) {
         u8 slot0x25KeyX[16] = {0};
         if (!DebugFileRead(&slot0x25KeyX, 16, 0)) {
             FileClose();
@@ -230,7 +230,7 @@ u32 NcchPadgen()
         Debug("7.x game decryption will fail on less than 7.x!");
     }
 
-    if (DebugFileOpen("seeddb.bin")) {
+    if (DebugFileOpen("/seeddb.bin")) {
         if (!DebugFileRead(seedinfo, 16, 0)) {
             FileClose();
             return 1;
@@ -249,7 +249,7 @@ u32 NcchPadgen()
         Debug("9.x seed crypto game decryption will fail!");
     }
 
-    if (!DebugFileOpen("ncchinfo.bin"))
+    if (!DebugFileOpen("/ncchinfo.bin"))
         return 1;
     if (!DebugFileRead(info, 16, 0)) {
         FileClose();
@@ -363,7 +363,7 @@ u32 SdPadgen()
     u8 movable_seed[0x120] = {0};
 
     // Load console 0x34 keyY from movable.sed if present on SD card
-    if (DebugFileOpen("movable.sed")) {
+    if (DebugFileOpen("/movable.sed")) {
         if (!DebugFileRead(&movable_seed, 0x120, 0)) {
             FileClose();
             return 1;
@@ -377,7 +377,7 @@ u32 SdPadgen()
         use_aeskey(0x34);
     }
 
-    if (!DebugFileOpen("SDinfo.bin"))
+    if (!DebugFileOpen("/SDinfo.bin"))
         return 1;
     if (!DebugFileRead(info, 4, 0)) {
         FileClose();
@@ -911,8 +911,7 @@ u32 CreatePad(PadInfo *info)
     u8* buffer = BUFFER_ADDRESS;
     u32 result = 0;
     
-    // No DebugFileCreate() here - messages are already given
-    if (!FileCreate((info->filename[0] == '/') ? info->filename + 1 : info->filename, true))
+    if (!FileCreate(info->filename, true)) // No DebugFileCreate() here - messages are already given
         return 1;
         
     DecryptBufferInfo decryptInfo = {.keyslot = info->keyslot, .setKeyY = info->setKeyY, .mode = info->mode, .buffer = buffer};
@@ -945,7 +944,7 @@ u32 DumpNand()
 
     Debug("Dumping System NAND. Size (MB): %u", nand_size / (1024 * 1024));
 
-    if (!DebugFileCreate("NAND.bin", true))
+    if (!DebugFileCreate("/NAND.bin", true))
         return 1;
 
     u32 n_sectors = nand_size / NAND_SECTOR_SIZE;

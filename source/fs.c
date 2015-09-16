@@ -29,6 +29,9 @@ void DeinitFS()
 
 bool FileOpen(const char* path)
 {
+    #ifdef WORKDIR
+    while (*path == '/' || *path == '\\') path++;
+    #endif
     unsigned flags = FA_READ | FA_WRITE | FA_OPEN_EXISTING;
     bool ret = (f_open(&file, path, flags) == FR_OK);
     f_lseek(&file, 0);
@@ -48,6 +51,9 @@ bool DebugFileOpen(const char* path) {
 
 bool FileCreate(const char* path, bool truncate)
 {
+    #ifdef WORKDIR
+    while (*path == '/' || *path == '\\') path++;
+    #endif
     unsigned flags = FA_READ | FA_WRITE;
     flags |= truncate ? FA_CREATE_ALWAYS : FA_OPEN_ALWAYS;
     bool ret = (f_open(&file, path, flags) == FR_OK);
@@ -115,6 +121,9 @@ void FileClose()
 
 bool DirMake(const char* path)
 {
+    #ifdef WORKDIR
+    while (*path == '/' || *path == '\\') path++;
+    #endif
     FRESULT res = f_mkdir(path);
     bool ret = (res == FR_OK) || (res == FR_EXIST);
     return ret;
@@ -122,6 +131,9 @@ bool DirMake(const char* path)
 
 bool DirOpen(const char* path)
 {
+    #ifdef WORKDIR
+    while (*path == '/' || *path == '\\') path++;
+    #endif
     bool ret = (f_opendir(&dir, path) == FR_OK);
     return ret;
 }
