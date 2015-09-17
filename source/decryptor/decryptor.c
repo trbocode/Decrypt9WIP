@@ -285,13 +285,18 @@ u32 NcchPadgen()
 
     Debug("Number of entries: %i", info->n_entries);
 
-    // detect UTF-16 and convert to UTF-8 if found
-    for (u32 i = 0; i < info->n_entries; i++) {
-        if (info->entries[i].filename[1] != '\0')
-            continue;
-        for (u32 j = 0; j < (112 / 2); j++)
-            info->entries[i].filename[j] = info->entries[i].filename[j*2];
-        memset(info->entries[i].filename + (112/2), '\0', (112/2));
+    for (u32 i = 0; i < info->n_entries; i++) { // check and fix filenames
+        char* filename = info->entries[i].filename;
+        if (filename[1] == 0x00) { // convert UTF-16 -> UTF-8
+            for (u32 j = 1; j < (112 / 2); j++)
+                filename[j] = filename[j*2];
+        }
+        for (u32 j = strnlen(info->entries[i].filename, 112) - 1; j >= 0; j--) { // fix absolute / relative paths
+            if ((filename[j] == '/') || (filename[j] == '\\') || (filename[j] == ':')) {
+                memmove(filename, filename + j + 1, 112 - j - 1);
+                break;
+            }
+        }
     }
             
     for (u32 i = 0; i < info->n_entries; i++) {

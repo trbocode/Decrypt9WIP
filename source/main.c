@@ -27,7 +27,7 @@ MenuInfo menu[] =
         {
             { "NAND Backup", &DumpNand, 0 },
             { "All Partitions Dump", &DecryptAllNandPartitions, 0 },
-            { "TWLN Partition Dump", &DecryptTwlNandPartition, 0 },
+            { "TWLNAND Partition Dump", &DecryptTwlNandPartition, 0 },
             { "CTRNAND Partition Dump", &DecryptCtrNandPartition, 0 }
         }
     },
@@ -46,7 +46,7 @@ MenuInfo menu[] =
         {
             { "NAND Restore", &RestoreNand, 1 },
             { "All Partitions Inject", &InjectAllNandPartitions, 1 },
-            { "TWLN Partition Inject", &InjectTwlNandPartition, 1 },
+            { "TWLNAND Partition Inject", &InjectTwlNandPartition, 1 },
             { "CTRNAND Partition Inject", &InjectCtrNandPartition, 1 }
         }
     }
