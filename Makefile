@@ -145,8 +145,7 @@ release:
 	@cp $(OUTPUT).3dsx $(TOPDIR)/release/Decrypt9
 	@cp $(OUTPUT).smdh $(TOPDIR)/release/Decrypt9
 	@cp $(TOPDIR)/scripts/*.py $(TOPDIR)/release/scripts
-	@-rm -fr $(TOPDIR)/Decrypt9-brahma-d0k3-`date +'%Y%m%d'`
-	@mv --no-target-directory $(TOPDIR)/release $(TOPDIR)/Decrypt9-wip-d0k3-`date +'%Y%m%d'`
+	@mv --no-target-directory $(TOPDIR)/release $(TOPDIR)/Decrypt9-wip-d0k3-`date +'%Y%m%d-%H%M%S'`
 	
 #---------------------------------------------------------------------------------
 clean:
