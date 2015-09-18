@@ -16,22 +16,15 @@ include $(DEVKITARM)/ds_rules
 # INCLUDES is a list of directories containing header files
 # SPECS is the directory containing the important build and link files
 #---------------------------------------------------------------------------------
+export TARGET	:=	Decrypt9
 BUILD		:=	build
 SOURCES		:=	source source/fatfs source/decryptor source/abstraction
 DATA		:=	data
 INCLUDES	:=	include source source/fatfs
 
 #---------------------------------------------------------------------------------
-# Include AppInfo / define Loader
+# Setup some defines
 #---------------------------------------------------------------------------------
-ifneq ($(BUILD),$(notdir $(CURDIR)))
-TOPDIR ?= $(CURDIR)
-else
-TOPDIR ?= $(CURDIR)/..
-endif
-
-include $(TOPDIR)/resources/AppInfo
-LOADER			:= brahma_loader
 
 #---------------------------------------------------------------------------------
 # options for code generation
@@ -48,7 +41,7 @@ CFLAGS	+=	$(INCLUDE) -DEXEC_$(EXEC_METHOD) -DARM9
 CXXFLAGS	:= $(CFLAGS) -fno-rtti -fno-exceptions
 
 ASFLAGS	:=	-g $(ARCH) -DEXEC_$(EXEC_METHOD)
-LDFLAGS	=	-nostartfiles -g $(ARCH) -Wl,-Map,$(notdir $*.map)
+LDFLAGS	=	-nostartfiles -g $(ARCH) -Wl,-Map,$(TARGET).map
 
 ifeq ($(EXEC_METHOD),GATEWAY)
 	LDFLAGS += --specs=../gateway.specs
@@ -72,8 +65,7 @@ ifneq ($(BUILD),$(notdir $(CURDIR)))
 #---------------------------------------------------------------------------------
 
 export OUTPUT_D	:=	$(CURDIR)/output
-export OUTPUT_N	:=	$(subst $(SPACE),,$(APP_TITLE))
-export OUTPUT	:=	$(OUTPUT_D)/$(OUTPUT_N)
+export OUTPUT	:=	$(OUTPUT_D)/$(TARGET)
 
 export VPATH	:=	$(foreach dir,$(SOURCES),$(CURDIR)/$(dir)) \
 			$(foreach dir,$(DATA),$(CURDIR)/$(dir))
@@ -108,7 +100,7 @@ export INCLUDE	:=	$(foreach dir,$(INCLUDES),-I$(CURDIR)/$(dir)) \
 
 export LIBPATHS	:=	$(foreach dir,$(LIBDIRS),-L$(dir)/lib)
 
-.PHONY: common clean all gateway bootstrap brahma release
+.PHONY: common clean all gateway bootstrap cakehax brahma release
 
 #---------------------------------------------------------------------------------
 all: brahma
@@ -116,42 +108,55 @@ all: brahma
 common:
 	@[ -d $(OUTPUT_D) ] || mkdir -p $(OUTPUT_D)
 	@[ -d $(BUILD) ] || mkdir -p $(BUILD)
+    
+submodules:
+	@-git submodule update --init --recursive
 
 gateway: common
 	@make --no-print-directory -C $(BUILD) -f $(CURDIR)/Makefile EXEC_METHOD=GATEWAY
-	cp resources/LauncherTemplate.dat $(OUTPUT_D)/Launcher.dat
-	dd if=$(OUTPUT).bin of=$(OUTPUT_D)/Launcher.dat bs=1497296 seek=1 conv=notrunc
+	@cp resources/LauncherTemplate.dat $(OUTPUT_D)/Launcher.dat
+	@dd if=$(OUTPUT).bin of=$(OUTPUT_D)/Launcher.dat bs=1497296 seek=1 conv=notrunc
 
 bootstrap: common
 	@make --no-print-directory -C $(BUILD) -f $(CURDIR)/Makefile EXEC_METHOD=BOOTSTRAP
-	
-brahma: bootstrap
-	@[ -d $(TOPDIR)/$(LOADER)/data ] || mkdir -p $(TOPDIR)/$(LOADER)/data
-	@cp $(OUTPUT).bin $(TOPDIR)/$(LOADER)/data/payload.bin
-	@make --no-print-directory -C $(TOPDIR)/$(LOADER) -f $(TOPDIR)/$(LOADER)/Makefile
-	@cp $(TOPDIR)/$(LOADER)/output/$(OUTPUT_N).3dsx $(OUTPUT).3dsx
-	@cp $(TOPDIR)/$(LOADER)/output/$(OUTPUT_N).smdh $(OUTPUT).smdh
+
+cakehax: submodules common
+	@make --no-print-directory -C $(BUILD) -f $(CURDIR)/Makefile EXEC_METHOD=GATEWAY
+	@make dir_out=$(OUTPUT_D) name=$(TARGET).dat -C CakeHax bigpayload
+	@dd if=$(OUTPUT).bin of=$(OUTPUT).dat bs=512 seek=160
+
+brahma: submodules bootstrap
+	@[ -d BrahmaLoader/data ] || mkdir -p BrahmaLoader/data
+	@cp $(OUTPUT).bin BrahmaLoader/data/payload.bin
+	@cp resources/BrahmaAppInfo BrahmaLoader/resources/AppInfo
+	@cp resources/BrahmaIcon.png BrahmaLoader/resources/icon.png
+	@make --no-print-directory -C BrahmaLoader APP_TITLE=$(TARGET)
+	@mv BrahmaLoader/output/*.3dsx $(OUTPUT_D)
+	@mv BrahmaLoader/output/*.smdh $(OUTPUT_D)
 	
 release:
-	@rm -fr $(BUILD) $(OUTPUT_D) $(TOPDIR)/release
+	@rm -fr $(BUILD) $(OUTPUT_D) $(CURDIR)/release
 	@make --no-print-directory gateway
-	@rm -fr $(BUILD) $(OUTPUT).bin $(OUTPUT).elf $(TOPDIR)/$(LOADER)/data
-	@make --no-print-directory brahma
-	@[ -d $(TOPDIR)/release ] || mkdir -p $(TOPDIR)/release
-	@[ -d $(TOPDIR)/release/Decrypt9 ] || mkdir -p $(TOPDIR)/release/Decrypt9
-	@[ -d $(TOPDIR)/release/scripts ] || mkdir -p $(TOPDIR)/release/scripts
-	@cp $(OUTPUT_D)/Launcher.dat $(TOPDIR)/release
-	@cp $(OUTPUT).bin $(TOPDIR)/release
-	@cp $(OUTPUT).3dsx $(TOPDIR)/release/Decrypt9
-	@cp $(OUTPUT).smdh $(TOPDIR)/release/Decrypt9
-	@cp $(TOPDIR)/scripts/*.py $(TOPDIR)/release/scripts
-	@mv --no-target-directory $(TOPDIR)/release $(TOPDIR)/Decrypt9-wip-d0k3-`date +'%Y%m%d-%H%M%S'`
+	@-make --no-print-directory cakehax
+	@rm -fr $(BUILD) $(OUTPUT).bin $(OUTPUT).elf $(CURDIR)/$(LOADER)/data
+	@-make --no-print-directory brahma
+	@[ -d $(CURDIR)/release ] || mkdir -p $(CURDIR)/release
+	@[ -d $(CURDIR)/release/$(TARGET) ] || mkdir -p $(CURDIR)/release/$(TARGET)
+	@[ -d $(CURDIR)/release/scripts ] || mkdir -p $(CURDIR)/release/scripts
+	@cp $(OUTPUT_D)/Launcher.dat $(CURDIR)/release
+	@cp $(OUTPUT).bin $(CURDIR)/release
+	@-cp $(OUTPUT).dat $(CURDIR)/release
+	@-cp $(OUTPUT).3dsx $(CURDIR)/release/$(TARGET)
+	@-cp $(OUTPUT).smdh $(CURDIR)/release/$(TARGET)
+	@cp $(CURDIR)/scripts/*.py $(CURDIR)/release/scripts
+	@mv --no-target-directory $(CURDIR)/release $(CURDIR)/$(TARGET)-wip-d0k3-`date +'%Y%m%d-%H%M%S'`
 	
 #---------------------------------------------------------------------------------
 clean:
 	@echo clean ...
-	@make clean --no-print-directory -C $(TOPDIR)/$(LOADER) -f $(TOPDIR)/$(LOADER)/Makefile
-	@rm -fr $(BUILD) $(OUTPUT_D) $(TOPDIR)/$(LOADER)/data
+	@-make clean --no-print-directory -C CakeHax
+	@-make clean --no-print-directory -C BrahmaLoader
+	@rm -fr $(BUILD) $(OUTPUT_D) $(TARGET)-wip-*
 
 
 #---------------------------------------------------------------------------------
@@ -168,7 +173,7 @@ $(OUTPUT).elf	:	$(OFILES)
 
 #---------------------------------------------------------------------------------
 %.bin: %.elf
-	@$(OBJCOPY) -O binary $< $@
+	@$(OBJCOPY) --set-section-flags .bss=alloc,load,contents -O binary $< $@
 	@echo built ... $(notdir $@)
 
 

@@ -3,12 +3,9 @@ Decrypt9.bin
 Decrypt9.elf
 Decrypt9.3dsx
 Decrypt9.smdh
-/Decrypt9-wip-*
-/brahma_loader/build
-/brahma_loader/data
-/brahma_loader/output
 /build
 /output
 /release
+/Decrypt9-wip-*
 
 .DS_Store
