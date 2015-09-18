@@ -39,21 +39,21 @@ void ProcessMenu(MenuInfo* info, u32 nMenus) {
         for (u32 i = 0; i < 4; i++) {
             char* name = currMenu->entries[i].name;
             u32 (*function)(void) = currMenu->entries[i].function;
-            u32 dangerous = currMenu->entries[i].dangerous;
             if ((pad_state & buttonCode[i]) && (name != NULL) && (function != NULL)) {
-                if (dangerous) {
-                    u32 unlockSequence[] = { BUTTON_LEFT, BUTTON_RIGHT, BUTTON_DOWN, BUTTON_UP };
+                if (currMenu->entries[i].dangerous) {
+                    u32 unlockSequence[] = { BUTTON_LEFT, BUTTON_RIGHT, BUTTON_DOWN, BUTTON_UP, BUTTON_A };
+                    u32 unlockLvlMax = sizeof(unlockSequence) / sizeof(u32);
                     u32 unlockLvl = 0;
                     DebugClear();
                     Debug("You selected \"%s\".", name);
                     Debug("This feature is potentially dangerous!");
                     Debug("If you understand and wish to proceed, enter:");
-                    Debug("<Left>, <Right>, <Down>, <Up>");
+                    Debug("<Left>, <Right>, <Down>, <Up>, <A>");
                     Debug("");
                     Debug("(SELECT to return, START to reboot)");
                     while (true) {
-                        ShowProgress(unlockLvl, 4);
-                        if (unlockLvl == 4)
+                        ShowProgress(unlockLvl, unlockLvlMax);
+                        if (unlockLvl == unlockLvlMax)
                             break;
                         pad_state = InputWait();
                         if (pad_state & unlockSequence[unlockLvl])
@@ -64,7 +64,7 @@ void ProcessMenu(MenuInfo* info, u32 nMenus) {
                             unlockLvl = 0;
                     }
                     ShowProgress(0, 0);
-                    if (unlockLvl < 4) {
+                    if (unlockLvl < unlockLvlMax) {
                         drawMenu = true;
                         break;
                     }
