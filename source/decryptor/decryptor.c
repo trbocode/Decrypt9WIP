@@ -8,7 +8,7 @@
 #include "decryptor/crypto.h"
 #include "decryptor/features.h"
 #include "sha256.h"
-#include "fatfs/sdmmc.h"
+#include "nandio.h"
 
 #define BUFFER_ADDRESS  ((u8*) 0x21000000)
 #define BUFFER_MAX_SIZE (1 * 1024 * 1024)
@@ -17,11 +17,6 @@
 #define SECTORS_PER_READ (BUFFER_MAX_SIZE / NAND_SECTOR_SIZE)
 
 #define TITLES_DIR "D9titles"
-
-#ifdef USE_EMUNAND
-#define sdmmc_nand_readsectors  sdmmc_sdcard_readsectors
-#define sdmmc_nand_writesectors sdmmc_sdcard_writesectors
-#endif
 
 
 // From https://github.com/profi200/Project_CTR/blob/master/makerom/pki/prod.h#L19
@@ -44,6 +39,23 @@ static PartitionInfo partitions[] = {
     { "CTRNAND", {0xE9, 0x00, 0x00, 0x43, 0x54, 0x52, 0x20, 0x20}, 0x0B95CA00, 0x2F3E3600, 0x4, AES_CNT_CTRNAND_MODE }, // O3DS
     { "CTRNAND", {0xE9, 0x00, 0x00, 0x43, 0x54, 0x52, 0x20, 0x20}, 0x0B95AE00, 0x41D2D200, 0x5, AES_CNT_CTRNAND_MODE }  // N3DS
 };
+
+static bool EmuNand = false;
+
+
+u32 UseEmuNand(bool use_emunand)
+{
+    u32 result;
+    
+    // SetEmuNand returns zero when SysNAND is used
+    if (use_emunand)
+        result = (SetEmuNand(true)) ? 0 : 1;
+    else
+        result = (SetEmuNand(false)) ? 1 : 0;
+    if (result == 0) EmuNand = use_emunand;
+    
+    return result;
+}
 
 u32 DecryptBuffer(DecryptBufferInfo *info)
 {
@@ -85,6 +97,24 @@ u32 DecryptTitlekey(TitleKeyEntry* entry)
     return 0;
 }
 
+u32 DumpSeedsave() {
+    PartitionInfo* ctrnand_info = &(partitions[(GetUnitPlatform() == PLATFORM_3DS) ? 5 : 6]);
+    u32 offset;
+    u32 size;
+    
+    Debug("Searching for seedsave...");
+    if (SeekFileInNand(&offset, &size, "DATA       ???????????SYSDATA    0001000F   00000000   ", ctrnand_info) != 0) {
+        Debug("Failed!");
+        return 1;
+    }
+    Debug("Found at %08X, size %uMB", offset, size / (1024 * 1024));
+    
+    if (DecryptNandToFile("/seedsave.bin", offset, size, ctrnand_info) != 0)
+        return 1;
+    
+    return 0;
+}
+
 u32 DumpTicket() {
     PartitionInfo* ctrnand_info = &(partitions[(GetUnitPlatform() == PLATFORM_3DS) ? 5 : 6]);
     u32 offset;
@@ -97,7 +127,7 @@ u32 DumpTicket() {
     }
     Debug("Found at %08X, size %uMB", offset, size / (1024 * 1024));
     
-    if (DecryptNandToFile("ticket.db", offset, size, ctrnand_info) != 0)
+    if (DecryptNandToFile((EmuNand) ? "/ticket_emu.db" : "/ticket.db", offset, size, ctrnand_info) != 0)
         return 1;
     
     return 0;
@@ -197,7 +227,7 @@ u32 DecryptTitlekeysNand(void)
     Debug("Decrypted %u unique Title Keys", nKeys);
     
     if(nKeys > 0) {
-        if (!DebugFileCreate("/decTitleKeys.bin", true))
+        if (!DebugFileCreate((EmuNand) ? "/decTitleKeys_emu.bin" : "/decTitleKeys.bin", true))
             return 1;
         if (!DebugFileWrite(info, 0x10 + nKeys * 0x20, 0)) {
             FileClose();
@@ -537,7 +567,7 @@ u32 DecryptNandToMem(u8* buffer, u32 offset, u32 size, PartitionInfo* partition)
 
     u32 n_sectors = (size + NAND_SECTOR_SIZE - 1) / NAND_SECTOR_SIZE;
     u32 start_sector = offset / NAND_SECTOR_SIZE;
-    sdmmc_nand_readsectors(start_sector, n_sectors, buffer);
+    ReadNandSectors(start_sector, n_sectors, buffer);
     DecryptBuffer(&info);
 
     return 0;
@@ -941,7 +971,7 @@ u32 CreatePad(PadInfo *info)
 u32 DumpNand()
 {
     u8* buffer = BUFFER_ADDRESS;
-    u32 nand_size = getMMCDevice(0)->total_size * 0x200;
+    u32 nand_size = GetNandSize();
     u32 result = 0;
 
     Debug("Dumping System NAND. Size (MB): %u", nand_size / (1024 * 1024));
@@ -952,7 +982,7 @@ u32 DumpNand()
     u32 n_sectors = nand_size / NAND_SECTOR_SIZE;
     for (u32 i = 0; i < n_sectors; i += SECTORS_PER_READ) {
         ShowProgress(i, n_sectors);
-        sdmmc_nand_readsectors(i, SECTORS_PER_READ, buffer);
+        ReadNandSectors(i, SECTORS_PER_READ, buffer);
         if(!DebugFileWrite(buffer, NAND_SECTOR_SIZE * SECTORS_PER_READ, i * NAND_SECTOR_SIZE)) {
             result = 1;
             break;
@@ -976,7 +1006,7 @@ u32 DecryptNandPartition(PartitionInfo* p) {
         Debug("Decryption error, please contact us");
         return 1;
     }
-    snprintf(filename, 32, "%s.bin", p->name);
+    snprintf(filename, 32, "/%s.bin", p->name);
     
     return DecryptNandToFile(filename, p->offset, p->size, p);
 }
@@ -1014,7 +1044,7 @@ u32 EncryptMemToNand(u8* buffer, u32 offset, u32 size, PartitionInfo* partition)
     u32 n_sectors = (size + NAND_SECTOR_SIZE - 1) / NAND_SECTOR_SIZE;
     u32 start_sector = offset / NAND_SECTOR_SIZE;
     DecryptBuffer(&info);
-    sdmmc_nand_writesectors(start_sector, n_sectors, buffer);
+    WriteNandSectors(start_sector, n_sectors, buffer);
 
     return 0;
 }
@@ -1052,7 +1082,7 @@ u32 EncryptFileToNand(const char* filename, u32 offset, u32 size, PartitionInfo*
 u32 RestoreNand()
 {
     u8* buffer = BUFFER_ADDRESS;
-    u32 nand_size = getMMCDevice(0)->total_size * 0x200;
+    u32 nand_size = GetNandSize();
     u32 result = 0;
 
     if (!DebugFileOpen("/NAND.bin"))
@@ -1072,7 +1102,7 @@ u32 RestoreNand()
             result = 1;
             break;
         }
-        sdmmc_nand_writesectors(i, SECTORS_PER_READ, buffer);
+        WriteNandSectors(i, SECTORS_PER_READ, buffer);
     }
 
     ShowProgress(0, 0);
@@ -1086,7 +1116,7 @@ u32 InjectNandPartition(PartitionInfo* p) {
     u8 magic[NAND_SECTOR_SIZE];
     
     // File check
-    snprintf(filename, 32, "%s.bin", p->name);
+    snprintf(filename, 32, "/%s.bin", p->name);
     if (FileOpen(filename)) {
         FileClose();
     } else {

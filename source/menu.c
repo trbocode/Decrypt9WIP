@@ -70,7 +70,17 @@ void ProcessMenu(MenuInfo* info, u32 nMenus) {
                     }
                 }
                 DebugClear();
-                Debug("%s: %s!", name, (*function)() == 0 ? "succeeded" : "failed");
+                if (currMenu->entries[i].emunand) {
+                    if (UseEmuNand(true) != 0) {
+                        Debug("EmuNAND is not available!");
+                        Debug("%s: failed!", name);
+                    } else {
+                        Debug("%s: %s!", name, (*function)() == 0 ? "succeeded" : "failed");
+                        UseEmuNand(false);
+                    }
+                } else {
+                    Debug("%s: %s!", name, (*function)() == 0 ? "succeeded" : "failed");
+                }
                 Debug("");
                 Debug("Press SELECT to return, START to reboot.");
                 while(!(pad_state = InputWait() & (BUTTON_SELECT | BUTTON_START)));
