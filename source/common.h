@@ -29,7 +29,6 @@
 // customizations - careful with DANGER_ZONE, USE_EMUNAND still needs testing
 // #define DANGER_ZONE
 // #define WORKDIR "/Decrypt9"
-// #define USE_EMUNAND
 
 inline char* strupper(const char* str) {
     char* buffer = (char*)malloc(strlen(str) + 1);

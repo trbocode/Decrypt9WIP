@@ -692,8 +692,7 @@ u32 DecryptNcch(const char* filename, u32 offset)
             FileClose();
             setup_aeskeyX(0x25, slot0x25KeyX);
         } else {
-            Debug("Need slot0x25KeyX.bin on O3DS!");
-            return 1;
+            Debug("Warning: Need slot0x25KeyX.bin on O3DS < 7.x!");
         }
     }
     
