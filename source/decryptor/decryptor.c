@@ -97,7 +97,8 @@ u32 DecryptTitlekey(TitleKeyEntry* entry)
     return 0;
 }
 
-u32 DumpSeedsave() {
+u32 DumpSeedsave()
+{
     PartitionInfo* ctrnand_info = &(partitions[(GetUnitPlatform() == PLATFORM_3DS) ? 5 : 6]);
     u32 offset;
     u32 size;
@@ -107,7 +108,7 @@ u32 DumpSeedsave() {
         Debug("Failed!");
         return 1;
     }
-    Debug("Found at %08X, size %uMB", offset, size / (1024 * 1024));
+    Debug("Found at %08X, size %ukB", offset, size / 1024);
     
     if (DecryptNandToFile("/seedsave.bin", offset, size, ctrnand_info) != 0)
         return 1;
@@ -545,13 +546,13 @@ u32 SeekFileInNand(u32* offset, u32* size, const char* path, PartitionInfo* part
             else if (memcmp(buffer + i, zeroes, 8+3) == 0)
                 return 1;
             u32 p; // search for path in fat folder structure, accept '?' wildcards
-            for (p = 0; (p < 8+3) && (buffer[i+p] == '?' || buffer[i+p] == path[p]); p++);
-            if (p == 8+3) { // entry found
-                *offset = p_offset + cluster_start + (*((u16*) (buffer + i + 0x1A)) - 2) * cluster_size;
-                *size = *((u32*) (buffer + i + 0x1C));
-                found = true;
-                break;
-            }
+            for (p = 0; (p < 8+3) && (path[p] == '?' || buffer[i+p] == path[p]); p++);
+            if (p == 8+3) continue;
+            // entry found, store offset and move on
+            *offset = p_offset + cluster_start + (*((u16*) (buffer + i + 0x1A)) - 2) * cluster_size;
+            *size = *((u32*) (buffer + i + 0x1C));
+            found = true;
+            break;
         }
         if (!found) break;
     }
