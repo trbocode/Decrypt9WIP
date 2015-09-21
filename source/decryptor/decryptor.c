@@ -547,7 +547,7 @@ u32 SeekFileInNand(u32* offset, u32* size, const char* path, PartitionInfo* part
                 return 1;
             u32 p; // search for path in fat folder structure, accept '?' wildcards
             for (p = 0; (p < 8+3) && (path[p] == '?' || buffer[i+p] == path[p]); p++);
-            if (p == 8+3) continue;
+            if (p != 8+3) continue;
             // entry found, store offset and move on
             *offset = p_offset + cluster_start + (*((u16*) (buffer + i + 0x1A)) - 2) * cluster_size;
             *size = *((u32*) (buffer + i + 0x1C));
