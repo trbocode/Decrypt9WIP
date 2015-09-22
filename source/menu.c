@@ -70,14 +70,8 @@ void ProcessMenu(MenuInfo* info, u32 nMenus) {
                     }
                 }
                 DebugClear();
-                if (currMenu->entries[i].emunand) {
-                    if (UseEmuNand(true) != 0) {
-                        Debug("EmuNAND is not available!");
-                        Debug("%s: failed!", name);
-                    } else {
-                        Debug("%s: %s!", name, (*function)() == 0 ? "succeeded" : "failed");
-                        UseEmuNand(false);
-                    }
+                if (SetNand(currMenu->entries[i].emunand) != 0) {
+                    Debug("%s: failed!", name);
                 } else {
                     Debug("%s: %s!", name, (*function)() == 0 ? "succeeded" : "failed");
                 }

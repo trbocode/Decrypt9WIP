@@ -120,6 +120,9 @@ typedef struct {
     u8  hash_romfs[0x20];
 } __attribute__((packed, aligned(16))) NcchHeader;
 
+int ReadNandSectors(u32 sector_no, u32 numsectors, u8 *out);
+int WriteNandSectors(u32 sector_no, u32 numsectors, u8 *in);
+
 u32 DecryptBuffer(DecryptBufferInfo *info);
 u32 DecryptTitlekey(TitleKeyEntry* entry);
 u32 CreatePad(PadInfo *info);

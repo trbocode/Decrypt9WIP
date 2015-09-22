@@ -8,7 +8,7 @@
 #include "decryptor/crypto.h"
 #include "decryptor/features.h"
 #include "sha256.h"
-#include "nandio.h"
+#include "fatfs/sdmmc.h"
 
 #define BUFFER_ADDRESS  ((u8*) 0x21000000)
 #define BUFFER_MAX_SIZE (1 * 1024 * 1024)
@@ -40,21 +40,68 @@ static PartitionInfo partitions[] = {
     { "CTRNAND", {0xE9, 0x00, 0x00, 0x43, 0x54, 0x52, 0x20, 0x20}, 0x0B95AE00, 0x41D2D200, 0x5, AES_CNT_CTRNAND_MODE }  // N3DS
 };
 
-static bool EmuNand = false;
+static u32 emunand_header = 0;
+static u32 emunand_offset = 0;
 
 
-u32 UseEmuNand(bool use_emunand)
+u32 SetNand(u32 use_emunand)
 {
-    u32 result;
+    u8* buffer = BUFFER_ADDRESS;
     
-    // SetEmuNand returns zero when SysNAND is used
-    if (use_emunand)
-        result = (SetEmuNand(true)) ? 0 : 1;
-    else
-        result = (SetEmuNand(false)) ? 1 : 0;
-    if (result == 0) EmuNand = use_emunand;
-    
-    return result;
+    if (use_emunand) {
+        u32 nand_size_sectors = getMMCDevice(0)->total_size;
+        // check for Gateway type EmuNAND
+        sdmmc_sdcard_readsectors(nand_size_sectors, 1, buffer);
+        if (memcmp(buffer + 0x100, "NCSD", 4) == 0) {
+            emunand_header = nand_size_sectors;
+            emunand_offset = 0;
+            Debug("Using EmuNAND @ %06X/%06X", emunand_header, emunand_offset);
+            return 0;
+        }
+        // check for RedNAND type EmuNAND
+        sdmmc_sdcard_readsectors(1, 1, buffer);
+        if (memcmp(buffer + 0x100, "NCSD", 4) == 0) {
+            emunand_header = 1;
+            emunand_offset = 1;
+            Debug("Using RedNAND @ %06X/%06X", emunand_header, emunand_offset);
+            return 0;
+        }
+        // no EmuNAND found
+         Debug("EmuNAND is not available");
+         return 1;
+    } else {
+        emunand_header = 0;
+        emunand_offset = 0;
+        return 0;
+    }
+}
+
+int ReadNandSectors(u32 sector_no, u32 numsectors, u8 *out)
+{
+    if (emunand_header) {
+        if (sector_no == 0) {
+            int errorcode = sdmmc_sdcard_readsectors(emunand_header, 1, out);
+            if (errorcode) return errorcode;
+            sector_no = 1;
+            numsectors--;
+            out += 0x200;
+        }
+        return sdmmc_sdcard_readsectors(sector_no + emunand_offset, numsectors, out);
+    } else return sdmmc_nand_readsectors(sector_no, numsectors, out);
+}
+
+int WriteNandSectors(u32 sector_no, u32 numsectors, u8 *in)
+{
+    if (emunand_header) {
+        if (sector_no == 0) {
+            int errorcode = sdmmc_sdcard_writesectors(emunand_header, 1, in);
+            if (errorcode) return errorcode;
+            sector_no = 1;
+            numsectors--;
+            in += 0x200;
+        }
+        return sdmmc_sdcard_writesectors(sector_no + emunand_offset, numsectors, in);
+    } else return sdmmc_nand_writesectors(sector_no, numsectors, in);
 }
 
 u32 DecryptBuffer(DecryptBufferInfo *info)
@@ -209,7 +256,7 @@ u32 DumpTicket() {
     }
     Debug("Found at %08X, size %uMB", offset, size / (1024 * 1024));
     
-    if (DecryptNandToFile((EmuNand) ? "/ticket_emu.db" : "/ticket.db", offset, size, ctrnand_info) != 0)
+    if (DecryptNandToFile((emunand_header) ? "/ticket_emu.db" : "/ticket.db", offset, size, ctrnand_info) != 0)
         return 1;
     
     return 0;
@@ -309,7 +356,7 @@ u32 DecryptTitlekeysNand(void)
     Debug("Decrypted %u unique Title Keys", nKeys);
     
     if(nKeys > 0) {
-        if (!DebugFileCreate((EmuNand) ? "/decTitleKeys_emu.bin" : "/decTitleKeys.bin", true))
+        if (!DebugFileCreate((emunand_header) ? "/decTitleKeys_emu.bin" : "/decTitleKeys.bin", true))
             return 1;
         if (!DebugFileWrite(info, 0x10 + nKeys * 0x20, 0)) {
             FileClose();
@@ -1052,7 +1099,7 @@ u32 CreatePad(PadInfo *info)
 u32 DumpNand()
 {
     u8* buffer = BUFFER_ADDRESS;
-    u32 nand_size = GetNandSize();
+    u32 nand_size = getMMCDevice(0)->total_size * 0x200;
     u32 result = 0;
 
     Debug("Dumping System NAND. Size (MB): %u", nand_size / (1024 * 1024));
@@ -1163,7 +1210,7 @@ u32 EncryptFileToNand(const char* filename, u32 offset, u32 size, PartitionInfo*
 u32 RestoreNand()
 {
     u8* buffer = BUFFER_ADDRESS;
-    u32 nand_size = GetNandSize();
+    u32 nand_size = getMMCDevice(0)->total_size * 0x200;
     u32 result = 0;
 
     if (!DebugFileOpen("/NAND.bin"))
