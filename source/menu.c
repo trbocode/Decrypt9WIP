@@ -2,6 +2,7 @@
 #include "draw.h"
 #include "hid.h"
 #include "fs.h"
+#include "decryptor/features.h"
 
 
 void ProcessMenu(MenuInfo* info, u32 nMenus) {

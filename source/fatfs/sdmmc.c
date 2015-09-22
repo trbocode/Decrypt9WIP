@@ -37,7 +37,7 @@
 
 //Uncomment to enable 32bit fifo support?
 //not currently working
-#define DATA32_SUPPORT
+//#define DATA32_SUPPORT
 
 #define TRUE 1
 #define FALSE 0
@@ -135,10 +135,14 @@ void NO_INLINE sdmmc_send_command(struct mmcdevice *ctx, uint32_t cmd, uint32_t 
 	
 	uint32_t size = ctx->size;
 	uint16_t *dataPtr = (uint16_t*)ctx->data;
+#ifdef DATA32_SUPPORT
 	uint32_t *dataPtr32 = (uint32_t*)ctx->data;
+#endif
 	
 	bool useBuf = ( NULL != dataPtr );
+#ifdef DATA32_SUPPORT
 	bool useBuf32 = (useBuf && (0 == (3 & ((uint32_t)dataPtr))));
+#endif
 	
 	uint16_t status0 = 0;
 	while(1)
