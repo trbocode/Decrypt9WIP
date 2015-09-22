@@ -163,10 +163,8 @@ u32 UpdateSeedDb()
     // search and extract seeds
     for ( size_t i = 0; i < 2000; i++ ) {
         static const u8 magic[4] = { 0x00, 0x00, 0x04, 0x00 };
-        static u32 titleId_offset = 0x7000;
-        static u32 seed_offset = 0x7000 + (2000*8);
-        u8* titleId = buffer + titleId_offset + (i*8);
-        u8* seed = buffer + seed_offset + (i*16);
+        u8* titleId = buffer + 0x7000 + (i*8);
+        u8* seed = buffer + 0x7000 + (2000*8) + (i*16);
         if (memcmp(titleId + 4, magic, 4) != 0) continue;
         // seed found, check if it already exists
         u32 entryPos = 0;
@@ -590,9 +588,9 @@ u32 GetNandCtr(u8* ctr, u32 offset)
 u32 SeekFileInNand(u32* offset, u32* size, const char* path, PartitionInfo* partition)
 {
     // poor mans NAND FAT file seeker:
-    // - path format: DIR1_______DIR2_______FILENAMEEXT
+    // - path must be in FAT 8+3 format, without dots or slashes
+    //   example: DIR1_______DIR2_______FILENAMEEXT
     // - can't handle long filenames
-    // - path must be in FAT 8+3 format
     // - dirs must not exceed 1024 entries
     // - fragmentation not supported
     
@@ -922,7 +920,7 @@ u32 DecryptTitles()
     u32 n_failed = 0;
     u32 n_unknown = 0;
     
-    if (!DirOpen(TITLES_DIR)) {
+    if (!DebugDirOpen(TITLES_DIR)) {
         Debug("Titles to decrypt go to %s/!", TITLES_DIR);
         return 1;
     }
