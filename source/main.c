@@ -49,14 +49,32 @@ MenuInfo menu[] =
             { "Seedsave Dump", &DumpSeedsave, 0, 1 }
         }
     },
-    #ifdef DANGER_ZONE
+    #ifdef EXPERIMENTAL
     {
-        "!DANGER_ZONE!",
+        "NAND Write Options",
         {
             { "NAND Restore", &RestoreNand, 1, 0 },
             { "All Partitions Inject", &InjectAllNandPartitions, 1, 0 },
             { "TWLNAND Partition Inject", &InjectTwlNandPartition, 1, 0 },
             { "CTRNAND Partition Inject", &InjectCtrNandPartition, 1, 0 }
+        }
+    },
+    {
+        "EmuNAND Read Options",
+        {
+            { "EmuNAND Backup", &DumpNand, 0, 1 },
+            { "All Partitions Dump", &DecryptAllNandPartitions, 0, 1 },
+            { "TWLNAND Partition Dump", &DecryptTwlNandPartition, 0, 1 },
+            { "CTRNAND Partition Dump", &DecryptCtrNandPartition, 0, 1 }
+        }
+    },
+    {
+        "EmuNAND Write Options",
+        {
+            { "EmuNAND Restore", &RestoreNand, 1, 1 },
+            { "All Partitions Inject", &InjectAllNandPartitions, 1, 1 },
+            { "TWLNAND Partition Inject", &InjectTwlNandPartition, 1, 1 },
+            { "CTRNAND Partition Inject", &InjectCtrNandPartition, 1, 1 }
         }
     }
     #endif

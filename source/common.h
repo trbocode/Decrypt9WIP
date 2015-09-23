@@ -26,8 +26,8 @@
        __typeof__ (b) _b = (b); \
        _a < _b ? _a : _b; })
     
-// customizations - careful with DANGER_ZONE, USE_EMUNAND still needs testing
-// #define DANGER_ZONE
+// customizations - careful with EXPERIMENTAL
+// #define EXPERIMENTAL
 // #define WORKDIR "/Decrypt9"
 
 inline char* strupper(const char* str) {

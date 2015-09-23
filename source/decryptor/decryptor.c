@@ -1158,7 +1158,6 @@ u32 DecryptCtrNandPartition() {
     return DecryptNandPartition(&(partitions[(o3ds) ? 5 : 6])); // CTRNAND O3DS / N3DS
 }
 
-#ifdef DANGER_ZONE
 u32 EncryptMemToNand(u8* buffer, u32 offset, u32 size, PartitionInfo* partition)
 {
     DecryptBufferInfo info = {.keyslot = partition->keyslot, .setKeyY = 0, .size = size, .buffer = buffer, .mode = partition->mode};
@@ -1296,4 +1295,3 @@ u32 InjectCtrNandPartition() {
     bool o3ds = (GetUnitPlatform() == PLATFORM_3DS);
     return InjectNandPartition(&(partitions[(o3ds) ? 5 : 6])); // CTRNAND O3DS / N3DS
 }
-#endif
