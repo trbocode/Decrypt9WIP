@@ -450,12 +450,8 @@ u32 NcchPadgen()
             for (u32 j = 1; j < (112 / 2); j++)
                 filename[j] = filename[j*2];
         }
-        for (u32 j = strnlen(info->entries[i].filename, 112) - 1; j >= 0; j--) { // fix absolute / relative paths
-            if ((filename[j] == '/') || (filename[j] == '\\') || (filename[j] == ':')) {
-                memmove(filename, filename + j + 1, 112 - j - 1);
-                break;
-            }
-        }
+        if (memcmp(filename, "sdmc:", 5) == 0) // fix sdmc: prefix
+            memmove(filename, filename + 5, 112 - 5);
     }
             
     for (u32 i = 0; i < info->n_entries; i++) {
