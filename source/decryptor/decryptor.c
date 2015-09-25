@@ -764,6 +764,30 @@ u32 DecryptSdToSd(const char* filename, u32 offset, u32 size, DecryptBufferInfo*
     return result;
 }
 
+u32 CheckHash(const char* filename, u32 offset, u32 size, u8* hash)
+{
+    // uses the standard buffer, so be careful
+    u8* buffer = BUFFER_ADDRESS; 
+    u8 digest[32];
+    sha256_context shactx;
+    
+    if (!FileOpen(filename))
+        return 1;
+    sha256_starts(&shactx);
+    for (u32 i = 0; i < size; i += BUFFER_MAX_SIZE) {
+        u32 read_bytes = min(BUFFER_MAX_SIZE, (size - i));
+        if(!FileRead(buffer, read_bytes, offset + i)) {
+            FileClose();
+            return 1;
+        }
+        sha256_update(&shactx, buffer, read_bytes);
+    }
+    sha256_finish(&shactx, digest);
+    FileClose();
+    
+    return (memcmp(hash, digest, 32) == 0) ? 0 : 1; 
+}
+
 u32 DecryptNcch(const char* filename, u32 offset)
 {
     NcchHeader* ncch = (NcchHeader*) 0x20316200;
@@ -783,7 +807,7 @@ u32 DecryptNcch(const char* filename, u32 offset)
     
     // check if encrypted
     if (ncch->flags[7] & 0x04) {
-        Debug("Partition is not encrypted");
+        Debug("NCCH is not encrypted");
         return 0;
     }
     
@@ -792,15 +816,14 @@ u32 DecryptNcch(const char* filename, u32 offset)
     bool usesSec3Crypto = (ncch->flags[3] == 0x0A);
     bool usesSec4Crypto = (ncch->flags[3] == 0x0B);
     
-    Debug("Product Code: %s", ncch->productCode);
-    Debug("Crypto Flags: %s%s%s%s%s", (uses7xCrypto) ? "7x " : "", (usesSec3Crypto) ? "Sec3 " : "", (usesSec4Crypto) ? "Sec4 " : "", (usesSeedCrypto) ? "Seed " : "", (!uses7xCrypto && !usesSeedCrypto) ? "none" : "" );
+    Debug("Code / Crypto: %s / %s%s%s", ncch->productCode, (usesSec4Crypto) ? "Secure4 " : (usesSec3Crypto) ? "Secure3 " : (uses7xCrypto) ? "7x " : "", (usesSeedCrypto) ? "Seed " : "", (!uses7xCrypto && !usesSeedCrypto) ? "Standard" : "");
    
     // check secure4 crypto
     if (usesSec4Crypto) {
         Debug("Secure4 cannot be decrypted yet!");
         return 1;
     }
-        
+    
     // check / setup 7x crypto
     if (uses7xCrypto && (GetUnitPlatform() == PLATFORM_3DS)) {
         if (usesSec3Crypto) {
@@ -817,7 +840,7 @@ u32 DecryptNcch(const char* filename, u32 offset)
             FileClose();
             setup_aeskeyX(0x25, slot0x25KeyX);
         } else {
-            Debug("Warning: Need slot0x25KeyX.bin on O3DS < 7.x!");
+            Debug("Warning: Need slot0x25KeyX.bin on O3DS < 7.x");
         }
     }
     
@@ -866,9 +889,14 @@ u32 DecryptNcch(const char* filename, u32 offset)
     memcpy(info1.keyY, (usesSeedCrypto) ? seedKeyY : ncch->signature, 16);
     info1.keyslot = (usesSec3Crypto) ? 0x18 : ((uses7xCrypto) ? 0x25 : 0x2C);
     
+    Debug("Decrypt ExHdr/ExeFS/RomFS (%ukB/%ukB/%uMB)",
+        (ncch->size_exthdr > 0) ? 0x800 / 1024 : 0,
+        (ncch->size_exefs * 0x200) / 1024,
+        (ncch->size_romfs * 0x200) / (1024*1024));
+        
     // process ExHeader
     if (ncch->size_exthdr > 0) {
-        Debug("Decrypting ExtHeader (%ub)...", 0x800);
+        // Debug("Decrypting ExtHeader (%ub)...", 0x800);
         memset(info0.CTR + 12, 0x00, 4);
         if (ncch->version == 1)
             add_ctr(info0.CTR, 0x200); // exHeader offset
@@ -881,7 +909,7 @@ u32 DecryptNcch(const char* filename, u32 offset)
     if (ncch->size_exefs > 0) {
         u32 offset_byte = ncch->offset_exefs * 0x200;
         u32 size_byte = ncch->size_exefs * 0x200;
-        Debug("Decrypting ExeFS (%ukB)...", size_byte / 1024);
+        // Debug("Decrypting ExeFS (%ukB)...", size_byte / 1024);
         memset(info0.CTR + 12, 0x00, 4);
         if (ncch->version == 1)
             add_ctr(info0.CTR, offset_byte);
@@ -928,7 +956,7 @@ u32 DecryptNcch(const char* filename, u32 offset)
     if (ncch->size_romfs > 0) {
         u32 offset_byte = ncch->offset_romfs * 0x200;
         u32 size_byte = ncch->size_romfs * 0x200;
-        Debug("Decrypting RomFS (%uMB)...", size_byte / (1024 * 1024));
+        // Debug("Decrypting RomFS (%uMB)...", size_byte / (1024 * 1024));
         memset(info1.CTR + 12, 0x00, 4);
         if (ncch->version == 1)
             add_ctr(info1.CTR, offset_byte);
@@ -952,71 +980,93 @@ u32 DecryptNcch(const char* filename, u32 offset)
     }
     FileClose();
     
+    // verify decryption
+    if (result == 0) {
+        char* status_str[3] = { "OK", "Fail", "-" }; 
+        u32 ver_exthdr = 2;
+        u32 ver_exefs = 2;
+        u32 ver_romfs = 2;
+        
+        if (ncch->size_exthdr > 0)
+            ver_exthdr = CheckHash(filename, offset + 0x200, 0x400, ncch->hash_exthdr);
+        if (ncch->size_exefs_hash > 0)
+            ver_exefs = CheckHash(filename, offset + (ncch->offset_exefs * 0x200), ncch->size_exefs_hash * 0x200, ncch->hash_exefs);
+        if (ncch->size_romfs_hash > 0)
+            ver_romfs = CheckHash(filename, offset + (ncch->offset_romfs * 0x200), ncch->size_romfs_hash * 0x200, ncch->hash_romfs);
+        
+        Debug("Verify ExHdr/ExeFS/RomFS: %s/%s/%s", status_str[ver_exthdr], status_str[ver_exefs], status_str[ver_romfs]);
+        result = (((ver_exthdr | ver_exefs | ver_romfs) & 1) == 0) ? 0 : 1;
+    }
+    
     
     return result;
 }
 
-u32 DecryptTitles()
+u32 DecryptNcsdNcchBatch()
 {
+    const char* ncsd_partition_name[8] = {
+        "Executable", "Manual", "DPC", "Unknown", "Unknown", "Unknown", "UpdateN3DS", "UpdateO3DS" 
+    };
     u8* buffer = (u8*) 0x20316000;
     u32 n_processed = 0;
     u32 n_failed = 0;
-    u32 n_unknown = 0;
     
     if (!DebugDirOpen(TITLES_DIR)) {
-        Debug("Titles to decrypt go to %s/!", TITLES_DIR);
+        Debug("Files to decrypt go to %s/!", TITLES_DIR);
         return 1;
     }
     
-    char filename[256];
+    char path[256];
     u32 path_len = strnlen(TITLES_DIR, 128);
-    memcpy(filename, TITLES_DIR, path_len);
-    filename[path_len++] = '/';
+    memcpy(path, TITLES_DIR, path_len);
+    path[path_len++] = '/';
     
-    while (DirRead(filename + path_len, 256 - path_len)) {
-        if (!DebugFileOpen(filename))
+    while (DirRead(path + path_len, 256 - path_len)) {
+        if (!FileOpen(path))
             continue;
-        if (!DebugFileRead(buffer, 0x200, 0x0)) {
+        if (!FileRead(buffer, 0x200, 0x0)) {
             FileClose();
             continue;
         }
         FileClose();
         
         if (memcmp(buffer + 0x100, "NCCH", 4) == 0) {
-            Debug("Found NCCH %08X%08X", *((unsigned int*) (buffer + 0x10C)), *((unsigned int*) (buffer + 0x108)));
-            if (DecryptNcch(filename, 0x00) == 0) {
-                Debug("Done!");
+            Debug("Decrypting NCCH \"%s\"", path + path_len);
+            if (DecryptNcch(path, 0x00) == 0) {
+                Debug("Success!");
                 n_processed++;
             } else {
                 Debug("Failed!");
                 n_failed++;
             }
         } else if (memcmp(buffer + 0x100, "NCSD", 4) == 0) {
-            Debug("Found NCSD %08X%08X", *((unsigned int*) (buffer + 0x10C)), *((unsigned int*) (buffer + 0x108)));
+            Debug("Decrypting NCSD \"%s\"", path + path_len);
             u32 p;
             for (p = 0; p < 8; p++) {
                 u32 offset = *((u32*) (buffer + 0x120 + (p*0x8))) * 0x200;
                 u32 size = *((u32*) (buffer + 0x124 + (p*0x8))) * 0x200;
-                if ((size > 0) && (DecryptNcch(filename, offset) != 0))
-                    break;
+                if (size > 0) {
+                    Debug("Partition %i (%s)", p, ncsd_partition_name[p]);
+                    if (DecryptNcch(path, offset) != 0)
+                        break;
+                }
             }
             if ( p == 8 ) {
-                Debug("Done!");
+                Debug("Success!");
                 n_processed++;
             } else {
                 Debug("Failed!");
                 n_failed++;
             }
-        } else {
-            Debug("Not a NCCH/NCSD container file!");
-            n_unknown++;
         }
     }
     
     DirClose();
     
-    if (n_processed)
-        Debug("%ux decrypted / %u failed / %U unknown", n_processed, n_failed, n_unknown);
+    if (n_processed) {
+        Debug("");
+        Debug("%ux decrypted / %u failed ", n_processed, n_failed);
+    }
     
     return !(n_processed);
 }

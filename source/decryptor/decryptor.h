@@ -131,6 +131,7 @@ u32 SeekFileInNand(u32* offset, u32* size, const char* path, PartitionInfo* part
 u32 DecryptNandToMem(u8* buffer, u32 offset, u32 size, PartitionInfo* partition);
 u32 DecryptNandToFile(const char* filename, u32 offset, u32 size, PartitionInfo* partition);
 u32 DecryptSdToSd(const char* filename, u32 offset, u32 size, DecryptBufferInfo* info);
+u32 CheckHash(const char* filename, u32 offset, u32 size, u8* hash);
 u32 DecryptNcch(const char* filename, u32 offset);
 u32 DecryptNandPartition(PartitionInfo* p);
 
