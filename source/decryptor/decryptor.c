@@ -76,7 +76,7 @@ u32 SetNand(u32 use_emunand)
     }
 }
 
-inline int ReadNandSectors(u32 sector_no, u32 numsectors, u8 *out)
+static inline int ReadNandSectors(u32 sector_no, u32 numsectors, u8 *out)
 {
     if (emunand_header) {
         if (sector_no == 0) {
@@ -90,7 +90,7 @@ inline int ReadNandSectors(u32 sector_no, u32 numsectors, u8 *out)
     } else return sdmmc_nand_readsectors(sector_no, numsectors, out);
 }
 
-inline int WriteNandSectors(u32 sector_no, u32 numsectors, u8 *in)
+static inline int WriteNandSectors(u32 sector_no, u32 numsectors, u8 *in)
 {
     if (emunand_header) {
         if (sector_no == 0) {
@@ -104,7 +104,7 @@ inline int WriteNandSectors(u32 sector_no, u32 numsectors, u8 *in)
     } else return sdmmc_nand_writesectors(sector_no, numsectors, in);
 }
 
-u32 DecryptBuffer(DecryptBufferInfo *info)
+u32 CryptBuffer(CryptBufferInfo *info)
 {
     u8 ctr[16] __attribute__((aligned(32)));
     memcpy(ctr, info->CTR, 16);
@@ -134,12 +134,12 @@ u32 DecryptBuffer(DecryptBufferInfo *info)
 
 u32 DecryptTitlekey(TitleKeyEntry* entry)
 {
-    DecryptBufferInfo info = {.keyslot = 0x3D, .setKeyY = 1, .size = 16, .buffer = entry->encryptedTitleKey, .mode = AES_CNT_TITLEKEY_MODE};
+    CryptBufferInfo info = {.keyslot = 0x3D, .setKeyY = 1, .size = 16, .buffer = entry->encryptedTitleKey, .mode = AES_CNT_TITLEKEY_MODE};
     memset(info.CTR, 0, 16);
     memcpy(info.CTR, entry->titleId, 8);
     memcpy(info.keyY, (void *)common_keyy[entry->commonKeyIndex], 16);
     
-    DecryptBuffer(&info);
+    CryptBuffer(&info);
     
     return 0;
 }
@@ -686,14 +686,14 @@ u32 SeekFileInNand(u32* offset, u32* size, const char* path, PartitionInfo* part
 
 u32 DecryptNandToMem(u8* buffer, u32 offset, u32 size, PartitionInfo* partition)
 {
-    DecryptBufferInfo info = {.keyslot = partition->keyslot, .setKeyY = 0, .size = size, .buffer = buffer, .mode = partition->mode};
+    CryptBufferInfo info = {.keyslot = partition->keyslot, .setKeyY = 0, .size = size, .buffer = buffer, .mode = partition->mode};
     if(GetNandCtr(info.CTR, offset) != 0)
         return 1;
 
     u32 n_sectors = (size + NAND_SECTOR_SIZE - 1) / NAND_SECTOR_SIZE;
     u32 start_sector = offset / NAND_SECTOR_SIZE;
     ReadNandSectors(start_sector, n_sectors, buffer);
-    DecryptBuffer(&info);
+    CryptBuffer(&info);
 
     return 0;
 }
@@ -722,7 +722,7 @@ u32 DecryptNandToFile(const char* filename, u32 offset, u32 size, PartitionInfo*
     return result;
 }
 
-u32 DecryptSdToSd(const char* filename, u32 offset, u32 size, DecryptBufferInfo* info)
+u32 DecryptSdToSd(const char* filename, u32 offset, u32 size, CryptBufferInfo* info)
 {
     u8* buffer = BUFFER_ADDRESS;
     u32 offset_16 = offset % 16;
@@ -738,7 +738,7 @@ u32 DecryptSdToSd(const char* filename, u32 offset, u32 size, DecryptBufferInfo*
             result = 1;
         }
         info->size = 16;
-        DecryptBuffer(info);
+        CryptBuffer(info);
         if(!DebugFileWrite(buffer + offset_16, 16 - offset_16, offset)) {
             result = 1;
         }
@@ -751,7 +751,7 @@ u32 DecryptSdToSd(const char* filename, u32 offset, u32 size, DecryptBufferInfo*
             break;
         }
         info->size = read_bytes;
-        DecryptBuffer(info);
+        CryptBuffer(info);
         if(!DebugFileWrite(buffer, read_bytes, offset + i)) {
             result = 1;
             break;
@@ -792,8 +792,8 @@ u32 DecryptNcch(const char* filename, u32 offset)
 {
     NcchHeader* ncch = (NcchHeader*) 0x20316200;
     u8* buffer = (u8*) 0x20316400;
-    DecryptBufferInfo info0 = {.setKeyY = 1, .keyslot = 0x2C, .mode = AES_CNT_CTRNAND_MODE};
-    DecryptBufferInfo info1 = {.setKeyY = 1, .mode = AES_CNT_CTRNAND_MODE};
+    CryptBufferInfo info0 = {.setKeyY = 1, .keyslot = 0x2C, .mode = AES_CNT_CTRNAND_MODE};
+    CryptBufferInfo info1 = {.setKeyY = 1, .mode = AES_CNT_CTRNAND_MODE};
     u8 seedKeyY[16] = { 0x00 };
     u32 result = 0;
     
@@ -876,7 +876,7 @@ u32 DecryptNcch(const char* filename, u32 offset)
         }
     }
     
-    // basic setup of DecryptBufferInfo structs
+    // basic setup of CryptBufferInfo structs
     memset(info0.CTR, 0x00, 16);
     if (ncch->version == 1) {
         memcpy(info0.CTR, &(ncch->partitionId), 8);
@@ -1120,7 +1120,7 @@ u32 CreatePad(PadInfo *info)
     if (!FileCreate(info->filename, true)) // No DebugFileCreate() here - messages are already given
         return 1;
         
-    DecryptBufferInfo decryptInfo = {.keyslot = info->keyslot, .setKeyY = info->setKeyY, .mode = info->mode, .buffer = buffer};
+    CryptBufferInfo decryptInfo = {.keyslot = info->keyslot, .setKeyY = info->setKeyY, .mode = info->mode, .buffer = buffer};
     memcpy(decryptInfo.CTR, info->CTR, 16);
     memcpy(decryptInfo.keyY, info->keyY, 16);
     u32 size_bytes = info->size_mb * 1024*1024;
@@ -1129,7 +1129,7 @@ u32 CreatePad(PadInfo *info)
         decryptInfo.size = curr_block_size;
         memset(buffer, 0x00, curr_block_size);
         ShowProgress(i, size_bytes);
-        DecryptBuffer(&decryptInfo);
+        CryptBuffer(&decryptInfo);
         if (!DebugFileWrite((void*)buffer, curr_block_size, i)) {
             result = 1;
             break;
@@ -1210,13 +1210,13 @@ u32 DecryptCtrNandPartition() {
 
 u32 EncryptMemToNand(u8* buffer, u32 offset, u32 size, PartitionInfo* partition)
 {
-    DecryptBufferInfo info = {.keyslot = partition->keyslot, .setKeyY = 0, .size = size, .buffer = buffer, .mode = partition->mode};
+    CryptBufferInfo info = {.keyslot = partition->keyslot, .setKeyY = 0, .size = size, .buffer = buffer, .mode = partition->mode};
     if(GetNandCtr(info.CTR, offset) != 0)
         return 1;
 
     u32 n_sectors = (size + NAND_SECTOR_SIZE - 1) / NAND_SECTOR_SIZE;
     u32 start_sector = offset / NAND_SECTOR_SIZE;
-    DecryptBuffer(&info);
+    CryptBuffer(&info);
     WriteNandSectors(start_sector, n_sectors, buffer);
 
     return 0;

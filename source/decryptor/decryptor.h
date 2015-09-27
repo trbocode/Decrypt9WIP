@@ -54,7 +54,7 @@ typedef struct {
     u32  size;
     u32  mode;
     u8*  buffer;
-} __attribute__((packed)) DecryptBufferInfo;
+} __attribute__((packed)) CryptBufferInfo;
 
 typedef struct {
     u32  keyslot;
@@ -120,17 +120,14 @@ typedef struct {
     u8  hash_romfs[0x20];
 } __attribute__((packed, aligned(16))) NcchHeader;
 
-int ReadNandSectors(u32 sector_no, u32 numsectors, u8 *out);
-int WriteNandSectors(u32 sector_no, u32 numsectors, u8 *in);
-
-u32 DecryptBuffer(DecryptBufferInfo *info);
+u32 CryptBuffer(CryptBufferInfo *info);
 u32 DecryptTitlekey(TitleKeyEntry* entry);
 u32 CreatePad(PadInfo *info);
 u32 GetNandCtr(u8* ctr, u32 offset);
 u32 SeekFileInNand(u32* offset, u32* size, const char* path, PartitionInfo* partition);
 u32 DecryptNandToMem(u8* buffer, u32 offset, u32 size, PartitionInfo* partition);
 u32 DecryptNandToFile(const char* filename, u32 offset, u32 size, PartitionInfo* partition);
-u32 DecryptSdToSd(const char* filename, u32 offset, u32 size, DecryptBufferInfo* info);
+u32 DecryptSdToSd(const char* filename, u32 offset, u32 size, CryptBufferInfo* info);
 u32 CheckHash(const char* filename, u32 offset, u32 size, u8* hash);
 u32 DecryptNcch(const char* filename, u32 offset);
 u32 DecryptNandPartition(PartitionInfo* p);

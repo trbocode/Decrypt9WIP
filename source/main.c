@@ -87,12 +87,6 @@ void Reboot()
     while(true);
 }
 
-void PowerOff()
-{
-    i2cWriteRegister(I2C_DEV_MCU, 0x20, 1 << 0);
-    while (true);
-}
-
 int main()
 {
     DebugClear();
