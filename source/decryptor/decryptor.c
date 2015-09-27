@@ -7,7 +7,7 @@
 #include "decryptor/decryptor.h"
 #include "decryptor/crypto.h"
 #include "decryptor/features.h"
-#include "sha256.h"
+#include "decryptor/sha256.h"
 #include "fatfs/sdmmc.h"
 
 #define BUFFER_ADDRESS  ((u8*) 0x21000000)
@@ -67,8 +67,8 @@ u32 SetNand(u32 use_emunand)
             return 0;
         }
         // no EmuNAND found
-         Debug("EmuNAND is not available");
-         return 1;
+        Debug("EmuNAND is not available");
+        return 1;
     } else {
         emunand_header = 0;
         emunand_offset = 0;
@@ -76,7 +76,7 @@ u32 SetNand(u32 use_emunand)
     }
 }
 
-int ReadNandSectors(u32 sector_no, u32 numsectors, u8 *out)
+inline int ReadNandSectors(u32 sector_no, u32 numsectors, u8 *out)
 {
     if (emunand_header) {
         if (sector_no == 0) {
@@ -90,7 +90,7 @@ int ReadNandSectors(u32 sector_no, u32 numsectors, u8 *out)
     } else return sdmmc_nand_readsectors(sector_no, numsectors, out);
 }
 
-int WriteNandSectors(u32 sector_no, u32 numsectors, u8 *in)
+inline int WriteNandSectors(u32 sector_no, u32 numsectors, u8 *in)
 {
     if (emunand_header) {
         if (sector_no == 0) {
