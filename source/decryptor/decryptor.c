@@ -16,7 +16,7 @@
 #define NAND_SECTOR_SIZE 0x200
 #define SECTORS_PER_READ (BUFFER_MAX_SIZE / NAND_SECTOR_SIZE)
 
-#define TITLES_DIR "D9titles"
+#define DECRYPT_DIR "D9decrypt"
 
 
 // From https://github.com/profi200/Project_CTR/blob/master/makerom/pki/prod.h#L19
@@ -1011,14 +1011,14 @@ u32 DecryptNcsdNcchBatch()
     u32 n_processed = 0;
     u32 n_failed = 0;
     
-    if (!DebugDirOpen(TITLES_DIR)) {
-        Debug("Files to decrypt go to %s/!", TITLES_DIR);
+    if (!DebugDirOpen(DECRYPT_DIR)) {
+        Debug("Files to decrypt go to %s/!", DECRYPT_DIR);
         return 1;
     }
     
     char path[256];
-    u32 path_len = strnlen(TITLES_DIR, 128);
-    memcpy(path, TITLES_DIR, path_len);
+    u32 path_len = strnlen(DECRYPT_DIR, 128);
+    memcpy(path, DECRYPT_DIR, path_len);
     path[path_len++] = '/';
     
     while (DirRead(path + path_len, 256 - path_len)) {
