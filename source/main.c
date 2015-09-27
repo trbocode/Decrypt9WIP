@@ -23,12 +23,21 @@ MenuInfo menu[] =
         }
     },
     {
-        "NAND Options",
+        "NAND Options 1",
         {
             { "NAND Backup", &DumpNand, 0, 0 },
             { "All Partitions Dump", &DecryptAllNandPartitions, 0, 0 },
             { "TWLNAND Partition Dump", &DecryptTwlNandPartition, 0, 0 },
             { "CTRNAND Partition Dump", &DecryptCtrNandPartition, 0, 0 }
+        }
+    },
+    {
+        "NAND Options 2",
+        {
+            { "NAND Restore", &RestoreNand, 1, 0 },
+            { "All Partitions Inject", &InjectAllNandPartitions, 1, 0 },
+            { "TWLNAND Partition Inject", &InjectTwlNandPartition, 1, 0 },
+            { "CTRNAND Partition Inject", &InjectCtrNandPartition, 1, 0 }
         }
     },
     {
@@ -50,15 +59,6 @@ MenuInfo menu[] =
         }
     },
     #ifdef EXPERIMENTAL
-    {
-        "NAND Write Options",
-        {
-            { "NAND Restore", &RestoreNand, 1, 0 },
-            { "All Partitions Inject", &InjectAllNandPartitions, 1, 0 },
-            { "TWLNAND Partition Inject", &InjectTwlNandPartition, 1, 0 },
-            { "CTRNAND Partition Inject", &InjectCtrNandPartition, 1, 0 }
-        }
-    },
     {
         "EmuNAND Read Options",
         {
