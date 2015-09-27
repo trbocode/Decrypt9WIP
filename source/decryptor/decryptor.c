@@ -1145,7 +1145,7 @@ u32 CreatePad(PadInfo *info)
 u32 DumpNand()
 {
     u8* buffer = BUFFER_ADDRESS;
-    u32 nand_size = getMMCDevice(0)->total_size * 0x200;
+    u32 nand_size = getMMCDevice(0)->total_size * NAND_SECTOR_SIZE;
     u32 result = 0;
 
     Debug("Dumping System NAND. Size (MB): %u", nand_size / (1024 * 1024));
@@ -1155,9 +1155,10 @@ u32 DumpNand()
 
     u32 n_sectors = nand_size / NAND_SECTOR_SIZE;
     for (u32 i = 0; i < n_sectors; i += SECTORS_PER_READ) {
+        u32 read_sectors = min(SECTORS_PER_READ, (n_sectors - i));
         ShowProgress(i, n_sectors);
-        ReadNandSectors(i, SECTORS_PER_READ, buffer);
-        if(!DebugFileWrite(buffer, NAND_SECTOR_SIZE * SECTORS_PER_READ, i * NAND_SECTOR_SIZE)) {
+        ReadNandSectors(i, read_sectors, buffer);
+        if(!DebugFileWrite(buffer, NAND_SECTOR_SIZE * read_sectors, i * NAND_SECTOR_SIZE)) {
             result = 1;
             break;
         }
@@ -1255,7 +1256,7 @@ u32 EncryptFileToNand(const char* filename, u32 offset, u32 size, PartitionInfo*
 u32 RestoreNand()
 {
     u8* buffer = BUFFER_ADDRESS;
-    u32 nand_size = getMMCDevice(0)->total_size * 0x200;
+    u32 nand_size = getMMCDevice(0)->total_size * NAND_SECTOR_SIZE;
     u32 result = 0;
 
     if (!DebugFileOpen("/NAND.bin"))
@@ -1270,12 +1271,13 @@ u32 RestoreNand()
 
     u32 n_sectors = nand_size / NAND_SECTOR_SIZE;
     for (u32 i = 0; i < n_sectors; i += SECTORS_PER_READ) {
+        u32 read_sectors = min(SECTORS_PER_READ, (n_sectors - i));
         ShowProgress(i, n_sectors);
-        if(!DebugFileRead(buffer, NAND_SECTOR_SIZE * SECTORS_PER_READ, i * NAND_SECTOR_SIZE)) {
+        if(!DebugFileRead(buffer, NAND_SECTOR_SIZE * read_sectors, i * NAND_SECTOR_SIZE)) {
             result = 1;
             break;
         }
-        WriteNandSectors(i, SECTORS_PER_READ, buffer);
+        WriteNandSectors(i, read_sectors, buffer);
     }
 
     ShowProgress(0, 0);
