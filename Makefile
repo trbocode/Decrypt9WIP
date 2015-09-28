@@ -16,7 +16,7 @@ include $(DEVKITARM)/ds_rules
 # INCLUDES is a list of directories containing header files
 # SPECS is the directory containing the important build and link files
 #---------------------------------------------------------------------------------
-export TARGET	:=	Decrypt9
+export TARGET	:=	Decrypt9WIP
 BUILD		:=	build
 SOURCES		:=	source source/fatfs source/decryptor source/abstraction
 DATA		:=	data
