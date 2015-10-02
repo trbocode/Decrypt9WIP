@@ -25,6 +25,13 @@
     ({ __typeof__ (a) _a = (a); \
        __typeof__ (b) _b = (b); \
        _a < _b ? _a : _b; })
+#define getbe16(d) \
+    (((d)[0]<<8) | (d)[1])
+#define getbe32(d) \
+    (((d)[0]<<24) | ((d)[1]<<16) | \
+     ((d)[2]<< 8) | (d)[3])
+#define align(v,a) \
+    (((v) % (a)) ? ((v) + (a) - ((v) % (a))) : (v))
     
 // customizations - careful with EXPERIMENTAL
 // #define EXPERIMENTAL

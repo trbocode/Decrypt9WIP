@@ -46,7 +46,7 @@ MenuInfo menu[] =
             { "Titlekey Decrypt (file)", &DecryptTitlekeysFile, 0, 0 },
             { "Titlekey Decrypt (NAND)", &DecryptTitlekeysNand, 0, 0 },
             { "Ticket Dump", &DumpTicket, 0, 0 },
-            { "NCCH Decryptor", &DecryptNcsdNcchBatch, 0, 0 }
+            { "NCCH/CIA Decryptor", &DecryptNcsdNcchBatch, 0, 0 }
         }
     },
     {
