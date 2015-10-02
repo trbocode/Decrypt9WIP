@@ -4,52 +4,31 @@
 void setup_aeskeyX(u8 keyslot, void* keyx)
 {
     u32 * _keyx = (u32*)keyx;
-    *REG_AESKEYCNT = (*REG_AESKEYCNT >> 6 << 6) | keyslot| 0x80;
+    *REG_AESKEYCNT = (*REG_AESKEYCNT >> 6 << 6) | keyslot | 0x80;
     *REG_AESKEYXFIFO = _keyx[0];
     *REG_AESKEYXFIFO = _keyx[1];
     *REG_AESKEYXFIFO = _keyx[2];
     *REG_AESKEYXFIFO = _keyx[3];
 }
 
-void setup_aeskey(u32 keyno, int value, void* key)
+void setup_aeskeyY(u8 keyslot, void* keyy)
 {
-    volatile u32* aes_regs[] =
-    {
-        (volatile u32*)0x19009060,
-        (volatile u32*)0x10009090,
-        (volatile u32*)0x100090C0,
-        (volatile u32*)0x100090F0
-    };
+    u32 * _keyy = (u32*)keyy;
+    *REG_AESKEYCNT = (*REG_AESKEYCNT >> 6 << 6) | keyslot | 0x80;
+    *REG_AESKEYYFIFO = _keyy[0];
+    *REG_AESKEYYFIFO = _keyy[1];
+    *REG_AESKEYYFIFO = _keyy[2];
+    *REG_AESKEYYFIFO = _keyy[3];
+}
+
+void setup_aeskey(u8 keyslot, void* key)
+{
     u32 * _key = (u32*)key;
-    *REG_AESCNT = (*REG_AESCNT & ~(AES_CNT_INPUT_ENDIAN|AES_CNT_INPUT_ORDER)) | (value << 23);
-    if (keyno > 3)
-    {
-        if (keyno > 0x3F)
-            return;
-        *REG_AESKEYCNT = (*REG_AESKEYCNT >> 6 << 6) | (u8)keyno | 0x80;
-        *REG_AESKEYFIFO = _key[0];
-        *REG_AESKEYFIFO = _key[1];
-        *REG_AESKEYFIFO = _key[2];
-        *REG_AESKEYFIFO = _key[3];
-    }
-    else
-    {
-        volatile u32* aes_reg = aes_regs[keyno];
-        if (value & 0x4)
-        {
-            aes_reg[0] = _key[3];
-            aes_reg[1] = _key[2];
-            aes_reg[2] = _key[1];
-            aes_reg[3] = _key[0];
-        }
-        else
-        {
-            aes_reg[0] = _key[0];
-            aes_reg[1] = _key[1];
-            aes_reg[2] = _key[2];
-            aes_reg[3] = _key[3];
-        }
-    }
+    *REG_AESKEYCNT = (*REG_AESKEYCNT >> 6 << 6) | keyslot | 0x80;
+    *REG_AESKEYFIFO = _key[0];
+    *REG_AESKEYFIFO = _key[1];
+    *REG_AESKEYFIFO = _key[2];
+    *REG_AESKEYFIFO = _key[3];
 }
 
 void use_aeskey(u32 keyno)
