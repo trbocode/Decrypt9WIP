@@ -14,7 +14,7 @@
 MenuInfo menu[] =
 {
     {
-        "XORpad Options",
+        "XORpad Options", 4,
         {
             { "NCCH Padgen", &NcchPadgen, 0, 0 },
             { "SD Padgen", &SdPadgen, 0, 0 },
@@ -23,7 +23,7 @@ MenuInfo menu[] =
         }
     },
     {
-        "NAND Options 1",
+        "NAND Options 1", 4,
         {
             { "NAND Backup", &DumpNand, 0, 0 },
             { "All Partitions Dump", &DecryptAllNandPartitions, 0, 0 },
@@ -32,7 +32,7 @@ MenuInfo menu[] =
         }
     },
     {
-        "NAND Options 2",
+        "NAND Options 2", 4,
         {
             { "NAND Restore", &RestoreNand, 1, 0 },
             { "All Partitions Inject", &InjectAllNandPartitions, 1, 0 },
@@ -41,7 +41,7 @@ MenuInfo menu[] =
         }
     },
     {
-        "Titles Options",
+        "Titles Options", 4,
         {
             { "Titlekey Decrypt (file)", &DecryptTitlekeysFile, 0, 0 },
             { "Titlekey Decrypt (NAND)", &DecryptTitlekeysNand, 0, 0 },
@@ -50,7 +50,7 @@ MenuInfo menu[] =
         }
     },
     {
-        "EmuNAND Options",
+        "EmuNAND Options", 4,
         {
             { "Titlekey Decrypt", &DecryptTitlekeysNand, 0, 1 },
             { "Ticket Dump", &DumpTicket, 0, 1 },
@@ -60,7 +60,7 @@ MenuInfo menu[] =
     },
     #ifdef EXPERIMENTAL
     {
-        "EmuNAND Read Options",
+        "EmuNAND Read Options", 4,
         {
             { "EmuNAND Backup", &DumpNand, 0, 1 },
             { "All Partitions Dump", &DecryptAllNandPartitions, 0, 1 },
@@ -69,7 +69,7 @@ MenuInfo menu[] =
         }
     },
     {
-        "EmuNAND Write Options",
+        "EmuNAND Write Options", 4,
         {
             { "EmuNAND Restore", &RestoreNand, 1, 1 },
             { "All Partitions Inject", &InjectAllNandPartitions, 1, 1 },

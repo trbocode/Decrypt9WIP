@@ -33,6 +33,11 @@ void ClearScreen(u8* screen, int color)
     }
 }
 
+void ClearTopScreen() {
+    ClearScreen(TOP_SCREEN0, BG_COLOR);
+    ClearScreen(TOP_SCREEN1, BG_COLOR);
+}
+
 void DrawCharacter(u8* screen, int character, int x, int y, int color, int bgcolor)
 {
     for (int yy = 0; yy < 8; yy++) {
@@ -78,8 +83,7 @@ void DrawStringF(int x, int y, const char *format, ...)
 void DebugClear()
 {
     memset(debugstr, 0x00, N_CHARS_X * N_CHARS_Y);
-    ClearScreen(TOP_SCREEN0, BG_COLOR);
-    ClearScreen(TOP_SCREEN1, BG_COLOR);
+    ClearTopScreen();
 }
 
 void Debug(const char *format, ...)
