@@ -149,14 +149,14 @@ release:
 	@-cp $(OUTPUT).3dsx $(CURDIR)/release/$(TARGET)
 	@-cp $(OUTPUT).smdh $(CURDIR)/release/$(TARGET)
 	@cp $(CURDIR)/scripts/*.py $(CURDIR)/release/scripts
-	@mv --no-target-directory $(CURDIR)/release $(CURDIR)/$(TARGET)-wip-d0k3-`date +'%Y%m%d-%H%M%S'`
+	@mv --no-target-directory $(CURDIR)/release $(CURDIR)/$(TARGET)-d0k3-`date +'%Y%m%d-%H%M%S'`
 	
 #---------------------------------------------------------------------------------
 clean:
 	@echo clean ...
 	@-make clean --no-print-directory -C CakeHax
 	@-make clean --no-print-directory -C BrahmaLoader
-	@rm -fr $(BUILD) $(OUTPUT_D) $(TARGET)-wip-*
+	@rm -fr $(BUILD) $(OUTPUT_D) $(TARGET)-d0k3-*
 
 
 #---------------------------------------------------------------------------------
