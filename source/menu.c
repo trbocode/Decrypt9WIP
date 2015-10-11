@@ -88,7 +88,11 @@ void ProcessMenu(MenuInfo* info, u32 nMenus) {
         mainMenu.entries[i].name = info[i].name;
         mainMenu.entries[i].function = NULL;
     }
+    #ifndef BUILD_NAME
     mainMenu.name = "Decrypt9 Main Menu";
+    #else
+    mainMenu.name = BUILD_NAME;
+    #endif
     mainMenu.n_entries = nMenus;
     DrawMenu(&mainMenu, 0, true, false);
     
