@@ -39,7 +39,8 @@ bool FileOpen(const char* path)
     return ret;
 }
 
-bool DebugFileOpen(const char* path) {
+bool DebugFileOpen(const char* path)
+{
     Debug("Opening %s ...", path);
     if (!FileOpen(path)) {
         Debug("Could not open %s!", path);
@@ -99,7 +100,8 @@ size_t FileWrite(void* buf, size_t size, size_t foffset)
     return bytes_written;
 }
 
-bool DebugFileWrite(void* buf, size_t size, size_t foffset) {
+bool DebugFileWrite(void* buf, size_t size, size_t foffset)
+{
     size_t bytesWritten = FileWrite(buf, size, foffset);
     if(bytesWritten != size) {
         Debug("ERROR, SD card may be full!");
@@ -138,7 +140,8 @@ bool DirOpen(const char* path)
     return ret;
 }
 
-bool DebugDirOpen(const char* path) {
+bool DebugDirOpen(const char* path)
+{
     Debug("Opening %s ...", path);
     if (!DirOpen(path)) {
         Debug("Could not open %s!", path);

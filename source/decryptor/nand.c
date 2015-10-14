@@ -259,7 +259,8 @@ u32 DumpNand()
     return result;
 }
 
-u32 DecryptNandPartition(PartitionInfo* p) {
+u32 DecryptNandPartition(PartitionInfo* p)
+{
     char filename[32];
     u8 magic[NAND_SECTOR_SIZE];
     
@@ -275,7 +276,8 @@ u32 DecryptNandPartition(PartitionInfo* p) {
     return DecryptNandToFile(filename, p->offset, p->size, p);
 }
 
-u32 DecryptAllNandPartitions() {
+u32 DecryptAllNandPartitions()
+{
     u32 result = 0;
     
     for (u32 partition_id = 0; partition_id < 6; partition_id++)
@@ -284,11 +286,13 @@ u32 DecryptAllNandPartitions() {
     return result;
 }
 
-u32 DecryptTwlNandPartition() {
+u32 DecryptTwlNandPartition()
+{
     return DecryptNandPartition(GetPartitionInfo(P_TWLN)); // TWLN
 }
     
-u32 DecryptCtrNandPartition() {
+u32 DecryptCtrNandPartition()
+{
     return DecryptNandPartition(GetPartitionInfo(P_CTRNAND)); // CTRNAND O3DS / N3DS
 }
 
@@ -369,7 +373,8 @@ u32 RestoreNand()
     return result;
 }
 
-u32 InjectNandPartition(PartitionInfo* p) {
+u32 InjectNandPartition(PartitionInfo* p)
+{
     char filename[32];
     u8 magic[NAND_SECTOR_SIZE];
     
@@ -408,7 +413,8 @@ u32 InjectNandPartition(PartitionInfo* p) {
     return EncryptFileToNand(filename, p->offset, p->size, p);
 }
 
-u32 InjectAllNandPartitions() {
+u32 InjectAllNandPartitions()
+{
     u32 result = 1;
     
     for (u32 partition_id = 0; partition_id < 6; partition_id++)
@@ -417,10 +423,12 @@ u32 InjectAllNandPartitions() {
     return result;
 }
 
-u32 InjectTwlNandPartition() {
+u32 InjectTwlNandPartition()
+{
     return InjectNandPartition(GetPartitionInfo(P_TWLN)); // TWLN
 }
 
-u32 InjectCtrNandPartition() {
+u32 InjectCtrNandPartition()
+{
     return InjectNandPartition(GetPartitionInfo(P_CTRNAND)); // CTRNAND O3DS / N3DS
 }

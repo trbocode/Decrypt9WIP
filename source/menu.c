@@ -5,7 +5,8 @@
 #include "decryptor/features.h"
 
 
-void DrawMenu(MenuInfo* currMenu, u32 index, bool fullDraw, bool subMenu) {
+void DrawMenu(MenuInfo* currMenu, u32 index, bool fullDraw, bool subMenu)
+{
     u32 menublock_y0 = 40;
     u32 menublock_y1 = menublock_y0 + currMenu->n_entries * 10;
     
@@ -28,7 +29,8 @@ void DrawMenu(MenuInfo* currMenu, u32 index, bool fullDraw, bool subMenu) {
     }
 }
 
-u32 ProcessEntry(MenuEntry* entry) {
+u32 ProcessEntry(MenuEntry* entry)
+{
     u32 pad_state;
     
     // unlock sequence for dangerous features
@@ -77,7 +79,8 @@ u32 ProcessEntry(MenuEntry* entry) {
     return pad_state;
 }
 
-void ProcessMenu(MenuInfo* info, u32 nMenus) {
+void ProcessMenu(MenuInfo* info, u32 nMenus)
+{
     MenuInfo mainMenu;
     MenuInfo* currMenu = &mainMenu;
     u32 index = 0;

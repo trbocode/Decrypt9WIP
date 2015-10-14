@@ -33,7 +33,8 @@ void ClearScreen(u8* screen, int color)
     }
 }
 
-void ClearTopScreen() {
+void ClearTopScreen()
+{
     ClearScreen(TOP_SCREEN0, BG_COLOR);
     ClearScreen(TOP_SCREEN1, BG_COLOR);
 }
