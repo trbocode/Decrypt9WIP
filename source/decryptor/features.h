@@ -11,6 +11,12 @@ u32 UpdateSeedDb(void);
 u32 DumpTicket(void);
 u32 DecryptTitlekeysFile(void);
 u32 DecryptTitlekeysNand(void);
+
+u32 DumpMovableSed(void);
+u32 DumpSecureInfoA(void);
+u32 InjectMovableSed(void);
+u32 InjectSecureInfoA(void);
+
 u32 DumpNand(void);
 u32 DecryptAllNandPartitions(void);
 u32 DecryptTwlNandPartition(void);

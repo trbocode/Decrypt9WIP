@@ -8,5 +8,3 @@
 
 u32 SeekFileInNand(u32* offset, u32* size, const char* path, PartitionInfo* partition);
 u32 DebugSeekFileInNand(u32* offset, u32* size, const char* filename, const char* path, PartitionInfo* partition);
-u32 DumpFileFromNand(const char* filename, const char* emuname, const char* path, PartitionInfo* partition);
-u32 InjectFileToNand(const char* filename, const char* path, PartitionInfo* partition);

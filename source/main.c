@@ -23,17 +23,12 @@ MenuInfo menu[] =
         }
     },
     {
-        "NAND Options 1", 4,
+        "NAND Options", 8,
         {
             { "NAND Backup", &DumpNand, 0, 0 },
             { "All Partitions Dump", &DecryptAllNandPartitions, 0, 0 },
             { "TWLNAND Partition Dump", &DecryptTwlNandPartition, 0, 0 },
-            { "CTRNAND Partition Dump", &DecryptCtrNandPartition, 0, 0 }
-        }
-    },
-    {
-        "NAND Options 2", 4,
-        {
+            { "CTRNAND Partition Dump", &DecryptCtrNandPartition, 0, 0 },
             { "NAND Restore", &RestoreNand, 1, 0 },
             { "All Partitions Inject", &InjectAllNandPartitions, 1, 0 },
             { "TWLNAND Partition Inject", &InjectTwlNandPartition, 1, 0 },
@@ -41,36 +36,44 @@ MenuInfo menu[] =
         }
     },
     {
-        "Titles Options", 4,
+        "Title Options", 4,
         {
             { "Titlekey Decrypt (file)", &DecryptTitlekeysFile, 0, 0 },
             { "Titlekey Decrypt (NAND)", &DecryptTitlekeysNand, 0, 0 },
-            { "Ticket Dump", &DumpTicket, 0, 0 },
+            { "Titlekey Decrypt (EMU)", &DecryptTitlekeysNand, 0, 1 },
             { "NCCH/CIA Decryptor", &DecryptNcsdNcchBatch, 0, 0 }
         }
     },
     {
-        "EmuNAND Options", 4,
+        "SysNAND File Options", 5,
         {
-            { "Titlekey Decrypt", &DecryptTitlekeysNand, 0, 1 },
-            { "Ticket Dump", &DumpTicket, 0, 1 },
-            { "Update SeedDB", &UpdateSeedDb, 0, 1 },
-            { "Seedsave Dump", &DumpSeedsave, 0, 1 }
+            { "Dump ticket.db", &DumpTicket, 0, 0 },
+            { "Dump movable.sed", &DumpMovableSed, 0, 0 },
+            { "Dump SecureInfo_A", &DumpSecureInfoA, 0, 0 },
+            { "Inject movable.sed", &InjectMovableSed, 1, 0 },
+            { "Inject SecureInfo_A", &InjectSecureInfoA, 1, 0 }
+        }
+    },
+    {
+        "EmuNAND File Options", 7,
+        {
+            { "Dump ticket_emu.db", &DumpTicket, 0, 1 },
+            { "Dump movable.sed", &DumpMovableSed, 0, 1 },
+            { "Dump SecureInfo_A", &DumpSecureInfoA, 0, 1 },
+            { "Dump seedsave.bin", &DumpSeedsave, 0, 1 },
+            { "Inject movable.sed", &InjectMovableSed, 1, 1 },
+            { "Inject SecureInfo_A", &InjectSecureInfoA, 1, 1 },
+            { "Update SeedDB", &UpdateSeedDb, 0, 1 }
         }
     },
     #ifdef EXPERIMENTAL
     {
-        "EmuNAND Read Options", 4,
+        "EmuNAND Options", 8,
         {
             { "EmuNAND Backup", &DumpNand, 0, 1 },
             { "All Partitions Dump", &DecryptAllNandPartitions, 0, 1 },
             { "TWLNAND Partition Dump", &DecryptTwlNandPartition, 0, 1 },
-            { "CTRNAND Partition Dump", &DecryptCtrNandPartition, 0, 1 }
-        }
-    },
-    {
-        "EmuNAND Write Options", 4,
-        {
+            { "CTRNAND Partition Dump", &DecryptCtrNandPartition, 0, 1 },
             { "EmuNAND Restore", &RestoreNand, 1, 1 },
             { "All Partitions Inject", &InjectAllNandPartitions, 1, 1 },
             { "TWLNAND Partition Inject", &InjectTwlNandPartition, 1, 1 },
