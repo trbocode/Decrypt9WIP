@@ -76,39 +76,57 @@ u32 SeekFileInNand(u32* offset, u32* size, const char* path, PartitionInfo* part
     return (found) ? 0 : 1;
 }
 
-u32 DumpSeedsave()
+u32 DebugSeekFileInNand(u32* offset, u32* size, const char* filename, const char* path, PartitionInfo* partition)
 {
-    PartitionInfo* ctrnand_info = GetPartitionInfo(P_CTRNAND);
-    u32 offset;
-    u32 size;
-    
-    Debug("Searching for seedsave...");
-    if (SeekFileInNand(&offset, &size, "DATA       ???????????SYSDATA    0001000F   00000000   ", ctrnand_info) != 0) {
+    Debug("Searching for %s...", filename);
+    if (SeekFileInNand(offset, size, path, partition) != 0) {
         Debug("Failed!");
         return 1;
     }
-    Debug("Found at %08X, size %ukB", offset, size / 1024);
+    if (*size < 1024)
+        Debug("Found at %08X, size %ub", *offset, *size);
+    else if (*size < 1024 * 1024)
+        Debug("Found at %08X, size %ukB", *offset, *size / 1024);
+    else
+        Debug("Found at %08X, size %uMB", *offset, *size / (1024*1024));
     
-    if (DecryptNandToFile("/seedsave.bin", offset, size, ctrnand_info) != 0)
+    return 0;
+}
+
+u32 DumpFileFromNand(const char* filename, const char* emuname, const char* path, PartitionInfo* partition)
+{
+    u32 offset;
+    u32 size;
+    
+    if (DebugSeekFileInNand(&offset, &size, filename, path, partition) != 0)
+        return 1;
+    if (DecryptNandToFile((IsEmuNand() && (emuname != NULL)) ? emuname : filename, offset, size, partition) != 0)
         return 1;
     
     return 0;
 }
 
-u32 DumpTicket() {
-    PartitionInfo* ctrnand_info = GetPartitionInfo(P_CTRNAND);
+u32 InjectFileToNand(const char* filename, const char* path, PartitionInfo* partition)
+{
     u32 offset;
     u32 size;
     
-    Debug("Searching for ticket.db...");
-    if (SeekFileInNand(&offset, &size, "DBS        TICKET  DB ", ctrnand_info) != 0) {
-        Debug("Failed!");
+    if (DebugSeekFileInNand(&offset, &size, filename, path, partition) != 0)
         return 1;
-    }
-    Debug("Found at %08X, size %uMB", offset, size / (1024 * 1024));
-    
-    if (DecryptNandToFile((IsEmuNand()) ? "/ticket_emu.db" : "/ticket.db", offset, size, ctrnand_info) != 0)
+    if (EncryptFileToNand(filename, offset, size, partition) != 0)
         return 1;
     
     return 0;
+}
+
+u32 DumpSeedsave()
+{
+    PartitionInfo* ctrnand_info = GetPartitionInfo(P_CTRNAND);
+    return DumpFileFromNand("/seedsave.bin", NULL, "DATA       ???????????SYSDATA    0001000F   00000000   ", ctrnand_info);
+}
+
+u32 DumpTicket()
+{
+    PartitionInfo* ctrnand_info = GetPartitionInfo(P_CTRNAND);
+    return DumpFileFromNand("/ticket.db", "/ticket_emu.db", "DBS        TICKET  DB ", ctrnand_info);
 }
