@@ -21,9 +21,12 @@ u32 DumpNand(void);
 u32 DecryptAllNandPartitions(void);
 u32 DecryptTwlNandPartition(void);
 u32 DecryptCtrNandPartition(void);
-u32 DecryptNcsdNcchBatch(void);
 
 u32 RestoreNand(void);
 u32 InjectAllNandPartitions(void);
 u32 InjectTwlNandPartition(void);
 u32 InjectCtrNandPartition(void);
+
+u32 DecryptNcsdNcch(void);
+u32 DecryptCiaShallow(void);
+u32 DecryptCiaDeep(void);

@@ -23,12 +23,16 @@ MenuInfo menu[] =
         }
     },
     {
-        "NAND Options", 8,
+        "Titlekey Options", 3,
         {
-            { "NAND Backup", &DumpNand, 0, 0 },
-            { "All Partitions Dump", &DecryptAllNandPartitions, 0, 0 },
-            { "TWLNAND Partition Dump", &DecryptTwlNandPartition, 0, 0 },
-            { "CTRNAND Partition Dump", &DecryptCtrNandPartition, 0, 0 },
+            { "Titlekey Decrypt (file)", &DecryptTitlekeysFile, 0, 0 },
+            { "Titlekey Decrypt (NAND)", &DecryptTitlekeysNand, 0, 0 },
+            { "Titlekey Decrypt (EMU)", &DecryptTitlekeysNand, 0, 1 }
+        }
+    },
+    {
+        "NAND Dump Options", 4,
+        {
             { "NAND Restore", &RestoreNand, 1, 0 },
             { "All Partitions Inject", &InjectAllNandPartitions, 1, 0 },
             { "TWLNAND Partition Inject", &InjectTwlNandPartition, 1, 0 },
@@ -36,12 +40,12 @@ MenuInfo menu[] =
         }
     },
     {
-        "Title Options", 4,
+        "NAND Inject Options", 4,
         {
-            { "Titlekey Decrypt (file)", &DecryptTitlekeysFile, 0, 0 },
-            { "Titlekey Decrypt (NAND)", &DecryptTitlekeysNand, 0, 0 },
-            { "Titlekey Decrypt (EMU)", &DecryptTitlekeysNand, 0, 1 },
-            { "NCCH/CIA Decryptor", &DecryptNcsdNcchBatch, 0, 0 }
+            { "NAND Restore", &RestoreNand, 1, 0 },
+            { "All Partitions Inject", &InjectAllNandPartitions, 1, 0 },
+            { "TWLNAND Partition Inject", &InjectTwlNandPartition, 1, 0 },
+            { "CTRNAND Partition Inject", &InjectCtrNandPartition, 1, 0 }
         }
     },
     {
@@ -66,14 +70,27 @@ MenuInfo menu[] =
             { "Update SeedDB", &UpdateSeedDb, 0, 1 }
         }
     },
+    {
+        "Game Decryptor Options", 3,
+        {
+            { "NCCH/NCSD Decryptor", &DecryptNcsdNcch, 0, 0 },
+            { "CIA Decryptor (shallow)", &DecryptCiaShallow, 0, 0 },
+            { "CIA Decryptor (deep)", &DecryptCiaDeep, 0, 0 }
+        }
+    },
     #ifdef EXPERIMENTAL
     {
-        "EmuNAND Options", 8,
+        "EmuNAND Dump Options", 4,
         {
             { "EmuNAND Backup", &DumpNand, 0, 1 },
             { "All Partitions Dump", &DecryptAllNandPartitions, 0, 1 },
             { "TWLNAND Partition Dump", &DecryptTwlNandPartition, 0, 1 },
-            { "CTRNAND Partition Dump", &DecryptCtrNandPartition, 0, 1 },
+            { "CTRNAND Partition Dump", &DecryptCtrNandPartition, 0, 1 }
+        }
+    },
+    {
+        "EmuNAND Inject Options", 4,
+        {
             { "EmuNAND Restore", &RestoreNand, 1, 1 },
             { "All Partitions Inject", &InjectAllNandPartitions, 1, 1 },
             { "TWLNAND Partition Inject", &InjectTwlNandPartition, 1, 1 },

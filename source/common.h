@@ -30,6 +30,9 @@
 #define getbe32(d) \
     (((d)[0]<<24) | ((d)[1]<<16) | \
      ((d)[2]<< 8) | (d)[3])
+#define getbe64(d) \
+    ((((u64) getbe32(d))<<32) | \
+     ((u64) getbe32(d+4)))
 #define align(v,a) \
     (((v) % (a)) ? ((v) + (a) - ((v) % (a))) : (v))
     

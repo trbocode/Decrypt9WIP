@@ -12,7 +12,7 @@ typedef struct {
 typedef struct {
     char* name;
     u32 n_entries;
-    MenuEntry entries[8];
+    MenuEntry entries[12];
 } MenuInfo;
 
 void ProcessMenu(MenuInfo* info, u32 nMenus);
