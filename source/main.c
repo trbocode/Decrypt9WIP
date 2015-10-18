@@ -33,10 +33,10 @@ MenuInfo menu[] =
     {
         "NAND Dump Options", 4,
         {
-            { "NAND Restore", &RestoreNand, 1, 0 },
-            { "All Partitions Inject", &InjectAllNandPartitions, 1, 0 },
-            { "TWLNAND Partition Inject", &InjectTwlNandPartition, 1, 0 },
-            { "CTRNAND Partition Inject", &InjectCtrNandPartition, 1, 0 }
+            { "NAND Backup", &DumpNand, 0, 0 },
+            { "All Partitions Dump", &DecryptAllNandPartitions, 0, 0 },
+            { "TWLNAND Partition Dump", &DecryptTwlNandPartition, 0, 0 },
+            { "CTRNAND Partition Dump", &DecryptCtrNandPartition, 0, 0 },
         }
     },
     {
