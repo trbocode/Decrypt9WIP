@@ -68,6 +68,7 @@ ifneq ($(BUILD),$(notdir $(CURDIR)))
 
 export OUTPUT_D	:=	$(CURDIR)/output
 export OUTPUT	:=	$(OUTPUT_D)/$(TARGET)
+export RELEASE	:=	$(CURDIR)/release
 
 export VPATH	:=	$(foreach dir,$(SOURCES),$(CURDIR)/$(dir)) \
 			$(foreach dir,$(DATA),$(CURDIR)/$(dir))
@@ -137,28 +138,28 @@ brahma: submodules bootstrap
 	@mv BrahmaLoader/output/*.smdh $(OUTPUT_D)
 	
 release:
-	@rm -fr $(BUILD) $(OUTPUT_D) $(CURDIR)/release
+	@rm -fr $(BUILD) $(OUTPUT_D) $(RELEASE)
 	@make --no-print-directory gateway
 	@-make --no-print-directory cakehax
 	@rm -fr $(BUILD) $(OUTPUT).bin $(OUTPUT).elf $(CURDIR)/$(LOADER)/data
 	@-make --no-print-directory brahma
-	@[ -d $(CURDIR)/release ] || mkdir -p $(CURDIR)/release
-	@[ -d $(CURDIR)/release/$(TARGET) ] || mkdir -p $(CURDIR)/release/$(TARGET)
-	@[ -d $(CURDIR)/release/scripts ] || mkdir -p $(CURDIR)/release/scripts
-	@cp $(OUTPUT_D)/Launcher.dat $(CURDIR)/release
-	@cp $(OUTPUT).bin $(CURDIR)/release
-	@-cp $(OUTPUT).dat $(CURDIR)/release
-	@-cp $(OUTPUT).3dsx $(CURDIR)/release/$(TARGET)
-	@-cp $(OUTPUT).smdh $(CURDIR)/release/$(TARGET)
-	@cp $(CURDIR)/scripts/*.py $(CURDIR)/release/scripts
-	@mv --no-target-directory $(CURDIR)/release $(CURDIR)/$(TARGET)-d0k3-`date +'%Y%m%d-%H%M%S'`
+	@[ -d $(RELEASE) ] || mkdir -p $(RELEASE)
+	@[ -d $(RELEASE)/$(TARGET) ] || mkdir -p $(RELEASE)/$(TARGET)
+	@[ -d $(RELEASE)/scripts ] || mkdir -p $(RELEASE)/scripts
+	@cp $(OUTPUT_D)/Launcher.dat $(RELEASE)
+	@cp $(OUTPUT).bin $(RELEASE)
+	@-cp $(OUTPUT).dat $(RELEASE)
+	@-cp $(OUTPUT).3dsx $(RELEASE)/$(TARGET)
+	@-cp $(OUTPUT).smdh $(RELEASE)/$(TARGET)
+	@cp $(CURDIR)/scripts/*.py $(RELEASE)/scripts
+	@7z a $(RELEASE)/$(TARGET)-d0k3-`date +'%Y%m%d-%H%M%S'`.zip $(RELEASE)/*
 	
 #---------------------------------------------------------------------------------
 clean:
 	@echo clean ...
 	@-make clean --no-print-directory -C CakeHax
 	@-make clean --no-print-directory -C BrahmaLoader
-	@rm -fr $(BUILD) $(OUTPUT_D) $(TARGET)-d0k3-*
+	@rm -fr $(BUILD) $(OUTPUT_D) $(RELEASE)
 
 
 #---------------------------------------------------------------------------------
