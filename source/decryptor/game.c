@@ -6,7 +6,6 @@
 #include "platform.h"
 #include "decryptor/features.h"
 #include "decryptor/crypto.h"
-#include "decryptor/sha256.h"
 #include "decryptor/decryptor.h"
 #include "decryptor/nand.h"
 #include "decryptor/nandfat.h"
@@ -123,10 +122,9 @@ u32 NcchPadgen()
                 return 1;
             }
             u8 sha256sum[32];
-            sha256_context shactx;
-            sha256_starts(&shactx);
-            sha256_update(&shactx, keydata, 32);
-            sha256_finish(&shactx, sha256sum);
+            sha_init(SHA256_MODE);
+            sha_update(keydata, 32);
+            sha_get(sha256sum);
             memcpy(padInfo.keyY, sha256sum, 16);
         }
         else
@@ -347,12 +345,10 @@ u32 GetHashFromFile(const char* filename, u32 offset, u32 size, u8* hash)
 {
     // uses the standard buffer, so be careful
     u8* buffer = BUFFER_ADDRESS;
-    u8 digest[32];    
-    sha256_context shactx;
     
     if (!FileOpen(filename))
         return 1;
-    sha256_starts(&shactx);
+    sha_init(SHA256_MODE);
     for (u32 i = 0; i < size; i += BUFFER_MAX_SIZE) {
         u32 read_bytes = min(BUFFER_MAX_SIZE, (size - i));
         if (size >= 0x100000) ShowProgress(i, size);
@@ -360,10 +356,9 @@ u32 GetHashFromFile(const char* filename, u32 offset, u32 size, u8* hash)
             FileClose();
             return 1;
         }
-        sha256_update(&shactx, buffer, read_bytes);
+        sha_update(buffer, read_bytes);
     }
-    sha256_finish(&shactx, digest);
-    memcpy(hash, digest, 32);
+    sha_get(hash);
     ShowProgress(0, 0);
     FileClose();
     
@@ -465,10 +460,9 @@ u32 DecryptNcch(const char* filename, u32 offset, u32 size, u64 seedId)
                     memcpy(keydata, ncch->signature, 16);
                     memcpy(keydata + 16, entry->external_seed, 16);
                     u8 sha256sum[32];
-                    sha256_context shactx;
-                    sha256_starts(&shactx);
-                    sha256_update(&shactx, keydata, 32);
-                    sha256_finish(&shactx, sha256sum);
+                    sha_init(SHA256_MODE);
+                    sha_update(keydata, 32);
+                    sha_get(sha256sum);
                     memcpy(seedKeyY, sha256sum, 16);
                     found = 1;
                 }
@@ -778,18 +772,16 @@ u32 DecryptCia(const char* filename, bool deep_decrypt)
         for (u32 i = 0, kc = 0; i < 64 && kc < content_count; i++) {
             u32 k = getbe16(tmd_data + 0xC4 + (i * 0x24) + 0x02);
             u8 chunk_hash[32];
-            sha256_context shactx;
-            sha256_starts(&shactx);
-            sha256_update(&shactx, content_list + kc * 0x30, k * 0x30);
-            sha256_finish(&shactx, chunk_hash);
+            sha_init(SHA256_MODE);
+            sha_update(content_list + kc * 0x30, k * 0x30);
+            sha_get(chunk_hash);
             memcpy(tmd_data + 0xC4 + (i * 0x24) + 0x04, chunk_hash, 32);
             kc += k;
         }
         u8 tmd_hash[32];
-        sha256_context shactx;
-        sha256_starts(&shactx);
-        sha256_update(&shactx, tmd_data + 0xC4, 64 * 0x24);
-        sha256_finish(&shactx, tmd_hash);
+        sha_init(SHA256_MODE);
+        sha_update(tmd_data + 0xC4, 64 * 0x24);
+        sha_get(tmd_hash);
         if (memcmp(tmd_data + 0xA4, tmd_hash, 32) != 0) {
             n_encrypted++;
             memcpy(tmd_data + 0xA4, tmd_hash, 32);
