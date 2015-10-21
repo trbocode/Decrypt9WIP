@@ -14,7 +14,7 @@ bool InitFS()
     *(u32*)0x10000020 = 0;
     *(u32*)0x10000020 = 0x340;
 #endif
-    bool ret = (f_mount(&fs, "0:", 0) == FR_OK);
+    bool ret = (f_mount(&fs, "0:", 1) == FR_OK);
     #ifdef WORKDIR
     f_mkdir(WORKDIR);
     f_chdir(WORKDIR);
@@ -24,7 +24,7 @@ bool InitFS()
 
 void DeinitFS()
 {
-    f_mount(NULL, "0:", 0);
+    f_mount(NULL, "0:", 1);
 }
 
 bool FileOpen(const char* path)

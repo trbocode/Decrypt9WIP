@@ -5,6 +5,26 @@
 #include "decryptor/features.h"
 
 
+u32 UnmountSd()
+{
+    u32 pad_state;
+    
+    DebugClear();
+    Debug("Unmounting SD card...");
+    DeinitFS();
+    Debug("SD is unmounted, you may remove it now.");
+    Debug("Put the SD card back in before pressing B!");
+    Debug("");
+    Debug("(B to return, START to reboot)");
+    while (true) {
+        pad_state = InputWait();
+        if (((pad_state & BUTTON_B) && InitFS()) || (pad_state & BUTTON_START))
+            break;
+    }
+    
+    return pad_state;
+}
+
 void DrawMenu(MenuInfo* currMenu, u32 index, bool fullDraw, bool subMenu)
 {
     u32 menublock_y0 = 40;
@@ -16,7 +36,8 @@ void DrawMenu(MenuInfo* currMenu, u32 index, bool fullDraw, bool subMenu)
         DrawStringF(10, menublock_y0 - 10, "==========================");
         DrawStringF(10, menublock_y1 +  0, "==========================");
         DrawStringF(10, menublock_y1 + 10, (subMenu) ? "A: Choose  B: Return" : "A: Choose");
-        DrawStringF(10, menublock_y1 + 20, "START: Reboot");
+        DrawStringF(10, menublock_y1 + 20, "SELECT: Unmount SD");
+        DrawStringF(10, menublock_y1 + 30, "START:  Reboot");
         DrawStringF(10, SCREEN_HEIGHT - 20, "Remaining SD storage space: %llu MiB", RemainingStorageSpace() / 1024 / 1024);
         #ifdef WORKDIR
         DrawStringF(10, SCREEN_HEIGHT - 30, "Working directory: %s", WORKDIR);
@@ -123,7 +144,9 @@ void ProcessMenu(MenuInfo* info, u32 nMenus)
         } else if ((pad_state & BUTTON_L1) && (currMenu != &mainMenu)) {
             if (--currMenu < info) currMenu = info + nMenus - 1;
             index = 0;
-        } else {
+        } else if (pad_state & BUTTON_SELECT) {
+            pad_state = UnmountSd();
+        }else {
             full_draw = false;
         }
         if (pad_state & BUTTON_START)
