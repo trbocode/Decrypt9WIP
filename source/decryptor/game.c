@@ -1,6 +1,3 @@
-#include <string.h>
-#include <stdio.h>
-
 #include "fs.h"
 #include "draw.h"
 #include "platform.h"
@@ -875,9 +872,11 @@ u32 DecryptGameFilesBatch(bool batchNcch, bool batchCia, bool deepCia)
     if (n_processed) {
         Debug("");
         Debug("%ux decrypted / %ux failed ", n_processed, n_failed);
+    } else if (!n_failed) {
+        Debug("Nothing found in %s/!", DECRYPT_DIR);
     }
     
-    return !(n_processed);
+    return !n_processed;
 }
 
 u32 DecryptNcsdNcch() {

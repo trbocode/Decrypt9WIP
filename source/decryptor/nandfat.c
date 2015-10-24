@@ -1,6 +1,3 @@
-#include <string.h>
-#include <stdio.h>
-
 #include "fs.h"
 #include "draw.h"
 #include "decryptor/features.h"
