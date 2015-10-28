@@ -488,7 +488,7 @@ u32 DecryptNcch(const char* filename, u32 offset, u32 size, u64 seedId)
             Debug("Can only be decrypted on N3DS!");
             return 1;
         }
-        if (FileOpen("slot0x25KeyX.bin")) {
+        if (FileOpen("/slot0x25KeyX.bin")) {
             u8 slot0x25KeyX[16] = {0};
             if (FileRead(&slot0x25KeyX, 16, 0) != 16) {
                 Debug("slot0x25keyX.bin is corrupt!");
@@ -504,7 +504,7 @@ u32 DecryptNcch(const char* filename, u32 offset, u32 size, u64 seedId)
     
     // check / setup seed crypto
     if (usesSeedCrypto) {
-        if (FileOpen("seeddb.bin")) {
+        if (FileOpen("/seeddb.bin")) {
             SeedInfoEntry* entry = (SeedInfoEntry*) buffer;
             u32 found = 0;
             for (u32 i = 0x10;; i += 0x20) {
@@ -553,7 +553,6 @@ u32 DecryptNcch(const char* filename, u32 offset, u32 size, u64 seedId)
         
     // process ExHeader
     if (ncch->size_exthdr > 0) {
-        // Debug("Decrypting ExtHeader (%ub)...", 0x800);
         memset(info0.CTR + 12, 0x00, 4);
         if (ncch->version == 1)
             add_ctr(info0.CTR, 0x200); // exHeader offset
@@ -566,7 +565,6 @@ u32 DecryptNcch(const char* filename, u32 offset, u32 size, u64 seedId)
     if (ncch->size_exefs > 0) {
         u32 offset_byte = ncch->offset_exefs * 0x200;
         u32 size_byte = ncch->size_exefs * 0x200;
-        // Debug("Decrypting ExeFS (%ukB)...", size_byte / 1024);
         memset(info0.CTR + 12, 0x00, 4);
         if (ncch->version == 1)
             add_ctr(info0.CTR, offset_byte);
@@ -613,7 +611,6 @@ u32 DecryptNcch(const char* filename, u32 offset, u32 size, u64 seedId)
     if (ncch->size_romfs > 0) {
         u32 offset_byte = ncch->offset_romfs * 0x200;
         u32 size_byte = ncch->size_romfs * 0x200;
-        // Debug("Decrypting RomFS (%uMB)...", size_byte / (1024 * 1024));
         memset(info1.CTR + 12, 0x00, 4);
         if (ncch->version == 1)
             add_ctr(info1.CTR, offset_byte);
