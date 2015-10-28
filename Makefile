@@ -152,7 +152,7 @@ release:
 	@-cp $(OUTPUT).3dsx $(RELEASE)/$(TARGET)
 	@-cp $(OUTPUT).smdh $(RELEASE)/$(TARGET)
 	@cp $(CURDIR)/scripts/*.py $(RELEASE)/scripts
-	@7z a $(RELEASE)/$(TARGET)-d0k3-`date +'%Y%m%d-%H%M%S'`.zip $(RELEASE)/*
+	@-7z a $(RELEASE)/$(TARGET)-d0k3-`date +'%Y%m%d-%H%M%S'`.zip $(RELEASE)/*
 	
 #---------------------------------------------------------------------------------
 clean:
