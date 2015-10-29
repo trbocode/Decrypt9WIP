@@ -236,7 +236,7 @@ u32 DumpNand()
 
     Debug("Dumping System NAND. Size (MB): %u", nand_size / (1024 * 1024));
 
-    if (!DebugFileCreate("/NAND.bin", true))
+    if (!DebugFileCreate((IsEmuNand()) ? "/EmuNAND.bin" : "/NAND.bin", true))
         return 1;
 
     u32 n_sectors = nand_size / NAND_SECTOR_SIZE;
@@ -342,14 +342,24 @@ u32 RestoreNand()
     u8* buffer = BUFFER_ADDRESS;
     u32 nand_size = getMMCDevice(0)->total_size * NAND_SECTOR_SIZE;
     u32 result = 0;
+    u8 magic[4];
 
-    if (!DebugFileOpen("/NAND.bin"))
+    if (IsEmuNand()) {
+        if (!DebugFileOpen("/EmuNAND.bin") && !DebugFileOpen("/NAND.bin"))
+            return 1;
+    } else if (!DebugFileOpen("/NAND.bin"))
         return 1;
     if (nand_size != FileGetSize()) {
         FileClose();
         Debug("NAND backup has the wrong size!");
         return 1;
     };
+    if(!DebugFileRead(magic, 4, 0x100))
+        return 1;
+    if (memcmp(magic, "NCSD", 4) != 0) {
+        Debug("Not a proper NAND backup!");
+        return 1;
+    }
     
     Debug("Restoring System NAND. Size (MB): %u", nand_size / (1024 * 1024));
 
