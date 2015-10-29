@@ -14,12 +14,7 @@ bool InitFS()
     *(u32*)0x10000020 = 0;
     *(u32*)0x10000020 = 0x340;
 #endif
-    bool ret = (f_mount(&fs, "0:", 1) == FR_OK);
-    #ifdef WORKDIR
-    f_mkdir(WORKDIR);
-    f_chdir(WORKDIR);
-    #endif
-    return ret;
+    return (f_mount(&fs, "0:", 1) == FR_OK);
 }
 
 void DeinitFS()
@@ -29,11 +24,18 @@ void DeinitFS()
 
 bool FileOpen(const char* path)
 {
-    #ifdef WORKDIR
-    if (*path == '/' || *path == '\\') path++;
-    #endif
     unsigned flags = FA_READ | FA_WRITE | FA_OPEN_EXISTING;
+    #ifdef WORKING_DIR
+    while (*path == '/' || *path == '\\') path++;
+    f_chdir(WORKING_DIR);
     bool ret = (f_open(&file, path, flags) == FR_OK);
+    if (!ret) {
+        f_chdir("/");
+        ret = (f_open(&file, path, flags) == FR_OK);
+    }
+    #else
+    bool ret = (f_open(&file, path, flags) == FR_OK);
+    #endif
     f_lseek(&file, 0);
     f_sync(&file);
     return ret;
@@ -52,11 +54,12 @@ bool DebugFileOpen(const char* path)
 
 bool FileCreate(const char* path, bool truncate)
 {
-    #ifdef WORKDIR
-    if (*path == '/' || *path == '\\') path++;
-    #endif
     unsigned flags = FA_READ | FA_WRITE;
     flags |= truncate ? FA_CREATE_ALWAYS : FA_OPEN_ALWAYS;
+    #ifdef WORKING_DIR
+    if (*path == '/' || *path == '\\') path++;
+    f_chdir(WORKING_DIR);
+    #endif
     bool ret = (f_open(&file, path, flags) == FR_OK);
     f_lseek(&file, 0);
     f_sync(&file);
@@ -123,8 +126,9 @@ void FileClose()
 
 bool DirMake(const char* path)
 {
-    #ifdef WORKDIR
-    if (*path == '/' || *path == '\\') path++;
+    #ifdef WORKING_DIR
+    while (*path == '/' || *path == '\\') path++;
+    f_chdir(WORKING_DIR);
     #endif
     FRESULT res = f_mkdir(path);
     bool ret = (res == FR_OK) || (res == FR_EXIST);
@@ -133,10 +137,17 @@ bool DirMake(const char* path)
 
 bool DirOpen(const char* path)
 {
-    #ifdef WORKDIR
-    if (*path == '/' || *path == '\\') path++;
-    #endif
+    #ifdef WORKING_DIR
+    while (*path == '/' || *path == '\\') path++;
+    f_chdir(WORKING_DIR);
     bool ret = (f_opendir(&dir, path) == FR_OK);
+    if (!ret) {
+        f_chdir("/");
+        ret = (f_opendir(&dir, path) == FR_OK);
+    }
+    #else
+    bool ret = (f_opendir(&dir, path) == FR_OK);
+    #endif
     return ret;
 }
 

@@ -39,7 +39,8 @@
     
 // customizations - careful with EXPERIMENTAL
 // #define EXPERIMENTAL
-// #define WORKDIR "/Decrypt9" // DOES NOT WORK FOR EVERYTHING ATM!
+#define DECRYPT_DIR "/D9decrypt"
+#define WORKING_DIR "/Decrypt9"
 
 inline char* strupper(const char* str) {
     char* buffer = (char*)malloc(strlen(str) + 1);

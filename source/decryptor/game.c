@@ -9,8 +9,6 @@
 #include "decryptor/titlekey.h"
 #include "decryptor/game.h"
 
-#define DECRYPT_DIR "D9decrypt"
-
 
 u32 NcchPadgen()
 {
@@ -864,8 +862,15 @@ u32 DecryptGameFilesBatch(bool batchNcch, bool batchCia, bool deepCia)
     u32 n_failed = 0;
     
     if (!DebugDirOpen(DECRYPT_DIR)) {
+        #ifdef WORKING_DIR
+        if (!DebugDirOpen(WORKING_DIR)) {
+            Debug("No working directory found!");
+            return 1;
+        }
+        #else
         Debug("Files to decrypt go to %s/!", DECRYPT_DIR);
         return 1;
+        #endif
     }
     
     char path[256];
