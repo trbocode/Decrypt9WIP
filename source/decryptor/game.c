@@ -451,6 +451,14 @@ u32 DecryptNcch(const char* filename, u32 offset, u32 size, u64 seedId)
         return 2; // not an actual error
     }
     
+    // size plausibility check
+    u32 size_sum = 0x200 + ((ncch->size_exthdr) ? 0x800 : 0x0) + 0x200 *
+        (ncch->size_plain + ncch->size_logo + ncch->size_exefs + ncch->size_romfs);
+    if (ncch->size * 0x200 < size_sum) {
+        Debug("Probably not a NCCH container");
+        return 2; // not an actual error
+    }        
+    
     // check if encrypted
     if (ncch->flags[7] & 0x04) {
         Debug("NCCH is not encrypted");
