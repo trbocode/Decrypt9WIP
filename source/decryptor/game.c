@@ -905,15 +905,18 @@ u32 DecryptGameFilesBatch(bool batchNcch, bool batchCia, bool deepCia)
                 n_failed++;
             }
         } else if (batchNcch && (memcmp(buffer + 0x100, "NCSD", 4) == 0)) {
+            if (*((u64*) (buffer + 0x110)) != 0) 
+                continue; // skip NAND backup NCSDs
             Debug("Decrypting NCSD \"%s\"", path + path_len);
             u32 p;
             for (p = 0; p < 8; p++) {
+                u64 seedId = (p) ? *((u64*) (buffer + 0x108)) : 0;
                 u32 offset = *((u32*) (buffer + 0x120 + (p*0x8))) * 0x200;
                 u32 size = *((u32*) (buffer + 0x124 + (p*0x8))) * 0x200;
                 if (size == 0) 
                     continue;
                 Debug("Partition %i (%s)", p, ncsd_partition_name[p]);
-                if (DecryptNcch(path, offset, size, 0) == 1)
+                if (DecryptNcch(path, offset, size, seedId) == 1)
                     break;
             }
             if ( p == 8 ) {
