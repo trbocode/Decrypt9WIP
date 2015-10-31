@@ -126,10 +126,6 @@ void FileClose()
 
 bool DirMake(const char* path)
 {
-    #ifdef WORKING_DIR
-    while (*path == '/' || *path == '\\') path++;
-    f_chdir(WORKING_DIR);
-    #endif
     FRESULT res = f_mkdir(path);
     bool ret = (res == FR_OK) || (res == FR_EXIST);
     return ret;
@@ -137,18 +133,7 @@ bool DirMake(const char* path)
 
 bool DirOpen(const char* path)
 {
-    #ifdef WORKING_DIR
-    while (*path == '/' || *path == '\\') path++;
-    f_chdir(WORKING_DIR);
-    bool ret = (f_opendir(&dir, path) == FR_OK);
-    if (!ret) {
-        f_chdir("/");
-        ret = (f_opendir(&dir, path) == FR_OK);
-    }
-    #else
-    bool ret = (f_opendir(&dir, path) == FR_OK);
-    #endif
-    return ret;
+    return (f_opendir(&dir, path) == FR_OK);
 }
 
 bool DebugDirOpen(const char* path)
