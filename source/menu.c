@@ -39,8 +39,12 @@ void DrawMenu(MenuInfo* currMenu, u32 index, bool fullDraw, bool subMenu)
         DrawStringF(10, menublock_y1 + 20, "SELECT: Unmount SD");
         DrawStringF(10, menublock_y1 + 30, "START:  Reboot");
         DrawStringF(10, SCREEN_HEIGHT - 20, "Remaining SD storage space: %llu MiB", RemainingStorageSpace() / 1024 / 1024);
+        DrawStringF(10, SCREEN_HEIGHT - 30, "Decrypt directory: %s", DECRYPT_DIR);
         #ifdef WORKING_DIR
-        DrawStringF(10, SCREEN_HEIGHT - 30, "Working directory: %s", WORKING_DIR);
+        if (DirOpen(WORKING_DIR)) {
+            DrawStringF(10, SCREEN_HEIGHT - 40, "Working directory: %s", WORKING_DIR);
+            DirClose();
+        }
         #endif
     }
     
