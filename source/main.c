@@ -10,7 +10,7 @@
 MenuInfo menu[] =
 {
     {
-        "XORpad Options", 4,
+        "XORpad Generator Options", 4,
         {
             { "NCCH Padgen", &NcchPadgen, 0, 0 },
             { "SD Padgen", &SdPadgen, 0, 0 },
@@ -19,7 +19,7 @@ MenuInfo menu[] =
         }
     },
     {
-        "Titlekey Options", 3,
+        "Titlekey Decrypt Options", 3,
         {
             { "Titlekey Decrypt (file)", &DecryptTitlekeysFile, 0, 0 },
             { "Titlekey Decrypt (NAND)", &DecryptTitlekeysNand, 0, 0 },
@@ -27,7 +27,7 @@ MenuInfo menu[] =
         }
     },
     {
-        "NAND Dump Options", 4,
+        "SysNAND Dump Options", 4,
         {
             { "NAND Backup", &DumpNand, 0, 0 },
             { "All Partitions Dump", &DecryptAllNandPartitions, 0, 0 },
@@ -36,7 +36,7 @@ MenuInfo menu[] =
         }
     },
     {
-        "NAND Inject Options", 4,
+        "SysNAND Inject Options", 4,
         {
             { "NAND Restore", &RestoreNand, 1, 0 },
             { "All Partitions Inject", &InjectAllNandPartitions, 1, 0 },

@@ -341,7 +341,7 @@ u32 UpdateSeedDb()
     if (nNewSeeds == 0) {
         Debug("Found no new seeds, %i total", seedinfo->n_entries);
         FileClose();
-        return 1;
+        return 0;
     }
     
     Debug("Found %i new seeds, %i total", nNewSeeds, seedinfo->n_entries);
