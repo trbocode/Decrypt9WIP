@@ -865,25 +865,28 @@ u32 DecryptGameFilesBatch(bool batchNcch, bool batchCia, bool deepCia)
     const char* ncsd_partition_name[8] = {
         "Executable", "Manual", "DPC", "Unknown", "Unknown", "Unknown", "UpdateN3DS", "UpdateO3DS" 
     };
+    char* batch_dir = DECRYPT_DIR;
     u8* buffer = (u8*) 0x20316000;
     u32 n_processed = 0;
     u32 n_failed = 0;
     
-    if (!DebugDirOpen(DECRYPT_DIR)) {
+    if (!DebugDirOpen(batch_dir)) {
         #ifdef WORKING_DIR
+        Debug("Trying %s/ instead...", WORKING_DIR); // <- needs extra checking!!!
         if (!DebugDirOpen(WORKING_DIR)) {
             Debug("No working directory found!");
             return 1;
         }
+        batch_dir = WORKING_DIR;
         #else
-        Debug("Files to decrypt go to %s/!", DECRYPT_DIR);
+        Debug("Files to decrypt go to %s/!", batch_dir);
         return 1;
         #endif
     }
     
     char path[256];
-    u32 path_len = strnlen(DECRYPT_DIR, 128);
-    memcpy(path, DECRYPT_DIR, path_len);
+    u32 path_len = strnlen(batch_dir, 128);
+    memcpy(path, batch_dir, path_len);
     path[path_len++] = '/';
     
     while (DirRead(path + path_len, 256 - path_len)) {
@@ -944,7 +947,7 @@ u32 DecryptGameFilesBatch(bool batchNcch, bool batchCia, bool deepCia)
         Debug("");
         Debug("%ux decrypted / %ux failed ", n_processed, n_failed);
     } else if (!n_failed) {
-        Debug("Nothing found in %s/!", DECRYPT_DIR);
+        Debug("Nothing found in %s/!", batch_dir);
     }
     
     return !n_processed;
