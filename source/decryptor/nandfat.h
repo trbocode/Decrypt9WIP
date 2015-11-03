@@ -6,5 +6,12 @@
 #define MAX_ENTRIES 1024
 
 
+typedef struct {
+    char name[24];
+    u32 tid_high;
+    u32 tid_low[6];
+} TitleListInfo;
+
 u32 SeekFileInNand(u32* offset, u32* size, const char* path, PartitionInfo* partition);
 u32 DebugSeekFileInNand(u32* offset, u32* size, const char* filename, const char* path, PartitionInfo* partition);
+u32 DebugSeekTitleInNand(u32* offset_tmd, u32* size_tmd, u32* offset_app, u32* size_app, TitleListInfo* title_info, u32 max_cnt);

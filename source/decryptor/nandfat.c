@@ -2,8 +2,24 @@
 #include "draw.h"
 #include "decryptor/features.h"
 #include "decryptor/decryptor.h"
+#include "decryptor/game.h"
 #include "decryptor/nand.h"
 #include "decryptor/nandfat.h"
+
+// only a subset, see http://3dbrew.org/wiki/Title_list
+// regions: JPN, USA,EUR, CHN, KOR, TWN
+TitleListInfo titleList[] = {
+    { "System Settings"       , 0x00040010, { 0x00020000, 0x00021000, 0x00022000, 0x00026000, 0x00027000, 0x00028000 } },
+    { "Download Play"         , 0x00040010, { 0x00020100, 0x00021100, 0x00022100, 0x00026100, 0x00027100, 0x00028100 } },
+    { "Activity Log"          , 0x00040010, { 0x00020200, 0x00021200, 0x00022200, 0x00026200, 0x00027200, 0x00028200 } },
+    { "Health&Safety"         , 0x00040010, { 0x00020300, 0x00021300, 0x00022300, 0x00026300, 0x00027300, 0x00028300 } },
+    { "Health&Safety (N3DS)"  , 0x00040010, { 0x20020300, 0x20021300, 0x20022300, 0x00000000, 0x00000000, 0x00000000 } },
+    { "3DS Camera"            , 0x00040010, { 0x00020400, 0x00021400, 0x00022400, 0x00026400, 0x00027400, 0x00028400 } },
+    { "3DS Sound"             , 0x00040010, { 0x00020500, 0x00021500, 0x00022500, 0x00026500, 0x00027500, 0x00028500 } },
+    { "Mii Maker"             , 0x00040010, { 0x00020700, 0x00021700, 0x00022700, 0x00026700, 0x00027700, 0x00028700 } },
+    { "Streetpass Mii Plaza"  , 0x00040010, { 0x00020800, 0x00021800, 0x00022800, 0x00026800, 0x00027800, 0x00028800 } },
+    { "3DS eShop"             , 0x00040010, { 0x00020900, 0x00021900, 0x00022900, 0x00000000, 0x00027900, 0x00028900 } }
+};
 
 
 u32 SeekFileInNand(u32* offset, u32* size, const char* path, PartitionInfo* partition)
@@ -90,6 +106,68 @@ u32 DebugSeekFileInNand(u32* offset, u32* size, const char* filename, const char
     return 0;
 }
 
+u32 DebugSeekTitleInNand(u32* offset_tmd, u32* size_tmd, u32* offset_app, u32* size_app, TitleListInfo* title_info, u32 max_cnt)
+{
+    PartitionInfo* ctrnand_info = GetPartitionInfo(P_CTRNAND);
+    u8* buffer = (u8*) 0x20316000;
+    u32 cnt_count = 0;
+    u32 tid_low = 0;
+    
+    Debug("Searching title \"%s\"...", title_info->name);
+    for (u32 i = 0; i < 6; i++) {
+        char path[64];
+        if (title_info->tid_low[i] == 0)
+            continue;
+        sprintf(path, "TITLE      %08X   %08X   CONTENT    ????????TMD", (unsigned int) title_info->tid_high, (unsigned int) title_info->tid_low[i]);
+        if (SeekFileInNand(offset_tmd, size_tmd, path, ctrnand_info) == 0) {
+            tid_low = title_info->tid_low[i];
+            break;
+        }
+    }
+    if (!tid_low) {
+        Debug("Failed!");
+        return 1;
+    }
+    Debug("Found title %08X%08X", title_info->tid_high, tid_low);
+    
+    Debug("TMD0 found at %08X, size %ub", *offset_tmd, *size_tmd);
+    if ((*size_tmd < 0xC4 + (0x40 * 0x24)) || (*size_tmd > 0x4000)) {
+        Debug("TMD has bad size!");
+        return 1;
+    }
+    if (DecryptNandToMem(buffer, *offset_tmd, *size_tmd, ctrnand_info) != 0)
+        return 1;
+    u32 size_sig = (buffer[3] == 3) ? 0x240 : (buffer[3] == 4) ? 0x140 : (buffer[3] == 5) ? 0x80 : 0;         
+    if ((size_sig == 0) || (memcmp(buffer, "\x00\x01\x00", 3) != 0)) {
+        Debug("Unknown signature type: %08X", getbe32(buffer));
+        return 1;
+    }
+    cnt_count = getbe16(buffer + size_sig + 0x9E);
+    u32 size_tmd_expected = size_sig + 0xC4 + (0x40 * 0x24) + (cnt_count * 0x30);
+    if (*size_tmd != size_tmd_expected) {
+        Debug("TMD bad size (expected %ub)!", size_tmd_expected );
+        return 1;
+    }
+    buffer += size_sig + 0xC4 + (0x40 * 0x24);
+    
+    for (u32 i = 0; i < cnt_count && i < max_cnt; i++) {
+        char path[64];
+        u32 cnt_id = getbe32(buffer + (0x30 * i));
+        if (i >= max_cnt) {
+            Debug("APP%i was skipped", i);
+            continue;
+        }
+        sprintf(path, "TITLE      %08X   %08X   CONTENT    %08XAPP", (unsigned int) title_info->tid_high, (unsigned int) tid_low, (unsigned int) cnt_id);
+        if (SeekFileInNand(offset_app + i, size_app + i, path, ctrnand_info) != 0) {
+            Debug("APP%i not found!", i);
+            return 1;
+        }
+        Debug("APP%i found at %08X, size %ukB", i, offset_app[i], size_app[i] / 1024);
+    }
+    
+    return 0;
+}
+
 u32 DumpSeedsave()
 {
     PartitionInfo* ctrnand_info = GetPartitionInfo(P_CTRNAND);
@@ -144,6 +222,30 @@ u32 DumpSecureInfoA()
         return 1;
     
     return 0;
+}
+
+u32 DumpHealthAndSafety()
+{
+    PartitionInfo* ctrnand_info = GetPartitionInfo(P_CTRNAND);
+    TitleListInfo* health_o3ds = titleList + 3;
+    TitleListInfo* health_n3ds = titleList + 4;
+    u32 offset_app[4];
+    u32 size_app[4];
+    u32 offset_tmd;
+    u32 size_tmd;
+    
+    
+    if (!((DebugSeekTitleInNand(&offset_tmd, &size_tmd, offset_app, size_app, health_o3ds, 4) == 0) ||
+          (DebugSeekTitleInNand(&offset_tmd, &size_tmd, offset_app, size_app, health_n3ds, 4) == 0)))
+        return 1;
+        
+    Debug("Dumping & decrypting APP0...");
+    if (DecryptNandToFile("/hs.app", offset_app[0], size_app[0], ctrnand_info) != 0)
+        return 1;
+    if (DecryptNcch("/hs.app", 0, 0, 0) != 0)
+        return 1;
+        
+     return 0;
 }
 
 u32 InjectMovableSed()

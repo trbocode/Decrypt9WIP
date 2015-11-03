@@ -14,6 +14,7 @@ u32 DecryptTitlekeysNand(void);
 
 u32 DumpMovableSed(void);
 u32 DumpSecureInfoA(void);
+u32 DumpHealthAndSafety(void);
 u32 InjectMovableSed(void);
 u32 InjectSecureInfoA(void);
 
