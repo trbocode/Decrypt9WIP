@@ -302,8 +302,8 @@ u32 InjectHealthAndSafety()
         return 1;
     size_hs = FileGetSize();
     memset(buffer, 0, size_app[0]);
-    if (size_hs != size_app[0]) {
-        Debug("H&S inject app size mismatch!");
+    if (size_hs > size_app[0]) {
+        Debug("H&S inject app is too big!");
         return 1;
     }
     if (!DebugFileRead(buffer, size_hs, 0)) {
