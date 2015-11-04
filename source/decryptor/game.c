@@ -589,7 +589,8 @@ u32 CryptNcch(const char* filename, u32 offset, u32 size, u64 seedId, u8* encryp
             u32 offset_code = 0;
             u32 size_code = 0;
             // find .code offset and size
-            result |= DecryptSdToSd(filename, offset + offset_byte, 0x200, &info0);
+            if (!encrypt) // decrypt this first (when decrypting)
+                result |= DecryptSdToSd(filename, offset + offset_byte, 0x200, &info0);
             if(!FileOpen(filename))
                 return 1;
             if(!DebugFileRead(buffer, 0x200, offset + offset_byte)) {
@@ -604,6 +605,8 @@ u32 CryptNcch(const char* filename, u32 offset, u32 size, u64 seedId, u8* encryp
                     break;
                 }
             }
+            if (encrypt) // encrypt this after (when encrypting)
+                result |= DecryptSdToSd(filename, offset + offset_byte, 0x200, &info0);
             // special ExeFS decryption routine (only .code has new encryption)
             if (size_code > 0) {
                 result |= DecryptSdToSd(filename, offset + offset_byte + 0x200, offset_code - 0x200, &info0);
