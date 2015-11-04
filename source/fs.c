@@ -25,14 +25,12 @@ void DeinitFS()
 bool FileOpen(const char* path)
 {
     unsigned flags = FA_READ | FA_WRITE | FA_OPEN_EXISTING;
-    #ifdef WORKING_DIR
-    while (*path == '/' || *path == '\\') path++;
-    f_chdir(WORKING_DIR);
+    #ifdef WORK_DIR
+    if (*path == '/' || *path == '\\') path++;
+    f_chdir(WORK_DIR);
     bool ret = (f_open(&file, path, flags) == FR_OK);
-    if (!ret) {
-        f_chdir("/");
-        ret = (f_open(&file, path, flags) == FR_OK);
-    }
+    f_chdir("/");
+    if (!ret) ret = (f_open(&file, path, flags) == FR_OK);
     #else
     bool ret = (f_open(&file, path, flags) == FR_OK);
     #endif
@@ -56,11 +54,14 @@ bool FileCreate(const char* path, bool truncate)
 {
     unsigned flags = FA_READ | FA_WRITE;
     flags |= truncate ? FA_CREATE_ALWAYS : FA_OPEN_ALWAYS;
-    #ifdef WORKING_DIR
+    #ifdef WORK_DIR
     if (*path == '/' || *path == '\\') path++;
-    f_chdir(WORKING_DIR);
-    #endif
+    f_chdir(WORK_DIR);
     bool ret = (f_open(&file, path, flags) == FR_OK);
+    f_chdir("/");
+    #else
+    bool ret = (f_open(&file, path, flags) == FR_OK);
+    #endif
     f_lseek(&file, 0);
     f_sync(&file);
     return ret;
