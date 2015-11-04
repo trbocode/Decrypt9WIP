@@ -45,18 +45,19 @@ MenuInfo menu[] =
         }
     },
     {
-        "SysNAND File Options", 6,
+        "SysNAND File Options", 7,
         {
             { "Dump ticket.db", &DumpTicket, 0, 0 },
             { "Dump movable.sed", &DumpMovableSed, 0, 0 },
             { "Dump SecureInfo_A", &DumpSecureInfoA, 0, 0 },
             { "Dump Health&Safety", &DumpHealthAndSafety, 0, 0 },
             { "Inject movable.sed", &InjectMovableSed, 1, 0 },
-            { "Inject SecureInfo_A", &InjectSecureInfoA, 1, 0 }
+            { "Inject SecureInfo_A", &InjectSecureInfoA, 1, 0 },
+            { "Inject Health&Safety", &InjectHealthAndSafety, 1, 0 }
         }
     },
     {
-        "EmuNAND File Options", 8,
+        "EmuNAND File Options", 9,
         {
             { "Dump ticket_emu.db", &DumpTicket, 0, 1 },
             { "Dump movable.sed", &DumpMovableSed, 0, 1 },
@@ -65,6 +66,7 @@ MenuInfo menu[] =
             { "Dump Health&Safety", &DumpHealthAndSafety, 0, 1 },
             { "Inject movable.sed", &InjectMovableSed, 1, 1 },
             { "Inject SecureInfo_A", &InjectSecureInfoA, 1, 1 },
+            { "Inject Health&Safety", &InjectHealthAndSafety, 1, 1 },
             { "Update SeedDB", &UpdateSeedDb, 0, 1 }
         }
     },

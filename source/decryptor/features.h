@@ -17,6 +17,7 @@ u32 DumpSecureInfoA(void);
 u32 DumpHealthAndSafety(void);
 u32 InjectMovableSed(void);
 u32 InjectSecureInfoA(void);
+u32 InjectHealthAndSafety(void);
 
 u32 DumpNand(void);
 u32 DecryptAllNandPartitions(void);

@@ -1,6 +1,7 @@
 #include "fs.h"
 #include "draw.h"
 #include "decryptor/features.h"
+#include "decryptor/crypto.h"
 #include "decryptor/decryptor.h"
 #include "decryptor/game.h"
 #include "decryptor/nand.h"
@@ -272,6 +273,89 @@ u32 InjectSecureInfoA()
         return 1;
     if (EncryptFileToNand("/SecureInfo_A", offset, size, ctrnand_info) != 0)
         return 1;
+    
+    return 0;
+}
+
+u32 InjectHealthAndSafety()
+{
+    u8* buffer = BUFFER_ADDRESS;
+    PartitionInfo* ctrnand_info = GetPartitionInfo(P_CTRNAND);
+    TitleListInfo* health_o3ds = titleList + 3;
+    TitleListInfo* health_n3ds = titleList + 4;
+    u32 offset_app[4];
+    u32 size_app[4];
+    u32 offset_tmd;
+    u32 size_tmd;
+    u32 size_hs;
+    
+    
+    if ((DebugSeekTitleInNand(&offset_tmd, &size_tmd, offset_app, size_app, health_o3ds, 4) != 0) &&
+        (DebugSeekTitleInNand(&offset_tmd, &size_tmd, offset_app, size_app, health_n3ds, 4) != 0))
+        return 1;
+    if (size_app[0] > 0x400000) {
+        Debug("H&S system app is too big!");
+        return 1;
+    }
+    
+    if (!DebugFileOpen("hs.app"))
+        return 1;
+    size_hs = FileGetSize();
+    memset(buffer, 0, size_app[0]);
+    if (size_hs != size_app[0]) {
+        Debug("H&S inject app size mismatch!");
+        return 1;
+    }
+    if (!DebugFileRead(buffer, size_hs, 0)) {
+        FileClose();
+        return 1;
+    }
+    FileClose();
+    if (!DebugFileCreate("hs.enc", true))
+        return 1;
+    if (!DebugFileWrite(buffer, size_app[0], 0)) {
+        FileClose();
+        return 1;
+    }
+    FileClose();
+    
+    NcchHeader* ncch = (NcchHeader*) 0x20316000;
+    if (DecryptNandToMem((void*) ncch, offset_app[0], 0x200, ctrnand_info) != 0)
+        return 1;
+    if (CryptNcch("hs.enc", 0, 0, 0, ncch->flags) != 0)
+        return 1;
+    
+    Debug("Injecting H&S app...");
+    if (EncryptFileToNand("hs.enc", offset_app[0], size_app[0], ctrnand_info) != 0)
+        return 1;
+    
+    Debug("Fixing TMD...");
+    u8* tmd_data = (u8*) 0x20316000;
+    if (DecryptNandToMem(tmd_data, offset_tmd, size_tmd, ctrnand_info) != 0)
+        return 1; 
+    tmd_data += (tmd_data[3] == 3) ? 0x240 : (tmd_data[3] == 4) ? 0x140 : 0x80;
+    u8* content_list = tmd_data + 0xC4 + (64 * 0x24);
+    u32 cnt_count = getbe16(tmd_data + 0x9E);
+    if (GetHashFromFile("hs.enc", 0, size_app[0], content_list + 0x10) != 0) {
+        Debug("Failed!");
+        return 1;
+    }
+    for (u32 i = 0, kc = 0; i < 64 && kc < cnt_count; i++) {
+        u32 k = getbe16(tmd_data + 0xC4 + (i * 0x24) + 0x02);
+        u8* chunk_hash = tmd_data + 0xC4 + (i * 0x24) + 0x04;
+        sha_init(SHA256_MODE);
+        sha_update(content_list + kc * 0x30, k * 0x30);
+        sha_get(chunk_hash);
+        kc += k;
+    }
+    u8* tmd_hash = tmd_data + 0xA4;
+    sha_init(SHA256_MODE);
+    sha_update(tmd_data + 0xC4, 64 * 0x24);
+    sha_get(tmd_hash);
+    tmd_data = (u8*) 0x20316000;
+    if (EncryptMemToNand(tmd_data, offset_tmd, size_tmd, ctrnand_info) != 0)
+        return 1; 
+    
     
     return 0;
 }
