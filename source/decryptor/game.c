@@ -17,7 +17,7 @@ u32 NcchPadgen()
     NcchInfo *info = (NcchInfo*)0x20316000;
     SeedInfo *seedinfo = (SeedInfo*)0x20400000;
 
-    if (DebugFileOpen("/slot0x25KeyX.bin")) {
+    if (DebugFileOpen("slot0x25KeyX.bin")) {
         u8 slot0x25KeyX[16] = {0};
         if (!DebugFileRead(&slot0x25KeyX, 16, 0)) {
             FileClose();
@@ -29,7 +29,7 @@ u32 NcchPadgen()
         Debug("7.x game decryption will fail on less than 7.x!");
     }
 
-    if (DebugFileOpen("/seeddb.bin")) {
+    if (DebugFileOpen("seeddb.bin")) {
         if (!DebugFileRead(seedinfo, 16, 0)) {
             FileClose();
             return 1;
@@ -48,7 +48,7 @@ u32 NcchPadgen()
         Debug("9.x seed crypto game decryption will fail!");
     }
 
-    if (!DebugFileOpen("/ncchinfo.bin"))
+    if (!DebugFileOpen("ncchinfo.bin"))
         return 1;
     if (!DebugFileRead(info, 16, 0)) {
         FileClose();
@@ -219,7 +219,7 @@ u32 SdPadgen()
     u8 movable_seed[0x120] = {0};
 
     // Load console 0x34 keyY from movable.sed if present on SD card
-    if (DebugFileOpen("/movable.sed")) {
+    if (DebugFileOpen("movable.sed")) {
         if (!DebugFileRead(&movable_seed, 0x120, 0)) {
             FileClose();
             return 1;
@@ -233,7 +233,7 @@ u32 SdPadgen()
         use_aeskey(0x34);
     }
 
-    if (DebugFileOpen("/SDinfo.bin")) {
+    if (DebugFileOpen("SDinfo.bin")) {
         if (!DebugFileRead(info, 4, 0)) {
             FileClose();
             return 1;
@@ -295,7 +295,7 @@ u32 UpdateSeedDb()
     DecryptNandToMem(buffer, offset, size, ctrnand_info);
     
     // load / create seeddb.bin
-    if (DebugFileOpen("/seeddb.bin")) {
+    if (DebugFileOpen("seeddb.bin")) {
         if (!DebugFileRead(seedinfo, 16, 0)) {
             FileClose();
             return 1;
@@ -310,7 +310,7 @@ u32 UpdateSeedDb()
             return 1;
         }
     } else {
-        if (!DebugFileCreate("/seeddb.bin", true))
+        if (!DebugFileCreate("seeddb.bin", true))
             return 1;
         memset(seedinfo, 0x00, 16);
     }
@@ -502,7 +502,7 @@ u32 CryptNcch(const char* filename, u32 offset, u32 size, u64 seedId, u8* encryp
             Debug("Secure3 crypto needs a N3DS!");
             return 1;
         }
-        if (FileOpen("/slot0x25KeyX.bin")) {
+        if (FileOpen("slot0x25KeyX.bin")) {
             u8 slot0x25KeyX[16] = {0};
             if (FileRead(&slot0x25KeyX, 16, 0) != 16) {
                 Debug("slot0x25keyX.bin is corrupt!");
@@ -518,7 +518,7 @@ u32 CryptNcch(const char* filename, u32 offset, u32 size, u64 seedId, u8* encryp
     
     // check / setup seed crypto
     if (usesSeedCrypto) {
-        if (FileOpen("/seeddb.bin")) {
+        if (FileOpen("seeddb.bin")) {
             SeedInfoEntry* entry = (SeedInfoEntry*) buffer;
             u32 found = 0;
             for (u32 i = 0x10;; i += 0x20) {

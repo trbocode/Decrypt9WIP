@@ -35,7 +35,7 @@ u32 DecryptTitlekeysFile(void)
 {
     EncKeysInfo *info = (EncKeysInfo*)0x20316000;
 
-    if (!DebugFileOpen("/encTitleKeys.bin"))
+    if (!DebugFileOpen("encTitleKeys.bin"))
         return 1;
     
     if (!DebugFileRead(info, 16, 0)) {
@@ -61,7 +61,7 @@ u32 DecryptTitlekeysFile(void)
     for (u32 i = 0; i < info->n_entries; i++)
         DecryptTitlekey(&(info->entries[i]));
 
-    if (!DebugFileCreate("/decTitleKeys.bin", true))
+    if (!DebugFileCreate("decTitleKeys.bin", true))
         return 1;
     if (!DebugFileWrite(info, info->n_entries * sizeof(TitleKeyEntry) + 16, 0)) {
         FileClose();
@@ -125,7 +125,7 @@ u32 DecryptTitlekeysNand(void)
     Debug("Decrypted %u unique Title Keys", nKeys);
     
     if(nKeys > 0) {
-        if (!DebugFileCreate((IsEmuNand()) ? "/decTitleKeys_emu.bin" : "/decTitleKeys.bin", true))
+        if (!DebugFileCreate((IsEmuNand()) ? "decTitleKeys_emu.bin" : "decTitleKeys.bin", true))
             return 1;
         if (!DebugFileWrite(info, 0x10 + nKeys * 0x20, 0)) {
             FileClose();

@@ -236,7 +236,7 @@ u32 DumpNand()
 
     Debug("Dumping System NAND. Size (MB): %u", nand_size / (1024 * 1024));
 
-    if (!DebugFileCreate((IsEmuNand()) ? "/EmuNAND.bin" : "/NAND.bin", true))
+    if (!DebugFileCreate((IsEmuNand()) ? "EmuNAND.bin" : "NAND.bin", true))
         return 1;
 
     u32 n_sectors = nand_size / NAND_SECTOR_SIZE;
@@ -268,7 +268,7 @@ u32 DecryptNandPartition(PartitionInfo* p)
         Debug("Decryption error, please contact us");
         return 1;
     }
-    snprintf(filename, 32, "/%s.bin", p->name);
+    snprintf(filename, 32, "%s.bin", p->name);
     
     return DecryptNandToFile(filename, p->offset, p->size, p);
 }
@@ -345,9 +345,9 @@ u32 RestoreNand()
     u8 magic[4];
 
     if (IsEmuNand()) {
-        if (!DebugFileOpen("/EmuNAND.bin") && !DebugFileOpen("/NAND.bin"))
+        if (!DebugFileOpen("EmuNAND.bin") && !DebugFileOpen("NAND.bin"))
             return 1;
-    } else if (!DebugFileOpen("/NAND.bin"))
+    } else if (!DebugFileOpen("NAND.bin"))
         return 1;
     if (nand_size != FileGetSize()) {
         FileClose();
@@ -386,7 +386,7 @@ u32 InjectNandPartition(PartitionInfo* p)
     u8 magic[NAND_SECTOR_SIZE];
     
     // File check
-    snprintf(filename, 32, "/%s.bin", p->name);
+    snprintf(filename, 32, "%s.bin", p->name);
     if (FileOpen(filename)) {
         FileClose();
     } else {

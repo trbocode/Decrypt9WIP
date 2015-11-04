@@ -177,7 +177,7 @@ u32 DumpSeedsave()
     
     if (DebugSeekFileInNand(&offset, &size, "seedsave", "DATA       ???????????SYSDATA    0001000F   00000000   ", ctrnand_info) != 0)
         return 1;
-    if (DecryptNandToFile("/seedsave.bin", offset, size, ctrnand_info) != 0)
+    if (DecryptNandToFile("seedsave.bin", offset, size, ctrnand_info) != 0)
         return 1;
     
     return 0;
@@ -191,7 +191,7 @@ u32 DumpTicket()
     
     if (DebugSeekFileInNand(&offset, &size, "ticket.db", "DBS        TICKET  DB ", ctrnand_info) != 0)
         return 1;
-    if (DecryptNandToFile((IsEmuNand()) ? "/ticket_emu.db" : "/ticket.db", offset, size, ctrnand_info) != 0)
+    if (DecryptNandToFile((IsEmuNand()) ? "ticket_emu.db" : "ticket.db", offset, size, ctrnand_info) != 0)
         return 1;
     
     return 0;
@@ -205,7 +205,7 @@ u32 DumpMovableSed()
     
     if (DebugSeekFileInNand(&offset, &size, "movable.sed", "PRIVATE    MOVABLE SED", ctrnand_info) != 0)
         return 1;
-    if (DecryptNandToFile("/movable.sed", offset, size, ctrnand_info) != 0)
+    if (DecryptNandToFile("movable.sed", offset, size, ctrnand_info) != 0)
         return 1;
     
     return 0;
@@ -219,7 +219,7 @@ u32 DumpSecureInfoA()
     
     if (DebugSeekFileInNand(&offset, &size, "SecureInfo_A", "RW         SYS        SECURE~?   ", ctrnand_info) != 0)
         return 1;
-    if (DecryptNandToFile("/SecureInfo_A", offset, size, ctrnand_info) != 0)
+    if (DecryptNandToFile("SecureInfo_A", offset, size, ctrnand_info) != 0)
         return 1;
     
     return 0;
@@ -241,9 +241,9 @@ u32 DumpHealthAndSafety()
         return 1;
         
     Debug("Dumping & decrypting APP0...");
-    if (DecryptNandToFile("/hs.app", offset_app[0], size_app[0], ctrnand_info) != 0)
+    if (DecryptNandToFile("hs.app", offset_app[0], size_app[0], ctrnand_info) != 0)
         return 1;
-    if (CryptNcch("/hs.app", 0, 0, 0, NULL) != 0)
+    if (CryptNcch("hs.app", 0, 0, 0, NULL) != 0)
         return 1;
         
      return 0;
@@ -257,7 +257,7 @@ u32 InjectMovableSed()
     
     if (DebugSeekFileInNand(&offset, &size, "movable.sed", "PRIVATE    MOVABLE SED", ctrnand_info) != 0)
         return 1;
-    if (EncryptFileToNand("/movable.sed", offset, size, ctrnand_info) != 0)
+    if (EncryptFileToNand("movable.sed", offset, size, ctrnand_info) != 0)
         return 1;
     
     return 0;
@@ -271,7 +271,7 @@ u32 InjectSecureInfoA()
     
     if (DebugSeekFileInNand(&offset, &size, "SecureInfo_A", "RW         SYS        SECURE~?   ", ctrnand_info) != 0)
         return 1;
-    if (EncryptFileToNand("/SecureInfo_A", offset, size, ctrnand_info) != 0)
+    if (EncryptFileToNand("SecureInfo_A", offset, size, ctrnand_info) != 0)
         return 1;
     
     return 0;
