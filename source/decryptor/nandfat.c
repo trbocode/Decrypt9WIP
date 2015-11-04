@@ -235,14 +235,14 @@ u32 DumpHealthAndSafety()
     u32 size_tmd;
     
     
-    if (!((DebugSeekTitleInNand(&offset_tmd, &size_tmd, offset_app, size_app, health_o3ds, 4) == 0) ||
-          (DebugSeekTitleInNand(&offset_tmd, &size_tmd, offset_app, size_app, health_n3ds, 4) == 0)))
+    if ((DebugSeekTitleInNand(&offset_tmd, &size_tmd, offset_app, size_app, health_o3ds, 4) != 0) &&
+        (DebugSeekTitleInNand(&offset_tmd, &size_tmd, offset_app, size_app, health_n3ds, 4) != 0))
         return 1;
         
     Debug("Dumping & decrypting APP0...");
     if (DecryptNandToFile("/hs.app", offset_app[0], size_app[0], ctrnand_info) != 0)
         return 1;
-    if (DecryptNcch("/hs.app", 0, 0, 0) != 0)
+    if (CryptNcch("/hs.app", 0, 0, 0, NULL) != 0)
         return 1;
         
      return 0;

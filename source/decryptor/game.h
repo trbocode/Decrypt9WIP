@@ -83,6 +83,6 @@ typedef struct {
 u32 DecryptSdToSd(const char* filename, u32 offset, u32 size, CryptBufferInfo* info);
 u32 GetHashFromFile(const char* filename, u32 offset, u32 size, u8* hash);
 u32 CheckHashFromFile(const char* filename, u32 offset, u32 size, u8* hash);
-u32 DecryptNcch(const char* filename, u32 offset, u32 size, u64 seedId);
+u32 CryptNcch(const char* filename, u32 offset, u32 size, u64 seedId, u8* encrypt);
 u32 DecryptCia(const char* filename, bool deep_decrypt);
 u32 DecryptGameFilesBatch(bool batchNcch, bool batchCia, bool deepCia);
