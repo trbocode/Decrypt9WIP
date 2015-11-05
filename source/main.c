@@ -108,14 +108,23 @@ void Reboot()
     while(true);
 }
 
+
+void PowerOff()
+{
+    i2cWriteRegister(I2C_DEV_MCU, 0x20, 1 << 0);
+    while (true);
+}
+
+
 int main()
 {
+    ClearBottomScreen();
     DebugClear();
     InitFS();
 
-    ProcessMenu(menu, sizeof(menu) / sizeof(MenuInfo));
+    u32 menu_exit = ProcessMenu(menu, sizeof(menu) / sizeof(MenuInfo));
     
     DeinitFS();
-    Reboot();
+    (menu_exit == MENU_EXIT_REBOOT) ? Reboot() : PowerOff();
     return 0;
 }

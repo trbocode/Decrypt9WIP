@@ -104,11 +104,12 @@ u32 ProcessEntry(MenuEntry* entry)
     return pad_state;
 }
 
-void ProcessMenu(MenuInfo* info, u32 nMenus)
+u32 ProcessMenu(MenuInfo* info, u32 nMenus)
 {
     MenuInfo mainMenu;
     MenuInfo* currMenu = &mainMenu;
     u32 index = 0;
+    u32 result = MENU_EXIT_REBOOT;
     
     // build main menu structure from submenus
     memset(&mainMenu, 0x00, sizeof(MenuInfo));
@@ -150,11 +151,15 @@ void ProcessMenu(MenuInfo* info, u32 nMenus)
             index = 0;
         } else if (pad_state & BUTTON_SELECT) {
             pad_state = UnmountSd();
-        }else {
+        } else {
             full_draw = false;
         }
-        if (pad_state & BUTTON_START)
+        if (pad_state & BUTTON_START) {
+            result = (pad_state & BUTTON_LEFT) ? MENU_EXIT_POWEROFF : MENU_EXIT_REBOOT;
             break;
+        }
         DrawMenu(currMenu, index, full_draw, currMenu != &mainMenu);
     }
+    
+    return result;
 }
