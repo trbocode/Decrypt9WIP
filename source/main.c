@@ -44,6 +44,26 @@ MenuInfo menu[] =
             { "CTRNAND Partition Inject", &InjectCtrNandPartition, 1, 0 }
         }
     },
+    #ifdef EXPERIMENTAL
+    {
+        "EmuNAND Dump Options", 4,
+        {
+            { "EmuNAND Backup", &DumpNand, 0, 1 },
+            { "All Partitions Dump", &DecryptAllNandPartitions, 0, 1 },
+            { "TWLNAND Partition Dump", &DecryptTwlNandPartition, 0, 1 },
+            { "CTRNAND Partition Dump", &DecryptCtrNandPartition, 0, 1 }
+        }
+    },
+    {
+        "EmuNAND Inject Options", 4,
+        {
+            { "EmuNAND Restore", &RestoreNand, 1, 1 },
+            { "All Partitions Inject", &InjectAllNandPartitions, 1, 1 },
+            { "TWLNAND Partition Inject", &InjectTwlNandPartition, 1, 1 },
+            { "CTRNAND Partition Inject", &InjectCtrNandPartition, 1, 1 }
+        }
+    },
+    #endif
     {
         "SysNAND File Options", 7,
         {
@@ -71,33 +91,14 @@ MenuInfo menu[] =
         }
     },
     {
-        "Game Decryptor Options", 3,
+        "Game Decryptor Options", 4,
         {
             { "NCCH/NCSD Decryptor", &DecryptNcsdNcch, 0, 0 },
             { "CIA Decryptor (shallow)", &DecryptCiaShallow, 0, 0 },
-            { "CIA Decryptor (deep)", &DecryptCiaDeep, 0, 0 }
-        }
-    },
-    #ifdef EXPERIMENTAL
-    {
-        "EmuNAND Dump Options", 4,
-        {
-            { "EmuNAND Backup", &DumpNand, 0, 1 },
-            { "All Partitions Dump", &DecryptAllNandPartitions, 0, 1 },
-            { "TWLNAND Partition Dump", &DecryptTwlNandPartition, 0, 1 },
-            { "CTRNAND Partition Dump", &DecryptCtrNandPartition, 0, 1 }
-        }
-    },
-    {
-        "EmuNAND Inject Options", 4,
-        {
-            { "EmuNAND Restore", &RestoreNand, 1, 1 },
-            { "All Partitions Inject", &InjectAllNandPartitions, 1, 1 },
-            { "TWLNAND Partition Inject", &InjectTwlNandPartition, 1, 1 },
-            { "CTRNAND Partition Inject", &InjectCtrNandPartition, 1, 1 }
+            { "CIA Decryptor (deep)", &DecryptCiaDeep, 0, 0 },
+            { "SD Decryptor/Encryptor", &DecryptSdFiles, 0, 0 }
         }
     }
-    #endif
 };
 
 

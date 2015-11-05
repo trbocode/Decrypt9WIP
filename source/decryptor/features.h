@@ -6,6 +6,7 @@ u32 NcchPadgen(void);
 u32 SdPadgen(void);
 u32 CtrNandPadgen(void);
 u32 TwlNandPadgen(void);
+
 u32 DumpSeedsave(void);
 u32 UpdateSeedDb(void);
 u32 DumpTicket(void);
@@ -29,6 +30,7 @@ u32 InjectAllNandPartitions(void);
 u32 InjectTwlNandPartition(void);
 u32 InjectCtrNandPartition(void);
 
+u32 DecryptSdFiles(void);
 u32 DecryptNcsdNcch(void);
 u32 DecryptCiaShallow(void);
 u32 DecryptCiaDeep(void);
