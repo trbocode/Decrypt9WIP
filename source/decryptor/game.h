@@ -18,7 +18,7 @@ typedef struct {
 } __attribute__((packed)) SeedInfo;
 
 typedef struct {
-    u8   CTR[16];
+    u8   ctr[16];
     u32  size_mb;
     char filename[180];
 } __attribute__((packed)) SdInfoEntry;
@@ -29,7 +29,7 @@ typedef struct {
 } __attribute__((packed, aligned(16))) SdInfo;
 
 typedef struct {
-    u8   CTR[16];
+    u8   ctr[16];
     u8   keyY[16];
     u32  size_mb;
     u8   reserved[4];

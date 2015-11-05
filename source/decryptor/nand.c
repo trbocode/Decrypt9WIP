@@ -112,7 +112,7 @@ u32 CtrNandPadgen()
     Debug("Filename: nand.fat16.xorpad");
 
     PadInfo padInfo = {.keyslot = keyslot, .setKeyY = 0, .size_mb = nand_size, .filename = "nand.fat16.xorpad", .mode = AES_CNT_CTRNAND_MODE};
-    if(GetNandCtr(padInfo.CTR, 0xB930000) != 0)
+    if(GetNandCtr(padInfo.ctr, 0xB930000) != 0)
         return 1;
 
     return CreatePad(&padInfo);
@@ -130,7 +130,7 @@ u32 TwlNandPadgen()
         .size_mb = size_mb,
         .filename = "twlnand.fat16.xorpad",
         .mode = AES_CNT_TWLNAND_MODE};
-    if(GetNandCtr(padInfo.CTR, partitions[0].offset) != 0)
+    if(GetNandCtr(padInfo.ctr, partitions[0].offset) != 0)
         return 1;
 
     return CreatePad(&padInfo);
@@ -163,19 +163,19 @@ u32 GetNandCtr(u8* ctr, u32 offset)
             for (u8* c = (u8*) 0x080D8FFF; c > (u8*) 0x08000000; c--) {
                 if (*(u32*)c == 0x5C980 && *(u32*)(c + 1) == 0x800005C9) {
                     ctr_start = c + 0x30;
-                    Debug("CTR Start 0x%08X", ctr_start);
+                    Debug("CTR start 0x%08X", ctr_start);
                     break;
                 }
             }
         }
         
         if (ctr_start == NULL) {
-            Debug("CTR Start not found!");
+            Debug("CTR start not found!");
             return 1;
         }
     }
     
-    // the CTR is stored backwards in memory
+    // the ctr is stored backwards in memory
     if (offset >= 0x0B100000) { // CTRNAND/AGBSAVE region
         for (u32 i = 0; i < 16; i++)
             ctr[i] = *(ctr_start + (0xF - i));
@@ -193,7 +193,7 @@ u32 GetNandCtr(u8* ctr, u32 offset)
 u32 DecryptNandToMem(u8* buffer, u32 offset, u32 size, PartitionInfo* partition)
 {
     CryptBufferInfo info = {.keyslot = partition->keyslot, .setKeyY = 0, .size = size, .buffer = buffer, .mode = partition->mode};
-    if(GetNandCtr(info.CTR, offset) != 0)
+    if(GetNandCtr(info.ctr, offset) != 0)
         return 1;
 
     u32 n_sectors = (size + NAND_SECTOR_SIZE - 1) / NAND_SECTOR_SIZE;
@@ -296,7 +296,7 @@ u32 DecryptCtrNandPartition()
 u32 EncryptMemToNand(u8* buffer, u32 offset, u32 size, PartitionInfo* partition)
 {
     CryptBufferInfo info = {.keyslot = partition->keyslot, .setKeyY = 0, .size = size, .buffer = buffer, .mode = partition->mode};
-    if(GetNandCtr(info.CTR, offset) != 0)
+    if(GetNandCtr(info.ctr, offset) != 0)
         return 1;
 
     u32 n_sectors = (size + NAND_SECTOR_SIZE - 1) / NAND_SECTOR_SIZE;

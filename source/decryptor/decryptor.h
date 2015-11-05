@@ -8,7 +8,7 @@
 typedef struct {
     u32  keyslot;
     u32  setKeyY;
-    u8   CTR[16];
+    u8   ctr[16];
     u8   keyY[16];
     u32  size;
     u32  mode;
@@ -18,7 +18,7 @@ typedef struct {
 typedef struct {
     u32  keyslot;
     u32  setKeyY;
-    u8   CTR[16];
+    u8   ctr[16];
     u8   keyY[16];
     u32  size_mb;
     u32  mode;
