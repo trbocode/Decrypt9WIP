@@ -8,9 +8,10 @@
 
 #define BYTES_PER_PIXEL 3
 #define SCREEN_HEIGHT 240
-#define SCREEN_WIDTH 400
+#define SCREEN_WIDTH_TOP 400
+#define SCREEN_WIDTH_BOT 320
 
-#define SCREEN_SIZE (BYTES_PER_PIXEL * SCREEN_HEIGHT * SCREEN_WIDTH)
+#define SCREEN_SIZE (BYTES_PER_PIXEL * SCREEN_HEIGHT * SCREEN_WIDTH_TOP)
 
 #define RGB(r,g,b) (r<<24|b<<16|g<<8|r)
 
@@ -28,8 +29,9 @@
 	#error "Unknown execution method"
 #endif
 
-void ClearScreen(unsigned char *screen, int color);
+void ClearScreen(unsigned char *screen, int width, int color);
 void ClearTopScreen();
+void ClearBottomScreen();
 void DrawCharacter(unsigned char *screen, int character, int x, int y, int color, int bgcolor);
 void DrawString(unsigned char *screen, const char *str, int x, int y, int color, int bgcolor);
 void DrawStringF(int x, int y, const char *format, ...);

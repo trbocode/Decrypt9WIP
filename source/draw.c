@@ -16,7 +16,7 @@
 #define START_Y 10
 #define END_Y   (SCREEN_HEIGHT - 10)
 #define START_X 10
-#define END_X   (SCREEN_WIDTH - 10)
+#define END_X   (SCREEN_WIDTH_TOP - 10)
 
 #define STEP_Y      10
 #define N_CHARS_Y   ((END_Y - START_Y) / STEP_Y)
@@ -24,9 +24,9 @@
 
 static char debugstr[N_CHARS_X * N_CHARS_Y] = { 0 };
 
-void ClearScreen(u8* screen, int color)
+void ClearScreen(u8* screen, int width, int color)
 {
-    for (int i = 0; i < (SCREEN_WIDTH * SCREEN_HEIGHT); i++) {
+    for (int i = 0; i < (width * SCREEN_HEIGHT); i++) {
         *(screen++) = color >> 16;  // B
         *(screen++) = color >> 8;   // G
         *(screen++) = color & 0xFF; // R
@@ -35,8 +35,14 @@ void ClearScreen(u8* screen, int color)
 
 void ClearTopScreen()
 {
-    ClearScreen(TOP_SCREEN0, BG_COLOR);
-    ClearScreen(TOP_SCREEN1, BG_COLOR);
+    ClearScreen(TOP_SCREEN0, SCREEN_WIDTH_TOP, BG_COLOR);
+    ClearScreen(TOP_SCREEN1, SCREEN_WIDTH_TOP, BG_COLOR);
+}
+
+void ClearBottomScreen()
+{
+    ClearScreen(BOT_SCREEN0, SCREEN_WIDTH_BOT, BG_COLOR);
+    ClearScreen(BOT_SCREEN1, SCREEN_WIDTH_BOT, BG_COLOR);
 }
 
 void DrawCharacter(u8* screen, int character, int x, int y, int color, int bgcolor)
@@ -112,7 +118,7 @@ void Debug(const char *format, ...)
 void ShowProgress(u64 current, u64 total)
 {
     if (total > 0)
-        DrawStringF(SCREEN_WIDTH - 40, SCREEN_HEIGHT - 20, "%3llu%%", (current * 100) / total);
+        DrawStringF(SCREEN_WIDTH_TOP - 40, SCREEN_HEIGHT - 20, "%3llu%%", (current * 100) / total);
     else
-        DrawStringF(SCREEN_WIDTH - 40, SCREEN_HEIGHT - 20, "    ");
+        DrawStringF(SCREEN_WIDTH_TOP - 40, SCREEN_HEIGHT - 20, "    ");
 }
