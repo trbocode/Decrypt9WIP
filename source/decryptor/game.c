@@ -236,7 +236,7 @@ u32 SdPadgen()
         }
         FileClose();
         if (memcmp(movable_seed, "SEED", 4) != 0) {
-            Debug("movable.sed is too corrupt!");
+            Debug("movable.sed is corrupt!");
             return 1;
         }
         setup_aeskeyY(0x34, &movable_seed[0x110]);
@@ -980,7 +980,6 @@ u32 DecryptGameFilesBatch(bool batchNcch, bool batchCia, bool deepCia)
 u32 DecryptSdFiles() {
     const char* subpaths[] = {"backups", "dbs", "extdata", "title", "Nintendo DSiWare", NULL};
     char* batch_dir = GAME_DIR;
-    u8 movable_keyY[16] = {0};
     u32 n_processed = 0;
     u32 n_failed = 0;
     u32 plen = 0;
@@ -1003,12 +1002,14 @@ u32 DecryptSdFiles() {
     
     // Load console 0x34 keyY from movable.sed if present on SD card
     if (DebugFileOpen("movable.sed")) {
+        u8 movable_keyY[16];
         u8 magic[4];
         if (!DebugFileRead(magic, 4, 0)) {
             FileClose();
             return 1;
         }
         if (memcmp(magic, "SEED", 4) != 0) {
+            FileClose();
             Debug("movable.sed is corrupt!");
             return 1;
         }

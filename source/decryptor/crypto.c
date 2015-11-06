@@ -81,17 +81,6 @@ void add_ctr(void* ctr, u32 carry)
     }
 }
 
-static void _decrypt(u32 value, void* inbuf, void* outbuf, size_t blocks)
-{
-    *REG_AESCNT = 0;
-    *REG_AESBLKCNT = blocks << 16;
-    *REG_AESCNT = value |
-                  AES_CNT_START |
-                  AES_CNT_FLUSH_READ |
-                  AES_CNT_FLUSH_WRITE;
-    aes_fifos(inbuf, outbuf, blocks);
-}
-
 void aes_decrypt(void* inbuf, void* outbuf, void* iv, size_t size, u32 mode)
 {
     u32 in  = (u32)inbuf;
@@ -101,7 +90,13 @@ void aes_decrypt(void* inbuf, void* outbuf, void* iv, size_t size, u32 mode)
     while (block_count != 0)
     {
         blocks = (block_count >= 0xFFFF) ? 0xFFFF : block_count;
-        _decrypt(mode, (void*)in, (void*)out, blocks);
+        *REG_AESCNT = 0;
+        *REG_AESBLKCNT = blocks << 16;
+        *REG_AESCNT = mode |
+                      AES_CNT_START |
+                      AES_CNT_FLUSH_READ |
+                      AES_CNT_FLUSH_WRITE;
+        aes_fifos((void*)in, (void*)out, blocks);
         in  += blocks * AES_BLOCK_SIZE;
         out += blocks * AES_BLOCK_SIZE;
         block_count -= blocks;
