@@ -4,6 +4,8 @@
 #include "fs.h"
 #include "decryptor/features.h"
 
+#define TOP_SCREEN false
+
 
 u32 UnmountSd()
 {
@@ -31,26 +33,31 @@ void DrawMenu(MenuInfo* currMenu, u32 index, bool fullDraw, bool subMenu)
     u32 menublock_y1 = menublock_y0 + currMenu->n_entries * 10;
     
     if (fullDraw) { // draw full menu
-        ClearTopScreen();
-        DrawStringF(10, menublock_y0 - 20, "%s", currMenu->name);
-        DrawStringF(10, menublock_y0 - 10, "==========================");
-        DrawStringF(10, menublock_y1 +  0, "==========================");
-        DrawStringF(10, menublock_y1 + 10, (subMenu) ? "A: Choose  B: Return" : "A: Choose");
-        DrawStringF(10, menublock_y1 + 20, "SELECT: Unmount SD");
-        DrawStringF(10, menublock_y1 + 30, "START:  Reboot");
-        DrawStringF(10, SCREEN_HEIGHT - 20, "Remaining SD storage space: %llu MiB", RemainingStorageSpace() / 1024 / 1024);
-        DrawStringF(10, SCREEN_HEIGHT - 30, "Game directory: %s", GAME_DIR);
+        if (!TOP_SCREEN)
+            ClearScreenFull(true);
+        ClearScreenFull(TOP_SCREEN);
+        DrawStringF(10, menublock_y0 - 20, TOP_SCREEN, "%s", currMenu->name);
+        DrawStringF(10, menublock_y0 - 10, TOP_SCREEN, "==========================");
+        DrawStringF(10, menublock_y1 +  0, TOP_SCREEN, "==========================");
+        DrawStringF(10, menublock_y1 + 10, TOP_SCREEN, (subMenu) ? "A: Choose  B: Return" : "A: Choose");
+        DrawStringF(10, menublock_y1 + 20, TOP_SCREEN, "SELECT: Unmount SD");
+        DrawStringF(10, menublock_y1 + 30, TOP_SCREEN, "START:  Reboot");
+        DrawStringF(10, SCREEN_HEIGHT - 20, TOP_SCREEN, "Remaining SD storage space: %llu MiB", RemainingStorageSpace() / 1024 / 1024);
+        DrawStringF(10, SCREEN_HEIGHT - 30, TOP_SCREEN, "Game directory: %s", GAME_DIR);
         #ifdef WORK_DIR
         if (DirOpen(WORK_DIR)) {
-            DrawStringF(10, SCREEN_HEIGHT - 40, "Work directory: %s", WORK_DIR);
+            DrawStringF(10, SCREEN_HEIGHT - 40, TOP_SCREEN, "Work directory: %s", WORK_DIR);
             DirClose();
         }
         #endif
     }
     
+    if (!TOP_SCREEN)
+        DrawStringF(10, 10, true, "Selected: %-*.*s", 32, 32, currMenu->entries[index].name);
+        
     for (u32 i = 0; i < currMenu->n_entries; i++) { // draw menu entries / selection []
         char* name = currMenu->entries[i].name;
-        DrawStringF(10, menublock_y0 + (i*10), (i == index) ? "[%s]" : " %s ", name);
+        DrawStringF(10, menublock_y0 + (i*10), TOP_SCREEN, (i == index) ? "[%s]" : " %s ", name);
     }
 }
 
@@ -79,7 +86,7 @@ u32 ProcessEntry(MenuEntry* entry)
                 continue;
             else if (pad_state & unlockSequence[unlockLvl])
                 unlockLvl++;
-            else if (pad_state & (BUTTON_B | BUTTON_SELECT | BUTTON_START))
+            else if (pad_state & (BUTTON_B | BUTTON_START))
                 break;
             else if (unlockLvl == 0 || !(pad_state & unlockSequence[unlockLvl-1]))
                 unlockLvl = 0;
@@ -98,7 +105,7 @@ u32 ProcessEntry(MenuEntry* entry)
     }
     Debug("");
     Debug("Press B to return, START to reboot.");
-    while(!(pad_state = InputWait() & (BUTTON_B | BUTTON_SELECT | BUTTON_START)));
+    while(!(pad_state = InputWait() & (BUTTON_B | BUTTON_START)));
     
     // returns the last known pad_state
     return pad_state;

@@ -33,16 +33,15 @@ void ClearScreen(u8* screen, int width, int color)
     }
 }
 
-void ClearTopScreen()
+void ClearScreenFull(bool use_top)
 {
-    ClearScreen(TOP_SCREEN0, SCREEN_WIDTH_TOP, BG_COLOR);
-    ClearScreen(TOP_SCREEN1, SCREEN_WIDTH_TOP, BG_COLOR);
-}
-
-void ClearBottomScreen()
-{
-    ClearScreen(BOT_SCREEN0, SCREEN_WIDTH_BOT, BG_COLOR);
-    ClearScreen(BOT_SCREEN1, SCREEN_WIDTH_BOT, BG_COLOR);
+    if (use_top) {
+        ClearScreen(TOP_SCREEN0, SCREEN_WIDTH_TOP, BG_COLOR);
+        ClearScreen(TOP_SCREEN1, SCREEN_WIDTH_TOP, BG_COLOR);
+    } else {
+        ClearScreen(BOT_SCREEN0, SCREEN_WIDTH_BOT, BG_COLOR);
+        ClearScreen(BOT_SCREEN1, SCREEN_WIDTH_BOT, BG_COLOR);
+    }
 }
 
 void DrawCharacter(u8* screen, int character, int x, int y, int color, int bgcolor)
@@ -74,7 +73,7 @@ void DrawString(u8* screen, const char *str, int x, int y, int color, int bgcolo
         DrawCharacter(screen, str[i], x + i * 8, y, color, bgcolor);
 }
 
-void DrawStringF(int x, int y, const char *format, ...)
+void DrawStringF(int x, int y, bool use_top, const char *format, ...)
 {
     char str[256] = {};
     va_list va;
@@ -83,14 +82,19 @@ void DrawStringF(int x, int y, const char *format, ...)
     vsnprintf(str, 256, format, va);
     va_end(va);
 
-    DrawString(TOP_SCREEN0, str, x, y, FONT_COLOR, BG_COLOR);
-    DrawString(TOP_SCREEN1, str, x, y, FONT_COLOR, BG_COLOR);
+    if (use_top) {
+        DrawString(TOP_SCREEN0, str, x, y, FONT_COLOR, BG_COLOR);
+        DrawString(TOP_SCREEN1, str, x, y, FONT_COLOR, BG_COLOR);
+    } else {
+        DrawString(BOT_SCREEN0, str, x, y, FONT_COLOR, BG_COLOR);
+        DrawString(BOT_SCREEN1, str, x, y, FONT_COLOR, BG_COLOR);
+    }
 }
 
 void DebugClear()
 {
     memset(debugstr, 0x00, N_CHARS_X * N_CHARS_Y);
-    ClearTopScreen();
+    ClearScreenFull(true);
 }
 
 void Debug(const char *format, ...)
@@ -118,7 +122,7 @@ void Debug(const char *format, ...)
 void ShowProgress(u64 current, u64 total)
 {
     if (total > 0)
-        DrawStringF(SCREEN_WIDTH_TOP - 40, SCREEN_HEIGHT - 20, "%3llu%%", (current * 100) / total);
+        DrawStringF(SCREEN_WIDTH_TOP - 40, SCREEN_HEIGHT - 20, true, "%3llu%%", (current * 100) / total);
     else
-        DrawStringF(SCREEN_WIDTH_TOP - 40, SCREEN_HEIGHT - 20, "    ");
+        DrawStringF(SCREEN_WIDTH_TOP - 40, SCREEN_HEIGHT - 20, true, "    ");
 }

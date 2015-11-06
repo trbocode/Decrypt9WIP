@@ -118,8 +118,8 @@ void PowerOff()
 
 int main()
 {
-    ClearBottomScreen();
-    DebugClear();
+    ClearScreenFull(false);
+    ClearScreenFull(true);
     InitFS();
 
     u32 menu_exit = ProcessMenu(menu, sizeof(menu) / sizeof(MenuInfo));

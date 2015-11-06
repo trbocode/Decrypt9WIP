@@ -30,11 +30,10 @@
 #endif
 
 void ClearScreen(unsigned char *screen, int width, int color);
-void ClearTopScreen();
-void ClearBottomScreen();
+void ClearScreenFull(bool use_top);
 void DrawCharacter(unsigned char *screen, int character, int x, int y, int color, int bgcolor);
 void DrawString(unsigned char *screen, const char *str, int x, int y, int color, int bgcolor);
-void DrawStringF(int x, int y, const char *format, ...);
+void DrawStringF(int x, int y, bool use_top, const char *format, ...);
 
 void DebugClear();
 void Debug(const char *format, ...);
