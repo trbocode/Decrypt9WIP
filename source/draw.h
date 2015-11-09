@@ -11,8 +11,6 @@
 #define SCREEN_WIDTH_TOP 400
 #define SCREEN_WIDTH_BOT 320
 
-#define SCREEN_SIZE (BYTES_PER_PIXEL * SCREEN_HEIGHT * SCREEN_WIDTH_TOP)
-
 #define RGB(r,g,b) (r<<24|b<<16|g<<8|r)
 
 #ifdef EXEC_GATEWAY
