@@ -500,9 +500,26 @@ u32 CryptNcch(const char* filename, u32 offset, u32 size, u64 seedId, u8* encryp
     bool usesSeedCrypto = ncch->flags[7] & 0x20;
     bool usesSec3Crypto = (ncch->flags[3] == 0x0A);
     bool usesSec4Crypto = (ncch->flags[3] == 0x0B);
+    bool usesFixedKey = ncch->flags[7] & 0x01;
     
-    Debug("Code / Crypto: %s / %s%s%s", ncch->productCode, (usesSec4Crypto) ? "Secure4 " : (usesSec3Crypto) ? "Secure3 " : (uses7xCrypto) ? "7x " : "", (usesSeedCrypto) ? "Seed " : "", (!uses7xCrypto && !usesSeedCrypto) ? "Standard" : "");
-   
+    Debug("Code / Crypto: %s / %s%s%s%s", ncch->productCode, (usesFixedKey) ? "Fixed " : "", (usesSec4Crypto) ? "Secure4 " : (usesSec3Crypto) ? "Secure3 " : (uses7xCrypto) ? "7x " : "", (usesSeedCrypto) ? "Seed " : "", (!uses7xCrypto && !usesSeedCrypto) ? "Standard" : "");
+    
+    // setup zero key encryption
+    if (usesFixedKey) {
+        u8 zeroKey[16] = {0};
+        if (uses7xCrypto || usesSeedCrypto) {
+            Debug("Crypto combination is not allowed!");
+            return 1;
+        }
+        if (ncch->programId & ((u64) 0x10 << 32)) {
+            Debug("System flag set and SystemKey not known!");
+            return 1;
+        }
+        info1.setKeyY = info0.setKeyY = 0;
+        info1.keyslot = info0.keyslot = 0x11;
+        setup_aeskey(0x11, zeroKey);
+    }
+    
     // check secure4 crypto
     if (usesSec4Crypto) {
         Debug("Secure4 crypto is not supported!");
