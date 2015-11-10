@@ -81,7 +81,7 @@ void add_ctr(void* ctr, u32 carry)
     }
 }
 
-void aes_decrypt(void* inbuf, void* outbuf, void* iv, size_t size, u32 mode)
+void aes_decrypt(void* inbuf, void* outbuf, size_t size, u32 mode)
 {
     u32 in  = (u32)inbuf;
     u32 out = (u32)outbuf;
