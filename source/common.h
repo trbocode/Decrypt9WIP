@@ -41,6 +41,7 @@
 // #define EXPERIMENTAL
 #define GAME_DIR "/D9Game"
 #define WORK_DIR "/Decrypt9"
+#define LOG_FILE "Decrypt9.log"
 
 inline char* strupper(const char* str) {
     char* buffer = (char*)malloc(strlen(str) + 1);
