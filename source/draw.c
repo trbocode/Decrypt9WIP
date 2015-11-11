@@ -9,6 +9,7 @@
 
 #include "font.h"
 #include "draw.h"
+#include "fs.h"
 
 #define BG_COLOR   (RGB(0x00, 0x00, 0x00))
 #define FONT_COLOR (RGB(0xFF, 0xFF, 0xFF))
@@ -95,16 +96,18 @@ void DebugClear()
 {
     memset(debugstr, 0x00, N_CHARS_X * N_CHARS_Y);
     ClearScreenFull(true);
+    LogWrite("");
 }
 
 void Debug(const char *format, ...)
 {
-    char tempstr[N_CHARS_X] = { 0 };
+    char tempstr[128] = { 0 }; // 128 instead of N_CHARS_X for log file 
     va_list va;
     
     va_start(va, format);
-    vsnprintf(tempstr, N_CHARS_X, format, va);
+    vsnprintf(tempstr, 128, format, va);
     va_end(va);
+    LogWrite(tempstr);
     
     memmove(debugstr + N_CHARS_X, debugstr, N_CHARS_X * (N_CHARS_Y - 1));
     snprintf(debugstr, N_CHARS_X, "%-*.*s", N_CHARS_X - 1, N_CHARS_X - 1, tempstr);
