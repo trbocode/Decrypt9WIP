@@ -33,6 +33,7 @@ void DrawCharacter(unsigned char *screen, int character, int x, int y, int color
 void DrawString(unsigned char *screen, const char *str, int x, int y, int color, int bgcolor);
 void DrawStringF(int x, int y, bool use_top, const char *format, ...);
 
+void DumpFrameBuffer();
 void DebugClear();
 void Debug(const char *format, ...);
 
