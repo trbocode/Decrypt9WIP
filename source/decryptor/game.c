@@ -494,15 +494,20 @@ u32 CryptNcch(const char* filename, u32 offset, u32 size, u64 seedId, u8* encryp
     if (seedId == 0) seedId = ncch->partitionId;
     
     // copy over encryption parameters (if applicable)
-    if (encrypt) memcpy(ncch->flags, encrypt, 8);
+    if (encrypt) {
+        ncch->flags[3] = encrypt[3];
+        ncch->flags[7] &= (0x01|0x20)^0xFF;
+        ncch->flags[7] |= (0x01|0x20)&encrypt[7];
+    }
     
+    // check crypto type
     bool uses7xCrypto = ncch->flags[3];
     bool usesSeedCrypto = ncch->flags[7] & 0x20;
     bool usesSec3Crypto = (ncch->flags[3] == 0x0A);
     bool usesSec4Crypto = (ncch->flags[3] == 0x0B);
     bool usesFixedKey = ncch->flags[7] & 0x01;
     
-    Debug("Code / Crypto: %s / %s%s%s%s", ncch->productCode, (usesFixedKey) ? "Fixed " : "", (usesSec4Crypto) ? "Secure4 " : (usesSec3Crypto) ? "Secure3 " : (uses7xCrypto) ? "7x " : "", (usesSeedCrypto) ? "Seed " : "", (!uses7xCrypto && !usesSeedCrypto) ? "Standard" : "");
+    Debug("Code / Crypto: %s / %s%s%s%s", ncch->productCode, (usesFixedKey) ? "FixedKey " : "", (usesSec4Crypto) ? "Secure4 " : (usesSec3Crypto) ? "Secure3 " : (uses7xCrypto) ? "7x " : "", (usesSeedCrypto) ? "Seed " : "", (!uses7xCrypto && !usesSeedCrypto && !usesFixedKey) ? "Standard" : "");
     
     // setup zero key encryption
     if (usesFixedKey) {
@@ -512,7 +517,7 @@ u32 CryptNcch(const char* filename, u32 offset, u32 size, u64 seedId, u8* encryp
             return 1;
         }
         if (ncch->programId & ((u64) 0x10 << 32)) {
-            Debug("System flag set and SystemKey not known!");
+            Debug("SystemFixedKey is not known!");
             return 1;
         }
         info1.setKeyY = info0.setKeyY = 0;
@@ -671,7 +676,7 @@ u32 CryptNcch(const char* filename, u32 offset, u32 size, u64 seedId, u8* encryp
     // set NCCH header flags
     if (!encrypt) {
         ncch->flags[3] = 0x00;
-        ncch->flags[7] &= 0x20^0xFF;
+        ncch->flags[7] &= (0x01|0x20)^0xFF;
         ncch->flags[7] |= 0x04;
     }
     
