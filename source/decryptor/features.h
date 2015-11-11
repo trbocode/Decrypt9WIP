@@ -34,4 +34,5 @@ u32 DecryptSdFiles(void);
 u32 DecryptNcsdNcch(void);
 u32 DecryptCiaShallow(void);
 u32 DecryptCiaDeep(void);
+u32 EncryptNcsdNcch(void);
 u32 EncryptCiaShallow(void);

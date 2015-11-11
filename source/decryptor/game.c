@@ -496,7 +496,7 @@ u32 CryptNcch(const char* filename, u32 offset, u32 size, u64 seedId, u8* encryp
     // copy over encryption parameters (if applicable)
     if (encrypt) {
         ncch->flags[3] = encrypt[3];
-        ncch->flags[7] &= (0x01|0x20)^0xFF;
+        ncch->flags[7] &= (0x01|0x20|0x04)^0xFF;
         ncch->flags[7] |= (0x01|0x20)&encrypt[7];
     }
     
@@ -925,6 +925,7 @@ u32 CryptCia(const char* filename, bool deep_crypt, bool encrypt)
 
 u32 CryptGameFilesBatch(bool batchNcch, bool batchCia, bool deepCia, bool encrypt)
 {
+    u8 ncch_encrypt_param[8] = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
     const char* ncsd_partition_name[8] = {
         "Executable", "Manual", "DPC", "Unknown", "Unknown", "Unknown", "UpdateN3DS", "UpdateO3DS" 
     };
@@ -963,7 +964,7 @@ u32 CryptGameFilesBatch(bool batchNcch, bool batchCia, bool deepCia, bool encryp
         
         if (batchNcch && (memcmp(buffer + 0x100, "NCCH", 4) == 0)) {
             Debug("Decrypting NCCH \"%s\"", path + path_len);
-            if (CryptNcch(path, 0x00, 0, 0, NULL) != 1) {
+            if (CryptNcch(path, 0x00, 0, 0, (encrypt) ? ncch_encrypt_param : NULL) != 1) {
                 Debug("Success!");
                 n_processed++;
             } else {
@@ -982,7 +983,7 @@ u32 CryptGameFilesBatch(bool batchNcch, bool batchCia, bool deepCia, bool encryp
                 if (size == 0) 
                     continue;
                 Debug("Partition %i (%s)", p, ncsd_partition_name[p]);
-                if (CryptNcch(path, offset, size, seedId, NULL) == 1)
+                if (CryptNcch(path, offset, size, seedId, (encrypt) ? ncch_encrypt_param : NULL) == 1)
                     break;
             }
             if ( p == 8 ) {
@@ -1108,6 +1109,10 @@ u32 DecryptCiaShallow() {
 
 u32 DecryptCiaDeep() {
     return CryptGameFilesBatch(false, true, true, false);
+}
+
+u32 EncryptNcsdNcch() {
+    return CryptGameFilesBatch(true, false, false, true);
 }
 
 u32 EncryptCiaShallow() {
