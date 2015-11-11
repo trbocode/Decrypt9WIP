@@ -4,7 +4,7 @@
 #include "fs.h"
 #include "decryptor/features.h"
 
-#define TOP_SCREEN false
+#define TOP_SCREEN true
 
 
 u32 UnmountSd()
