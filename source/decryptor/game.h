@@ -86,5 +86,5 @@ u32 CryptSdToSd(const char* filename, u32 offset, u32 size, CryptBufferInfo* inf
 u32 GetHashFromFile(const char* filename, u32 offset, u32 size, u8* hash);
 u32 CheckHashFromFile(const char* filename, u32 offset, u32 size, u8* hash);
 u32 CryptNcch(const char* filename, u32 offset, u32 size, u64 seedId, u8* encrypt);
-u32 DecryptCia(const char* filename, bool deep_decrypt);
-u32 DecryptGameFilesBatch(bool batchNcch, bool batchCia, bool deepCia);
+u32 CryptCia(const char* filename, bool deep_crypt, bool encrypt);
+u32 CryptGameFilesBatch(bool batchNcch, bool batchCia, bool deepCia, bool encrypt);
