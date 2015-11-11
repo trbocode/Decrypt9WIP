@@ -365,7 +365,7 @@ u32 UpdateSeedDb()
     return 0;
 }
 
-u32 DecryptSdToSd(const char* filename, u32 offset, u32 size, CryptBufferInfo* info)
+u32 CryptSdToSd(const char* filename, u32 offset, u32 size, CryptBufferInfo* info)
 {
     u8* buffer = BUFFER_ADDRESS;
     u32 offset_16 = offset % 16;
@@ -603,7 +603,7 @@ u32 CryptNcch(const char* filename, u32 offset, u32 size, u64 seedId, u8* encryp
             add_ctr(info0.ctr, 0x200); // exHeader offset
         else
             info0.ctr[8] = 1;
-        result |= DecryptSdToSd(filename, offset + 0x200, 0x800, &info0);
+        result |= CryptSdToSd(filename, offset + 0x200, 0x800, &info0);
     }
     
     // process ExeFS
@@ -620,7 +620,7 @@ u32 CryptNcch(const char* filename, u32 offset, u32 size, u64 seedId, u8* encryp
             u32 size_code = 0;
             // find .code offset and size
             if (!encrypt) // decrypt this first (when decrypting)
-                result |= DecryptSdToSd(filename, offset + offset_byte, 0x200, &info0);
+                result |= CryptSdToSd(filename, offset + offset_byte, 0x200, &info0);
             if(!FileOpen(filename))
                 return 1;
             if(!DebugFileRead(buffer, 0x200, offset + offset_byte)) {
@@ -636,22 +636,22 @@ u32 CryptNcch(const char* filename, u32 offset, u32 size, u64 seedId, u8* encryp
                 }
             }
             if (encrypt) // encrypt this after (when encrypting)
-                result |= DecryptSdToSd(filename, offset + offset_byte, 0x200, &info0);
+                result |= CryptSdToSd(filename, offset + offset_byte, 0x200, &info0);
             // special ExeFS decryption routine (only .code has new encryption)
             if (size_code > 0) {
-                result |= DecryptSdToSd(filename, offset + offset_byte + 0x200, offset_code - 0x200, &info0);
+                result |= CryptSdToSd(filename, offset + offset_byte + 0x200, offset_code - 0x200, &info0);
                 memcpy(info1.ctr, info0.ctr, 16); // this depends on the exeFS file offsets being aligned (which they are)
                 add_ctr(info0.ctr, size_code / 0x10);
                 info0.setKeyY = info1.setKeyY = 1;
-                result |= DecryptSdToSd(filename, offset + offset_byte + offset_code, size_code, &info1);
-                result |= DecryptSdToSd(filename,
+                result |= CryptSdToSd(filename, offset + offset_byte + offset_code, size_code, &info1);
+                result |= CryptSdToSd(filename,
                     offset + offset_byte + offset_code + size_code,
                     size_byte - (offset_code + size_code), &info0);
             } else {
-                result |= DecryptSdToSd(filename, offset + offset_byte + 0x200, size_byte - 0x200, &info0);
+                result |= CryptSdToSd(filename, offset + offset_byte + 0x200, size_byte - 0x200, &info0);
             }
         } else {
-            result |= DecryptSdToSd(filename, offset + offset_byte, size_byte, &info0);
+            result |= CryptSdToSd(filename, offset + offset_byte, size_byte, &info0);
         }
     }
     
@@ -665,7 +665,7 @@ u32 CryptNcch(const char* filename, u32 offset, u32 size, u64 seedId, u8* encryp
         else
             info1.ctr[8] = 3;
         info1.setKeyY = 1;
-        result |= DecryptSdToSd(filename, offset + offset_byte, size_byte, &info1);
+        result |= CryptSdToSd(filename, offset + offset_byte, size_byte, &info1);
     }
     
     // set NCCH header flags
