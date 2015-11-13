@@ -91,14 +91,17 @@ MenuInfo menu[] =
         }
     },
     {
-        "Game Decryptor Options", 6,
+        "Game Decryptor Options", 9,
         {
             { "NCCH/NCSD Decryptor", &DecryptNcsdNcch, 0, 0 },
+            { "NCCH/NCSD Decryptor (GW)", &DecryptNcsdNcchGateway, 0, 0 },
             { "CIA Decryptor (shallow)", &DecryptCiaShallow, 0, 0 },
             { "CIA Decryptor (deep)", &DecryptCiaDeep, 0, 0 },
+            { "CIA Decryptor (zerokey)", &DecryptCiaZero, 0, 0 },
+            { "CIA Decryptor (GW)", &DecryptCiaGateway, 0, 0 },
             { "SD Decryptor/Encryptor", &DecryptSdFiles, 0, 0 },
-            { "NCCH/NCSD Encryptor", &EncryptNcsdNcch, 0, 0 },
-            { "CIA Encryptor (shallow)", &EncryptCiaShallow, 0, 0 }
+            { "NCCH/NCSD Encryptor (standard)", &EncryptNcsdNcchStandard, 0, 0 },
+            { "NCCH/NCSD Encryptor (zerokey)", &EncryptNcsdNcchZerokey, 0, 0 }
         }
     }
 };

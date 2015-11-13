@@ -441,7 +441,7 @@ u32 CheckHashFromFile(const char* filename, u32 offset, u32 size, u8* hash)
     return (memcmp(hash, digest, 32) == 0) ? 0 : 1; 
 }
 
-u32 CryptNcch(const char* filename, u32 offset, u32 size, u64 seedId, u8* encrypt)
+u32 CryptNcch(const char* filename, u32 offset, u32 size, u64 seedId, u8* encrypt_flags)
 {
     NcchHeader* ncch = (NcchHeader*) 0x20316200;
     u8* buffer = (u8*) 0x20316400;
@@ -473,13 +473,13 @@ u32 CryptNcch(const char* filename, u32 offset, u32 size, u64 seedId, u8* encryp
     }        
     
     // check if encrypted
-    if (!encrypt && (ncch->flags[7] & 0x04)) {
+    if (!encrypt_flags && (ncch->flags[7] & 0x04)) {
         Debug("NCCH is not encrypted");
         return 2; // not an actual error
-    } else if (encrypt && !(ncch->flags[7] & 0x04)) {
+    } else if (encrypt_flags && !(ncch->flags[7] & 0x04)) {
         Debug("NCCH is already encrypted");
         return 2; // not an actual error
-    } else if (encrypt && (encrypt[7] & 0x04)) {
+    } else if (encrypt_flags && (encrypt_flags[7] & 0x04)) {
         Debug("Nothing to do!");
         return 2; // not an actual error
     }
@@ -494,10 +494,10 @@ u32 CryptNcch(const char* filename, u32 offset, u32 size, u64 seedId, u8* encryp
     if (seedId == 0) seedId = ncch->partitionId;
     
     // copy over encryption parameters (if applicable)
-    if (encrypt) {
-        ncch->flags[3] = encrypt[3];
+    if (encrypt_flags) {
+        ncch->flags[3] = encrypt_flags[3];
         ncch->flags[7] &= (0x01|0x20|0x04)^0xFF;
-        ncch->flags[7] |= (0x01|0x20)&encrypt[7];
+        ncch->flags[7] |= (0x01|0x20)&encrypt_flags[7];
     }
     
     // check crypto type
@@ -596,7 +596,7 @@ u32 CryptNcch(const char* filename, u32 offset, u32 size, u64 seedId, u8* encryp
     info1.keyslot = (usesSec3Crypto) ? 0x18 : ((uses7xCrypto) ? 0x25 : 0x2C);
     
     Debug("%s ExHdr/ExeFS/RomFS (%ukB/%ukB/%uMB)",
-        (encrypt) ? "Encrypt" : "Decrypt",
+        (encrypt_flags) ? "Encrypt" : "Decrypt",
         (ncch->size_exthdr > 0) ? 0x800 / 1024 : 0,
         (ncch->size_exefs * 0x200) / 1024,
         (ncch->size_romfs * 0x200) / (1024*1024));
@@ -624,7 +624,7 @@ u32 CryptNcch(const char* filename, u32 offset, u32 size, u64 seedId, u8* encryp
             u32 offset_code = 0;
             u32 size_code = 0;
             // find .code offset and size
-            if (!encrypt) // decrypt this first (when decrypting)
+            if (!encrypt_flags) // decrypt this first (when decrypting)
                 result |= CryptSdToSd(filename, offset + offset_byte, 0x200, &info0);
             if(!FileOpen(filename))
                 return 1;
@@ -640,7 +640,7 @@ u32 CryptNcch(const char* filename, u32 offset, u32 size, u64 seedId, u8* encryp
                     break;
                 }
             }
-            if (encrypt) // encrypt this after (when encrypting)
+            if (encrypt_flags) // encrypt_flags this after (when encrypting)
                 result |= CryptSdToSd(filename, offset + offset_byte, 0x200, &info0);
             // special ExeFS decryption routine (only .code has new encryption)
             if (size_code > 0) {
@@ -674,7 +674,7 @@ u32 CryptNcch(const char* filename, u32 offset, u32 size, u64 seedId, u8* encryp
     }
     
     // set NCCH header flags
-    if (!encrypt) {
+    if (!encrypt_flags) {
         ncch->flags[3] = 0x00;
         ncch->flags[7] &= (0x01|0x20)^0xFF;
         ncch->flags[7] |= 0x04;
@@ -690,7 +690,7 @@ u32 CryptNcch(const char* filename, u32 offset, u32 size, u64 seedId, u8* encryp
     FileClose();
     
     // verify decryption
-    if ((result == 0) && !encrypt) {
+    if ((result == 0) && !encrypt_flags) {
         char* status_str[3] = { "OK", "Fail", "-" }; 
         u32 ver_exthdr = 2;
         u32 ver_exefs = 2;
@@ -711,7 +711,7 @@ u32 CryptNcch(const char* filename, u32 offset, u32 size, u64 seedId, u8* encryp
     return result;
 }
 
-u32 CryptCia(const char* filename, bool deep_crypt, bool encrypt)
+u32 CryptCia(const char* filename, u8* ncch_crypt, bool cia_encrypt, u32 gw_fix)
 {
     u8* buffer = (u8*) 0x20316600;
     __attribute__((aligned(16))) u8 titlekey[16];
@@ -730,8 +730,8 @@ u32 CryptCia(const char* filename, bool deep_crypt, bool encrypt)
     u32 content_count;
     u32 result = 0;
     
-    if (encrypt) // no deep processing when encrypting
-        deep_crypt = false;
+    if (cia_encrypt) // no deep processing when encrypting
+        ncch_crypt = NULL;
     
     if (!FileOpen(filename)) // already checked this file
         return 1;
@@ -822,19 +822,20 @@ u32 CryptCia(const char* filename, bool deep_crypt, bool encrypt)
     bool untouched = true;
     u32 n_processed = 0;
     u32 next_offset = offset_content;
-    CryptBufferInfo info = {.setKeyY = 0, .keyslot = 0x11, .mode = (encrypt) ? AES_CNT_TITLEKEY_ENCRYPT_MODE : AES_CNT_TITLEKEY_DECRYPT_MODE};
+    CryptBufferInfo info = {.setKeyY = 0, .keyslot = 0x11, .mode = (cia_encrypt) ? AES_CNT_TITLEKEY_ENCRYPT_MODE : AES_CNT_TITLEKEY_DECRYPT_MODE};
     setup_aeskey(0x11, titlekey);
     
-    if (deep_crypt)
+    if (ncch_crypt)
         Debug("Pass #1: CIA decryption...");
+    if (gw_fix) content_count = gw_fix;
     for (u32 i = 0; i < content_count; i++) {
         u32 size = getbe32(content_list + (0x30 * i) + 0xC);
         u32 offset = next_offset;
         next_offset = offset + size;
-        if (!(content_list[(0x30 * i) + 0x7] & 0x1) != encrypt)
-            continue; // depending on 'encrypt' setting: not/already encrypted
+        if (!(content_list[(0x30 * i) + 0x7] & 0x1) != cia_encrypt)
+            continue; // depending on 'cia_encrypt' setting: not/already encrypted
         untouched = false;
-        if (encrypt) {
+        if (cia_encrypt) {
             Debug("Verifying unencrypted content...");
             if (CheckHashFromFile(filename, offset, size, content_list + (0x30 * i) + 0x10) != 0) {
                 Debug("Verification failed!");
@@ -843,15 +844,15 @@ u32 CryptCia(const char* filename, bool deep_crypt, bool encrypt)
             }
             Debug("Verified OK!");
         }
-        Debug("%scrypting Content %i of %i (%iMB)...", (encrypt) ? "En" : "De", i + 1, content_count, size / (1024*1024));
+        Debug("%scrypting Content %i of %i (%iMB)...", (cia_encrypt) ? "En" : "De", i + 1, content_count, size / (1024*1024));
         memset(info.ctr, 0x00, 16);
         memcpy(info.ctr, content_list + (0x30 * i) + 4, 2);
         if (CryptSdToSd(filename, offset, size, &info) != 0) {
-            Debug("%scryption failed!", (encrypt) ? "En" : "De");
+            Debug("%scryption failed!", (cia_encrypt) ? "En" : "De");
             result = 1;
             continue;
         }
-        if (!encrypt) {
+        if (!cia_encrypt) {
             Debug("Verifying decrypted content...");
             if (CheckHashFromFile(filename, offset, size, content_list + (0x30 * i) + 0x10) != 0) {
                 Debug("Verification failed!");
@@ -864,7 +865,7 @@ u32 CryptCia(const char* filename, bool deep_crypt, bool encrypt)
         n_processed++;
     }
     
-    if (deep_crypt) {
+    if (ncch_crypt) {
         Debug("Pass #2: NCCH decryption...");
         next_offset = offset_content;
         for (u32 i = 0; i < content_count; i++) {
@@ -874,6 +875,8 @@ u32 CryptCia(const char* filename, bool deep_crypt, bool encrypt)
             next_offset = offset + size;
             Debug("Processing Content %i of %i (%iMB)...", i + 1, content_count, size / (1024*1024));
             ncch_state = CryptNcch(filename, offset, size, titleId, NULL);
+            if (!(ncch_crypt[7] & 0x04) && (ncch_state != 1))
+                ncch_state = CryptNcch(filename, offset, size, titleId, ncch_crypt);
             if (ncch_state == 0) {
                 Debug("Recalculating hash...");
                 if (GetHashFromFile(filename, offset, size, content_list + (0x30 * i) + 0x10) != 0) {
@@ -910,7 +913,7 @@ u32 CryptCia(const char* filename, bool deep_crypt, bool encrypt)
     }
     
     if (untouched) {
-        Debug((encrypt) ? "CIA was already encrypted!" : "CIA was not encrypted!");
+        Debug((cia_encrypt) ? "CIA was already encrypted!" : "CIA was not encrypted!");
     } else if (n_processed > 0) {
         if (!FileOpen(filename)) // already checked this file
             return 1;
@@ -923,9 +926,8 @@ u32 CryptCia(const char* filename, bool deep_crypt, bool encrypt)
 }
 
 
-u32 CryptGameFilesBatch(bool batchNcch, bool batchCia, bool deepCia, bool encrypt)
+u32 CryptGameFilesBatch(bool batchNcch, bool batchCia, u8* ncch_crypt, u32 gw_fix)
 {
-    u8 ncch_encrypt_param[8] = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
     const char* ncsd_partition_name[8] = {
         "Executable", "Manual", "DPC", "Unknown", "Unknown", "Unknown", "UpdateN3DS", "UpdateO3DS" 
     };
@@ -963,8 +965,8 @@ u32 CryptGameFilesBatch(bool batchNcch, bool batchCia, bool deepCia, bool encryp
         FileClose();
         
         if (batchNcch && (memcmp(buffer + 0x100, "NCCH", 4) == 0)) {
-            Debug("Decrypting NCCH \"%s\"", path + path_len);
-            if (CryptNcch(path, 0x00, 0, 0, (encrypt) ? ncch_encrypt_param : NULL) != 1) {
+            Debug("Processing NCCH \"%s\"", path + path_len);
+            if (CryptNcch(path, 0x00, 0, 0, ncch_crypt) != 1) {
                 Debug("Success!");
                 n_processed++;
             } else {
@@ -974,19 +976,20 @@ u32 CryptGameFilesBatch(bool batchNcch, bool batchCia, bool deepCia, bool encryp
         } else if (batchNcch && (memcmp(buffer + 0x100, "NCSD", 4) == 0)) {
             if (*((u64*) (buffer + 0x110)) != 0) 
                 continue; // skip NAND backup NCSDs
-            Debug("Decrypting NCSD \"%s\"", path + path_len);
+            Debug("Processing NCSD \"%s\"", path + path_len);
             u32 p;
-            for (p = 0; p < 8; p++) {
+            u32 nc = (gw_fix) ? gw_fix : 8;
+            for (p = 0; p < nc; p++) {
                 u64 seedId = (p) ? *((u64*) (buffer + 0x108)) : 0;
                 u32 offset = *((u32*) (buffer + 0x120 + (p*0x8))) * 0x200;
                 u32 size = *((u32*) (buffer + 0x124 + (p*0x8))) * 0x200;
                 if (size == 0) 
                     continue;
                 Debug("Partition %i (%s)", p, ncsd_partition_name[p]);
-                if (CryptNcch(path, offset, size, seedId, (encrypt) ? ncch_encrypt_param : NULL) == 1)
+                if (CryptNcch(path, offset, size, seedId, ncch_crypt) == 1)
                     break;
             }
-            if ( p == 8 ) {
+            if ( p == nc ) {
                 Debug("Success!");
                 n_processed++;
             } else {
@@ -994,8 +997,8 @@ u32 CryptGameFilesBatch(bool batchNcch, bool batchCia, bool deepCia, bool encryp
                 n_failed++;
             }
         } else if (batchCia && (memcmp(buffer, "\x20\x20", 2) == 0)) {
-            Debug("%scrypting CIA \"%s\"", (encrypt) ? "En" : "De", path + path_len);
-            if (CryptCia(path, deepCia, encrypt) == 0) {
+            Debug("Processing CIA \"%s\"", path + path_len);
+            if (CryptCia(path, ncch_crypt, false, gw_fix) == 0) {
                 Debug("Success!");
                 n_processed++;
             } else {
@@ -1100,21 +1103,38 @@ u32 DecryptSdFiles() {
 }
 
 u32 DecryptNcsdNcch() {
-    return CryptGameFilesBatch(true, false, false, false);
+    return CryptGameFilesBatch(true, false, NULL, 0);
+}
+
+u32 DecryptNcsdNcchGateway() {
+    return CryptGameFilesBatch(true, false, NULL, 1);
 }
 
 u32 DecryptCiaShallow() {
-    return CryptGameFilesBatch(false, true, false, false);
+    return CryptGameFilesBatch(false, true, NULL, 0);
 }
 
 u32 DecryptCiaDeep() {
-    return CryptGameFilesBatch(false, true, true, false);
+    u8 ncch_encrypt_param[8] = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x04 };
+    return CryptGameFilesBatch(false, true, ncch_encrypt_param, 0);
 }
 
-u32 EncryptNcsdNcch() {
-    return CryptGameFilesBatch(true, false, false, true);
+u32 DecryptCiaZero() {
+    u8 ncch_encrypt_param[8] = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01 };
+    return CryptGameFilesBatch(false, true, ncch_encrypt_param, 0);
 }
 
-u32 EncryptCiaShallow() {
-    return CryptGameFilesBatch(false, true, false, true);
+u32 DecryptCiaGateway() {
+    u8 ncch_encrypt_param[8] = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x04 };
+    return CryptGameFilesBatch(false, true, ncch_encrypt_param, 1);
+}
+
+u32 EncryptNcsdNcchStandard() {
+    u8 ncch_encrypt_param[8] = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
+    return CryptGameFilesBatch(true, false, ncch_encrypt_param, 0);
+}
+
+u32 EncryptNcsdNcchZerokey() {
+    u8 ncch_encrypt_param[8] = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01 };
+    return CryptGameFilesBatch(true, false, ncch_encrypt_param, 0);
 }
