@@ -509,20 +509,18 @@ u32 CryptNcch(const char* filename, u32 offset, u32 size, u64 seedId, u8* encryp
     
     Debug("Code / Crypto: %s / %s%s%s%s", ncch->productCode, (usesFixedKey) ? "FixedKey " : "", (usesSec4Crypto) ? "Secure4 " : (usesSec3Crypto) ? "Secure3 " : (uses7xCrypto) ? "7x " : "", (usesSeedCrypto) ? "Seed " : "", (!uses7xCrypto && !usesSeedCrypto && !usesFixedKey) ? "Standard" : "");
     
-    // setup zero key encryption
+    // setup zero key crypto
     if (usesFixedKey) {
-        u8 zeroKey[16] = {0};
+        // from https://github.com/profi200/Project_CTR/blob/master/makerom/pki/dev.h
+        u8 zeroKey[16] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
+        u8 sysKey[16]  = {0x52, 0x7C, 0xE6, 0x30, 0xA9, 0xCA, 0x30, 0x5F, 0x36, 0x96, 0xF3, 0xCD, 0xE9, 0x54, 0x19, 0x4B};
         if (uses7xCrypto || usesSeedCrypto) {
             Debug("Crypto combination is not allowed!");
             return 1;
         }
-        if (ncch->programId & ((u64) 0x10 << 32)) {
-            Debug("SystemFixedKey is not known!");
-            return 1;
-        }
         info1.setKeyY = info0.setKeyY = 0;
         info1.keyslot = info0.keyslot = 0x11;
-        setup_aeskey(0x11, zeroKey);
+        setup_aeskey(0x11, (ncch->programId & ((u64) 0x10 << 32)) ? sysKey : zeroKey);
     }
     
     // check secure4 crypto
