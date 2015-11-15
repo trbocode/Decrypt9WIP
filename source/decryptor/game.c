@@ -1018,7 +1018,7 @@ u32 CryptGameFilesBatch(bool batchNcch, bool batchCia, u8* ncch_crypt, u32 gw_fi
     return !n_processed;
 }
 
-u32 DecryptSdFiles() {
+u32 CryptSdFiles() {
     const char* subpaths[] = {"backups", "dbs", "extdata", "title", "Nintendo DSiWare", NULL};
     char* batch_dir = GAME_DIR;
     u32 n_processed = 0;
@@ -1104,8 +1104,9 @@ u32 DecryptNcsdNcch() {
     return CryptGameFilesBatch(true, false, NULL, 0);
 }
 
-u32 DecryptNcsdNcchGateway() {
-    return CryptGameFilesBatch(true, false, NULL, 1);
+u32 EncryptNcsdNcchStandard() {
+    u8 ncch_encrypt_param[8] = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
+    return CryptGameFilesBatch(true, false, ncch_encrypt_param, 0);
 }
 
 u32 DecryptCiaShallow() {
@@ -1117,22 +1118,7 @@ u32 DecryptCiaDeep() {
     return CryptGameFilesBatch(false, true, ncch_encrypt_param, 0);
 }
 
-u32 DecryptCiaZero() {
-    u8 ncch_encrypt_param[8] = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01 };
-    return CryptGameFilesBatch(false, true, ncch_encrypt_param, 0);
-}
-
 u32 DecryptCiaGateway() {
     u8 ncch_encrypt_param[8] = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x04 };
     return CryptGameFilesBatch(false, true, ncch_encrypt_param, 1);
-}
-
-u32 EncryptNcsdNcchStandard() {
-    u8 ncch_encrypt_param[8] = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
-    return CryptGameFilesBatch(true, false, ncch_encrypt_param, 0);
-}
-
-u32 EncryptNcsdNcchZerokey() {
-    u8 ncch_encrypt_param[8] = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01 };
-    return CryptGameFilesBatch(true, false, ncch_encrypt_param, 0);
 }

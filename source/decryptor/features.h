@@ -30,12 +30,9 @@ u32 InjectAllNandPartitions(void);
 u32 InjectTwlNandPartition(void);
 u32 InjectCtrNandPartition(void);
 
-u32 DecryptSdFiles(void);
+u32 CryptSdFiles(void);
 u32 DecryptNcsdNcch(void);
-u32 DecryptNcsdNcchGateway(void);
+u32 EncryptNcsdNcchStandard(void);
 u32 DecryptCiaShallow(void);
 u32 DecryptCiaDeep(void);
-u32 DecryptCiaZero(void);
 u32 DecryptCiaGateway(void);
-u32 EncryptNcsdNcchStandard(void);
-u32 EncryptNcsdNcchZerokey(void);
