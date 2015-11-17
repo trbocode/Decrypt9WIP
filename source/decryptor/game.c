@@ -338,11 +338,11 @@ u32 UpdateSeedDb()
             for (entryPos = 0; entryPos < seedinfo->n_entries; entryPos++)
                 if (memcmp(titleId, &(seedinfo->entries[entryPos].titleId), 8) == 0) break;
             if (entryPos < seedinfo->n_entries) {
-                Debug("Found %08X%08X seed (duplicate)", *((u32*) (titleId + 4)), *((u32*) titleId));
+                Debug("Found %08X%08X seed (duplicate)", getle32(titleId + 4), getle32(titleId));
                 continue;
             }
             // seed is new, create a new entry
-            Debug("Found %08X%08X seed (new)", *((u32*) (titleId + 4)), *((u32*) titleId));
+            Debug("Found %08X%08X seed (new)", getle32(titleId + 4), getle32(titleId));
             memset(&(seedinfo->entries[entryPos]), 0x00, sizeof(SeedInfoEntry));
             memcpy(&(seedinfo->entries[entryPos].titleId), titleId, 8);
             memcpy(&(seedinfo->entries[entryPos].external_seed), seed, 16);
@@ -633,8 +633,8 @@ u32 CryptNcch(const char* filename, u32 offset, u32 size, u64 seedId, u8* encryp
             FileClose();
             for (u32 i = 0; i < 10; i++) {
                 if(memcmp(buffer + (i*0x10), ".code", 5) == 0) {
-                    offset_code = *((u32*) (buffer + (i*0x10) + 0x8)) + 0x200;
-                    size_code = *((u32*) (buffer + (i*0x10) + 0xC));
+                    offset_code = getle32(buffer + (i*0x10) + 0x8) + 0x200;
+                    size_code = getle32(buffer + (i*0x10) + 0xC);
                     break;
                 }
             }
@@ -741,10 +741,10 @@ u32 CryptCia(const char* filename, u8* ncch_crypt, bool cia_encrypt, u32 gw_fix)
     // get offsets for various sections & check
     u32 section_size[6];
     u32 section_offset[6];
-    section_size[0] = *((u32*) buffer);
+    section_size[0] = getle32(buffer);
     section_offset[0] = 0;
     for (u32 i = 1; i < 6; i++) {
-        section_size[i] = *((u32*) (buffer + 4 + ((i == 4) ? (5*4) : (i == 5) ? (4*4) : (i*4)) ));
+        section_size[i] = getle32(buffer + 4 + ((i == 4) ? (5*4) : (i == 5) ? (4*4) : (i*4)) );
         section_offset[i] = section_offset[i-1] + align(section_size[i-1], 64);
     }
     offset_ticktmd = section_offset[2];
@@ -972,15 +972,15 @@ u32 CryptGameFilesBatch(bool batchNcch, bool batchCia, u8* ncch_crypt, u32 gw_fi
                 n_failed++;
             }
         } else if (batchNcch && (memcmp(buffer + 0x100, "NCSD", 4) == 0)) {
-            if (*((u64*) (buffer + 0x110)) != 0) 
+            if (getle64(buffer + 0x110) != 0) 
                 continue; // skip NAND backup NCSDs
             Debug("Processing NCSD \"%s\"", path + path_len);
             u32 p;
             u32 nc = (gw_fix) ? gw_fix : 8;
             for (p = 0; p < nc; p++) {
-                u64 seedId = (p) ? *((u64*) (buffer + 0x108)) : 0;
-                u32 offset = *((u32*) (buffer + 0x120 + (p*0x8))) * 0x200;
-                u32 size = *((u32*) (buffer + 0x124 + (p*0x8))) * 0x200;
+                u64 seedId = (p) ? getle64(buffer + 0x108) : 0;
+                u32 offset = getle32(buffer + 0x120 + (p*0x8)) * 0x200;
+                u32 size = getle32(buffer + 0x124 + (p*0x8)) * 0x200;
                 if (size == 0) 
                     continue;
                 Debug("Partition %i (%s)", p, ncsd_partition_name[p]);
