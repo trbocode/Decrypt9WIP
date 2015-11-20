@@ -2,7 +2,7 @@
 #include "draw.h"
 #include "hid.h"
 #include "fs.h"
-#include "decryptor/features.h"
+#include "decryptor/nand.h"
 
 #define TOP_SCREEN true
 
@@ -101,7 +101,7 @@ u32 ProcessEntry(MenuEntry* entry)
     if (SetNand(entry->emunand) != 0) {
         Debug("%s: failed!", entry->name);
     } else {
-        Debug("%s: %s!", entry->name, (*(entry->function))() == 0 ? "succeeded" : "failed");
+        Debug("%s: %s!", entry->name, (*(entry->function))(entry->param) == 0 ? "succeeded" : "failed");
     }
     Debug("");
     Debug("Press B to return, START to reboot.");
@@ -120,7 +120,7 @@ u32 ProcessMenu(MenuInfo* info, u32 nMenus)
     
     // build main menu structure from submenus
     memset(&mainMenu, 0x00, sizeof(MenuInfo));
-    for (u32 i = 0; i < nMenus && i < 8; i++) {
+    for (u32 i = 0; i < nMenus && i < MENU_MAX_ENTRIES; i++) {
         mainMenu.entries[i].name = info[i].name;
         mainMenu.entries[i].function = NULL;
     }
@@ -129,7 +129,7 @@ u32 ProcessMenu(MenuInfo* info, u32 nMenus)
     #else
     mainMenu.name = BUILD_NAME;
     #endif
-    mainMenu.n_entries = nMenus;
+    mainMenu.n_entries = (nMenus > MENU_MAX_ENTRIES) ? MENU_MAX_ENTRIES : nMenus;
     DrawMenu(&mainMenu, 0, true, false);
     
     // main processing loop

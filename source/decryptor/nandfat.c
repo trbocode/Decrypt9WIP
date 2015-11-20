@@ -1,6 +1,5 @@
 #include "fs.h"
 #include "draw.h"
-#include "decryptor/features.h"
 #include "decryptor/crypto.h"
 #include "decryptor/decryptor.h"
 #include "decryptor/game.h"
@@ -22,6 +21,22 @@ TitleListInfo titleList[] = {
     { "3DS eShop"             , 0x00040010, { 0x00020900, 0x00021900, 0x00022900, 0x00000000, 0x00027900, 0x00028900 } }
 };
 
+NandFileInfo fileList[] = {
+    { "ticket.db",     "ticket_emu.db", "DBS        TICKET  DB ",                                  P_CTRNAND },
+    { "title.db",      "title_emu.db",  "DBS        TITLE   DB ",                                  P_CTRNAND },
+    { "import.db",     "import_emu.db", "DBS        IMPORT  DB ",                                  P_CTRNAND },
+    { "SecureInfo_A",  "SecureInfo_A",  "RW         SYS        SECURE~?   ",                       P_CTRNAND },
+    { "movable.sed",   "movable.sed",   "PRIVATE    MOVABLE SED",                                  P_CTRNAND },
+    { "seedsave.bin",  "seedsave.bin",  "DATA       ???????????SYSDATA    0001000F   00000000   ", P_CTRNAND }
+};
+
+
+NandFileInfo* GetNandFileInfo(u32 file_id)
+{
+    u32 f = 0;
+    for(; !(file_id & (1<<f)) && (f < 32); f++);
+    return (f >= 32) ? NULL : &(fileList[f]);
+}
 
 u32 SeekFileInNand(u32* offset, u32* size, const char* path, PartitionInfo* partition)
 {
@@ -169,63 +184,37 @@ u32 DebugSeekTitleInNand(u32* offset_tmd, u32* size_tmd, u32* offset_app, u32* s
     return 0;
 }
 
-u32 DumpSeedsave()
+u32 DumpFile(u32 param)
 {
-    PartitionInfo* ctrnand_info = GetPartitionInfo(P_CTRNAND);
+    NandFileInfo* f_info = GetNandFileInfo(param);
+    PartitionInfo* p_info = GetPartitionInfo(f_info->partition_id);
     u32 offset;
     u32 size;
     
-    if (DebugSeekFileInNand(&offset, &size, "seedsave", "DATA       ???????????SYSDATA    0001000F   00000000   ", ctrnand_info) != 0)
+    if (DebugSeekFileInNand(&offset, &size, (IsEmuNand()) ? f_info->name_emu : f_info->name_sys, f_info->path, p_info) != 0)
         return 1;
-    if (DecryptNandToFile("seedsave.bin", offset, size, ctrnand_info) != 0)
+    if (DecryptNandToFile((IsEmuNand()) ? f_info->name_emu : f_info->name_sys, offset, size, p_info) != 0)
         return 1;
     
     return 0;
 }
 
-u32 DumpTicket()
+u32 InjectFile(u32 param)
 {
-    PartitionInfo* ctrnand_info = GetPartitionInfo(P_CTRNAND);
+    NandFileInfo* f_info = GetNandFileInfo(param);
+    PartitionInfo* p_info = GetPartitionInfo(f_info->partition_id);
     u32 offset;
     u32 size;
     
-    if (DebugSeekFileInNand(&offset, &size, "ticket.db", "DBS        TICKET  DB ", ctrnand_info) != 0)
+    if (DebugSeekFileInNand(&offset, &size, f_info->name_sys, f_info->path, p_info) != 0)
         return 1;
-    if (DecryptNandToFile((IsEmuNand()) ? "ticket_emu.db" : "ticket.db", offset, size, ctrnand_info) != 0)
+    if (EncryptFileToNand(f_info->name_sys, offset, size, p_info) != 0)
         return 1;
     
     return 0;
 }
 
-u32 DumpMovableSed()
-{
-    PartitionInfo* ctrnand_info = GetPartitionInfo(P_CTRNAND);
-    u32 offset;
-    u32 size;
-    
-    if (DebugSeekFileInNand(&offset, &size, "movable.sed", "PRIVATE    MOVABLE SED", ctrnand_info) != 0)
-        return 1;
-    if (DecryptNandToFile("movable.sed", offset, size, ctrnand_info) != 0)
-        return 1;
-    
-    return 0;
-}
-
-u32 DumpSecureInfoA()
-{
-    PartitionInfo* ctrnand_info = GetPartitionInfo(P_CTRNAND);
-    u32 offset;
-    u32 size;
-    
-    if (DebugSeekFileInNand(&offset, &size, "SecureInfo_A", "RW         SYS        SECURE~?   ", ctrnand_info) != 0)
-        return 1;
-    if (DecryptNandToFile("SecureInfo_A", offset, size, ctrnand_info) != 0)
-        return 1;
-    
-    return 0;
-}
-
-u32 DumpHealthAndSafety()
+u32 DumpHealthAndSafety(u32 param)
 {
     PartitionInfo* ctrnand_info = GetPartitionInfo(P_CTRNAND);
     TitleListInfo* health_o3ds = titleList + 3;
@@ -249,35 +238,7 @@ u32 DumpHealthAndSafety()
      return 0;
 }
 
-u32 InjectMovableSed()
-{
-    PartitionInfo* ctrnand_info = GetPartitionInfo(P_CTRNAND);
-    u32 offset;
-    u32 size;
-    
-    if (DebugSeekFileInNand(&offset, &size, "movable.sed", "PRIVATE    MOVABLE SED", ctrnand_info) != 0)
-        return 1;
-    if (EncryptFileToNand("movable.sed", offset, size, ctrnand_info) != 0)
-        return 1;
-    
-    return 0;
-}
-
-u32 InjectSecureInfoA()
-{
-    PartitionInfo* ctrnand_info = GetPartitionInfo(P_CTRNAND);
-    u32 offset;
-    u32 size;
-    
-    if (DebugSeekFileInNand(&offset, &size, "SecureInfo_A", "RW         SYS        SECURE~?   ", ctrnand_info) != 0)
-        return 1;
-    if (EncryptFileToNand("SecureInfo_A", offset, size, ctrnand_info) != 0)
-        return 1;
-    
-    return 0;
-}
-
-u32 InjectHealthAndSafety()
+u32 InjectHealthAndSafety(u32 param)
 {
     u8* buffer = BUFFER_ADDRESS;
     PartitionInfo* ctrnand_info = GetPartitionInfo(P_CTRNAND);

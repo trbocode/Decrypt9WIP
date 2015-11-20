@@ -88,3 +88,15 @@ u32 CheckHashFromFile(const char* filename, u32 offset, u32 size, u8* hash);
 u32 CryptNcch(const char* filename, u32 offset, u32 size, u64 seedId, u8* encrypt_flags);
 u32 CryptCia(const char* filename, u8* ncch_crypt, bool cia_encrypt, u32 gw_fix);
 u32 CryptGameFilesBatch(bool batchNcch, bool batchCia, u8* ncch_crypt, u32 gw_fix);
+
+// --> FEATURE FUNCTIONS <--
+u32 NcchPadgen(u32 param);
+u32 SdPadgen(u32 param);
+u32 UpdateSeedDb(u32 param);
+
+u32 CryptSdFiles(u32 param);
+u32 DecryptNcsdNcch(u32 param);
+u32 EncryptNcsdNcchStandard(u32 param);
+u32 DecryptCiaShallow(u32 param);
+u32 DecryptCiaDeep(u32 param);
+u32 DecryptCiaGateway(u32 param);
