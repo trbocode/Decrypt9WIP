@@ -4,8 +4,6 @@
 #include "fs.h"
 #include "decryptor/nand.h"
 
-#define TOP_SCREEN true
-
 
 u32 UnmountSd()
 {
@@ -29,35 +27,38 @@ u32 UnmountSd()
 
 void DrawMenu(MenuInfo* currMenu, u32 index, bool fullDraw, bool subMenu)
 {
+    bool top_screen = true;
+    u32 menublock_x0 = (top_screen) ? 76 : 36;
+    u32 menublock_x1 = (top_screen) ? 50 : 10;
     u32 menublock_y0 = 40;
     u32 menublock_y1 = menublock_y0 + currMenu->n_entries * 10;
     
     if (fullDraw) { // draw full menu
-        if (!TOP_SCREEN)
+        if (!top_screen)
             ClearScreenFull(true);
-        ClearScreenFull(TOP_SCREEN);
-        DrawStringF(10, menublock_y0 - 20, TOP_SCREEN, "%s", currMenu->name);
-        DrawStringF(10, menublock_y0 - 10, TOP_SCREEN, "==========================");
-        DrawStringF(10, menublock_y1 +  0, TOP_SCREEN, "==========================");
-        DrawStringF(10, menublock_y1 + 10, TOP_SCREEN, (subMenu) ? "A: Choose  B: Return" : "A: Choose");
-        DrawStringF(10, menublock_y1 + 20, TOP_SCREEN, "SELECT: Unmount SD");
-        DrawStringF(10, menublock_y1 + 30, TOP_SCREEN, "START:  Reboot");
-        DrawStringF(10, SCREEN_HEIGHT - 20, TOP_SCREEN, "Remaining SD storage space: %llu MiB", RemainingStorageSpace() / 1024 / 1024);
-        DrawStringF(10, SCREEN_HEIGHT - 30, TOP_SCREEN, "Game directory: %s", GAME_DIR);
+        ClearScreenFull(top_screen);
+        DrawStringF(menublock_x0, menublock_y0 - 20, top_screen, "%s", currMenu->name);
+        DrawStringF(menublock_x0, menublock_y0 - 10, top_screen, "==============================");
+        DrawStringF(menublock_x0, menublock_y1 +  0, top_screen, "==============================");
+        DrawStringF(menublock_x0, menublock_y1 + 10, top_screen, (subMenu) ? "A: Choose  B: Return" : "A: Choose");
+        DrawStringF(menublock_x0, menublock_y1 + 20, top_screen, "SELECT: Unmount SD");
+        DrawStringF(menublock_x0, menublock_y1 + 30, top_screen, "START:  Reboot");
+        DrawStringF(menublock_x1, SCREEN_HEIGHT - 20, top_screen, "Remaining SD storage space: %llu MiB", RemainingStorageSpace() / 1024 / 1024);
+        DrawStringF(menublock_x1, SCREEN_HEIGHT - 30, top_screen, "Game directory: %s", GAME_DIR);
         #ifdef WORK_DIR
         if (DirOpen(WORK_DIR)) {
-            DrawStringF(10, SCREEN_HEIGHT - 40, TOP_SCREEN, "Work directory: %s", WORK_DIR);
+            DrawStringF(menublock_x1, SCREEN_HEIGHT - 40, top_screen, "Work directory: %s", WORK_DIR);
             DirClose();
         }
         #endif
     }
     
-    if (!TOP_SCREEN)
+    if (!top_screen)
         DrawStringF(10, 10, true, "Selected: %-*.*s", 32, 32, currMenu->entries[index].name);
         
     for (u32 i = 0; i < currMenu->n_entries; i++) { // draw menu entries / selection []
         char* name = currMenu->entries[i].name;
-        DrawStringF(10, menublock_y0 + (i*10), TOP_SCREEN, (i == index) ? "[%s]" : " %s ", name);
+        DrawStringF(menublock_x0, menublock_y0 + (i*10), top_screen, (i == index) ? "[%s]" : " %s ", name);
     }
 }
 
@@ -111,50 +112,62 @@ u32 ProcessEntry(MenuEntry* entry)
     return pad_state;
 }
 
-u32 ProcessMenu(MenuInfo* info, u32 nMenus)
+u32 ProcessMenu(MenuInfo* info, u32 n_entries_main)
 {
     MenuInfo mainMenu;
     MenuInfo* currMenu = &mainMenu;
+    MenuInfo* prevMenu[MENU_MAX_DEPTH];
+    u32 prevIndex[MENU_MAX_DEPTH];
     u32 index = 0;
+    u32 menuLvl = 0;
     u32 result = MENU_EXIT_REBOOT;
     
     // build main menu structure from submenus
     memset(&mainMenu, 0x00, sizeof(MenuInfo));
-    for (u32 i = 0; i < nMenus && i < MENU_MAX_ENTRIES; i++) {
+    for (u32 i = 0; i < n_entries_main && i < MENU_MAX_ENTRIES; i++) {
         mainMenu.entries[i].name = info[i].name;
         mainMenu.entries[i].function = NULL;
+        mainMenu.entries[i].param = i;
+        mainMenu.entries[i].dangerous = 0;
+        mainMenu.entries[i].emunand = 0;
     }
     #ifndef BUILD_NAME
     mainMenu.name = "Decrypt9 Main Menu";
     #else
     mainMenu.name = BUILD_NAME;
     #endif
-    mainMenu.n_entries = (nMenus > MENU_MAX_ENTRIES) ? MENU_MAX_ENTRIES : nMenus;
+    mainMenu.n_entries = (n_entries_main > MENU_MAX_ENTRIES) ? MENU_MAX_ENTRIES : n_entries_main;
     DrawMenu(&mainMenu, 0, true, false);
     
     // main processing loop
     while (true) {
         bool full_draw = true;
         u32 pad_state = InputWait();
-        if ((pad_state & BUTTON_A) && (currMenu == &mainMenu)) {
-            currMenu = info + index;
+        if ((pad_state & BUTTON_A) && (currMenu->entries[index].function == NULL)) {
+            if (menuLvl < MENU_MAX_DEPTH) {
+                prevMenu[menuLvl] = currMenu;
+                prevIndex[menuLvl] = index;
+                menuLvl++;
+            }
+            currMenu = info + currMenu->entries[index].param;
             index = 0;
         } else if (pad_state & BUTTON_A) {
             pad_state = ProcessEntry(currMenu->entries + index);
-        } else if ((pad_state & BUTTON_B) && (currMenu != &mainMenu)) {
-            index = currMenu - info;
-            currMenu = &mainMenu;
+        } else if ((pad_state & BUTTON_B) && (menuLvl > 0)) {
+            menuLvl--;
+            currMenu = prevMenu[menuLvl];
+            index = prevIndex[menuLvl];
         } else if (pad_state & BUTTON_DOWN) {
             index = (index == currMenu->n_entries - 1) ? 0 : index + 1;
             full_draw = false;
         } else if (pad_state & BUTTON_UP) {
             index = (index == 0) ? currMenu->n_entries - 1 : index - 1;
             full_draw = false;
-        } else if ((pad_state & BUTTON_R1) && (currMenu != &mainMenu)) {
-            if (++currMenu - info >= nMenus) currMenu = info;
+        } else if ((pad_state & BUTTON_R1) && (menuLvl == 1)) {
+            if (++currMenu - info >= n_entries_main) currMenu = info;
             index = 0;
-        } else if ((pad_state & BUTTON_L1) && (currMenu != &mainMenu)) {
-            if (--currMenu < info) currMenu = info + nMenus - 1;
+        } else if ((pad_state & BUTTON_L1) && (menuLvl == 1)) {
+            if (--currMenu < info) currMenu = info + n_entries_main - 1;
             index = 0;
         } else if (pad_state & BUTTON_SELECT) {
             pad_state = UnmountSd();
@@ -167,7 +180,7 @@ u32 ProcessMenu(MenuInfo* info, u32 nMenus)
             result = (pad_state & BUTTON_LEFT) ? MENU_EXIT_POWEROFF : MENU_EXIT_REBOOT;
             break;
         }
-        DrawMenu(currMenu, index, full_draw, currMenu != &mainMenu);
+        DrawMenu(currMenu, index, full_draw, menuLvl > 0);
     }
     
     return result;
