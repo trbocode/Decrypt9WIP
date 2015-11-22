@@ -38,8 +38,7 @@
 #define align(v,a) \
     (((v) % (a)) ? ((v) + (a) - ((v) % (a))) : (v))
     
-// customizations - careful with EXPERIMENTAL
-// #define EXPERIMENTAL
+// work files / directories
 #define GAME_DIR "/D9Game"
 #define WORK_DIR "/Decrypt9"
 #define LOG_FILE "Decrypt9.log"
