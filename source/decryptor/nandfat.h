@@ -5,12 +5,15 @@
 
 #define MAX_ENTRIES 1024
 
-#define F_TICKET     (1<<0)
-#define F_TITLE      (1<<1)
-#define F_IMPORT     (1<<2)
-#define F_SECUREINFO (1<<3)
-#define F_MOVABLE    (1<<4)
-#define F_SEEDSAVE   (1<<5)
+#define F_TICKET      (1<<0)
+#define F_TITLE       (1<<1)
+#define F_IMPORT      (1<<2)
+#define F_CERTS       (1<<3)
+#define F_SECUREINFO  (1<<4)
+#define F_LOCALFRIEND (1<<5)
+#define F_RANDSEED    (1<<6)
+#define F_MOVABLE     (1<<7)
+#define F_SEEDSAVE    (1<<8)
 
 typedef struct {
     char name[32];

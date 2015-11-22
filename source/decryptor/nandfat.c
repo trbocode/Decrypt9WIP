@@ -22,12 +22,15 @@ TitleListInfo titleList[] = {
 };
 
 NandFileInfo fileList[] = {
-    { "ticket.db",     "ticket_emu.db", "DBS        TICKET  DB ",                                  P_CTRNAND },
-    { "title.db",      "title_emu.db",  "DBS        TITLE   DB ",                                  P_CTRNAND },
-    { "import.db",     "import_emu.db", "DBS        IMPORT  DB ",                                  P_CTRNAND },
-    { "SecureInfo_A",  "SecureInfo_A",  "RW         SYS        SECURE~?   ",                       P_CTRNAND },
-    { "movable.sed",   "movable.sed",   "PRIVATE    MOVABLE SED",                                  P_CTRNAND },
-    { "seedsave.bin",  "seedsave.bin",  "DATA       ???????????SYSDATA    0001000F   00000000   ", P_CTRNAND }
+    { "ticket.db",             "ticket_emu.db",         "DBS        TICKET  DB ",                  P_CTRNAND },
+    { "title.db",              "title_emu.db",          "DBS        TITLE   DB ",                  P_CTRNAND },
+    { "import.db",             "import_emu.db",         "DBS        IMPORT  DB ",                  P_CTRNAND },
+    { "certs.db",              "certs_emu.db",          "DBS        CERTS   DB ",                  P_CTRNAND },
+    { "SecureInfo_A",          "SecureInfo_A",          "RW         SYS        SECURE~?   ",       P_CTRNAND },
+    { "LocalFriendCodeSeed_B", "LocalFriendCodeSeed_B", "RW         SYS        LOCALF~?   ",       P_CTRNAND },
+    { "rand_seed",             "rand_seed",             "RW         SYS        RAND_S~?   ",       P_CTRNAND },
+    { "movable.sed",           "movable.sed",           "PRIVATE    MOVABLE SED",                  P_CTRNAND },
+    { "seedsave.bin", "seedsave.bin", "DATA       ???????????SYSDATA    0001000F   00000000   ",   P_CTRNAND }
 };
 
 
