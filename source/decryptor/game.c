@@ -875,6 +875,7 @@ u32 CryptCia(const char* filename, u8* ncch_crypt, bool cia_encrypt, u32 gw_fix)
             if (!(ncch_crypt[7] & 0x04) && (ncch_state != 1))
                 ncch_state = CryptNcch(filename, offset, size, titleId, ncch_crypt);
             if (ncch_state == 0) {
+                untouched = false;
                 Debug("Recalculating hash...");
                 if (GetHashFromFile(filename, offset, size, content_list + (0x30 * i) + 0x10) != 0) {
                     Debug("Recalculation failed!");
@@ -888,29 +889,28 @@ u32 CryptCia(const char* filename, u8* ncch_crypt, bool cia_encrypt, u32 gw_fix)
             }
             n_processed++;
         }
-        // recalculate content info hashes
-        Debug("Recalculating TMD hashes...");
-        for (u32 i = 0, kc = 0; i < 64 && kc < content_count; i++) {
-            u32 k = getbe16(tmd_data + 0xC4 + (i * 0x24) + 0x02);
-            u8 chunk_hash[32];
+        if (!untouched) {
+            // recalculate content info hashes
+            Debug("Recalculating TMD hashes...");
+            for (u32 i = 0, kc = 0; i < 64 && kc < content_count; i++) {
+                u32 k = getbe16(tmd_data + 0xC4 + (i * 0x24) + 0x02);
+                u8 chunk_hash[32];
+                sha_init(SHA256_MODE);
+                sha_update(content_list + kc * 0x30, k * 0x30);
+                sha_get(chunk_hash);
+                memcpy(tmd_data + 0xC4 + (i * 0x24) + 0x04, chunk_hash, 32);
+                kc += k;
+            }
+            u8 tmd_hash[32];
             sha_init(SHA256_MODE);
-            sha_update(content_list + kc * 0x30, k * 0x30);
-            sha_get(chunk_hash);
-            memcpy(tmd_data + 0xC4 + (i * 0x24) + 0x04, chunk_hash, 32);
-            kc += k;
-        }
-        u8 tmd_hash[32];
-        sha_init(SHA256_MODE);
-        sha_update(tmd_data + 0xC4, 64 * 0x24);
-        sha_get(tmd_hash);
-        if (memcmp(tmd_data + 0xA4, tmd_hash, 32) != 0) {
-            untouched = false;
+            sha_update(tmd_data + 0xC4, 64 * 0x24);
+            sha_get(tmd_hash);
             memcpy(tmd_data + 0xA4, tmd_hash, 32);
         }
     }
     
     if (untouched) {
-        Debug((cia_encrypt) ? "CIA was already encrypted!" : "CIA was not encrypted!");
+        Debug((cia_encrypt) ? "CIA is already encrypted" : "CIA is not encrypted");
     } else if (n_processed > 0) {
         if (!FileOpen(filename)) // already checked this file
             return 1;
