@@ -47,14 +47,14 @@ MenuInfo menu[] =
     {
         "EmuNAND Options", 9,
         {
-            { "EmuNAND Backup", &DumpNand, 0, 0, 0 },
-            { "EmuNAND Restore", &RestoreNand, 1, 0, 0 },
-            { "Partition Dump...", NULL, 0, 0, SUBMENU_START + 1 },
-            { "Partition Inject...", NULL, 1, 0, SUBMENU_START + 3 },
-            { "File Dump...", NULL, 0, 0, SUBMENU_START + 5 },
-            { "File Inject...", NULL, 1, 0, SUBMENU_START + 7 },
-            { "Health&Safety Dump", &DumpHealthAndSafety, 0, 0, 0 },
-            { "Health&Safety Inject", &InjectHealthAndSafety, 1, 0, 0 },
+            { "EmuNAND Backup", &DumpNand, 0, 1, 0 },
+            { "EmuNAND Restore", &RestoreNand, 1, 1, 0 },
+            { "Partition Dump...", NULL, 0, 1, SUBMENU_START + 1 },
+            { "Partition Inject...", NULL, 1, 1, SUBMENU_START + 3 },
+            { "File Dump...", NULL, 0, 1, SUBMENU_START + 5 },
+            { "File Inject...", NULL, 1, 1, SUBMENU_START + 7 },
+            { "Health&Safety Dump", &DumpHealthAndSafety, 0, 1, 0 },
+            { "Health&Safety Inject", &InjectHealthAndSafety, 1, 1, 0 },
             { "Update SeedDB", &UpdateSeedDb, 0, 1, 0 }
         }
     },
