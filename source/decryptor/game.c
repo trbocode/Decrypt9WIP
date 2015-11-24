@@ -923,13 +923,23 @@ u32 CryptCia(const char* filename, u8* ncch_crypt, bool cia_encrypt, u32 gw_fix)
 }
 
 
-u32 CryptGameFilesBatch(bool batchNcch, bool batchCia, u8* ncch_crypt, u32 gw_fix)
+u32 CryptGameFiles(u32 param)
 {
+    u8 ncch_crypt_none[8]     = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x04 };
+    u8 ncch_crypt_standard[8] = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
     const char* ncsd_partition_name[8] = {
         "Executable", "Manual", "DPC", "Unknown", "Unknown", "Unknown", "UpdateN3DS", "UpdateO3DS" 
     };
     char* batch_dir = GAME_DIR;
     u8* buffer = (u8*) 0x20316000;
+    
+    bool batch_ncch = param & GC_NCCH_PROCESS;
+    bool batch_cia = param & GC_CIA_PROCESS;
+    bool cia_encrypt = param & GC_CIA_ENCRYPT;
+    bool gw_fix = param & GC_GWFIX;
+    u8* ncch_crypt = (param & GC_NCCH_ENCRYPT) ? ncch_crypt_standard : NULL;
+    u8* cia_ncch_crypt = (param & GC_CIA_DEEP) ? ncch_crypt_none : ncch_crypt;
+    
     u32 n_processed = 0;
     u32 n_failed = 0;
     
@@ -961,7 +971,7 @@ u32 CryptGameFilesBatch(bool batchNcch, bool batchCia, u8* ncch_crypt, u32 gw_fi
         }
         FileClose();
         
-        if (batchNcch && (memcmp(buffer + 0x100, "NCCH", 4) == 0)) {
+        if (batch_ncch && (memcmp(buffer + 0x100, "NCCH", 4) == 0)) {
             Debug("Processing NCCH \"%s\"", path + path_len);
             if (CryptNcch(path, 0x00, 0, 0, ncch_crypt) != 1) {
                 Debug("Success!");
@@ -970,12 +980,12 @@ u32 CryptGameFilesBatch(bool batchNcch, bool batchCia, u8* ncch_crypt, u32 gw_fi
                 Debug("Failed!");
                 n_failed++;
             }
-        } else if (batchNcch && (memcmp(buffer + 0x100, "NCSD", 4) == 0)) {
+        } else if (batch_ncch && (memcmp(buffer + 0x100, "NCSD", 4) == 0)) {
             if (getle64(buffer + 0x110) != 0) 
                 continue; // skip NAND backup NCSDs
             Debug("Processing NCSD \"%s\"", path + path_len);
             u32 p;
-            u32 nc = (gw_fix) ? gw_fix : 8;
+            u32 nc = (gw_fix) ? 1 : 8;
             for (p = 0; p < nc; p++) {
                 u64 seedId = (p) ? getle64(buffer + 0x108) : 0;
                 u32 offset = getle32(buffer + 0x120 + (p*0x8)) * 0x200;
@@ -993,9 +1003,9 @@ u32 CryptGameFilesBatch(bool batchNcch, bool batchCia, u8* ncch_crypt, u32 gw_fi
                 Debug("Failed!");
                 n_failed++;
             }
-        } else if (batchCia && (memcmp(buffer, "\x20\x20", 2) == 0)) {
+        } else if (batch_cia && (memcmp(buffer, "\x20\x20", 2) == 0)) {
             Debug("Processing CIA \"%s\"", path + path_len);
-            if (CryptCia(path, ncch_crypt, false, gw_fix) == 0) {
+            if (CryptCia(path, cia_ncch_crypt, cia_encrypt, (gw_fix) ? 1 : 0) == 0) {
                 Debug("Success!");
                 n_processed++;
             } else {
@@ -1097,27 +1107,4 @@ u32 CryptSdFiles(u32 param) {
     }
     
     return 0;
-}
-
-u32 DecryptNcsdNcch(u32 param) {
-    return CryptGameFilesBatch(true, false, NULL, 0);
-}
-
-u32 EncryptNcsdNcchStandard(u32 param) {
-    u8 ncch_encrypt_param[8] = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
-    return CryptGameFilesBatch(true, false, ncch_encrypt_param, 0);
-}
-
-u32 DecryptCiaShallow(u32 param) {
-    return CryptGameFilesBatch(false, true, NULL, 0);
-}
-
-u32 DecryptCiaDeep(u32 param) {
-    u8 ncch_encrypt_param[8] = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x04 };
-    return CryptGameFilesBatch(false, true, ncch_encrypt_param, 0);
-}
-
-u32 DecryptCiaGateway(u32 param) {
-    u8 ncch_encrypt_param[8] = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x04 };
-    return CryptGameFilesBatch(false, true, ncch_encrypt_param, 1);
 }

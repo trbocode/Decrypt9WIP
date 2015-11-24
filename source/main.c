@@ -61,11 +61,11 @@ MenuInfo menu[] =
     {
         "Game Decryptor Options", 6,
         {
-            { "NCCH/NCSD Decryptor", &DecryptNcsdNcch, 0, 0, 0 },
-            { "NCCH/NCSD Encryptor", &EncryptNcsdNcchStandard, 0, 0, 0 },
-            { "CIA Decryptor (shallow)", &DecryptCiaShallow, 0, 0, 0 },
-            { "CIA Decryptor (deep)", &DecryptCiaDeep, 0, 0, 0 },
-            { "CIA Decryptor (for GW)", &DecryptCiaGateway, 0, 0, 0 },
+            { "NCCH/NCSD Decryptor", &CryptGameFiles, 0, 0, GC_NCCH_PROCESS },
+            { "NCCH/NCSD Encryptor", &CryptGameFiles, 0, 0, GC_NCCH_PROCESS | GC_NCCH_ENCRYPT },
+            { "CIA Decryptor (shallow)", &CryptGameFiles, 0, 0, GC_CIA_PROCESS },
+            { "CIA Decryptor (deep)", &CryptGameFiles, 0, 0, GC_CIA_PROCESS | GC_CIA_DEEP },
+            { "CIA Decryptor (for GW)", &CryptGameFiles, 0, 0, GC_CIA_PROCESS | GC_CIA_DEEP | GC_GWFIX },
             { "SD Decryptor/Encryptor", &CryptSdFiles, 0, 0, 0 }
         }
     },
