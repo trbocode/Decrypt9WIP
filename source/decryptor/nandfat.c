@@ -1,5 +1,6 @@
 #include "fs.h"
 #include "draw.h"
+#include "platform.h"
 #include "decryptor/crypto.h"
 #include "decryptor/decryptor.h"
 #include "decryptor/game.h"
@@ -125,22 +126,71 @@ u32 DebugSeekFileInNand(u32* offset, u32* size, const char* filename, const char
     return 0;
 }
 
+u32 SeekTitleInNandDb(u32* tid_low, u32* tmd_id, TitleListInfo* title_info)
+{
+    PartitionInfo* ctrnand_info = GetPartitionInfo(P_CTRNAND);
+    u8* titledb = (u8*) 0x20316000;
+    
+    u32 offset_db;
+    u32 size_db;
+    if (SeekFileInNand(&offset_db, &size_db, "DBS        TITLE   DB ", ctrnand_info) != 0)
+        return 1; // database not found
+    if (size_db != 0x64C00)
+        return 1; // bad database size
+    if (DecryptNandToMem(titledb, offset_db, size_db, ctrnand_info) != 0)
+        return 1;
+    
+    u8* entry_table = titledb + 0x39A80;
+    u8* info_data = titledb + 0x44B80;
+    if ((getle32(entry_table + 0) != 2) || (getle32(entry_table + 4) != 3))
+        return 1; // magic number not found
+    *tid_low = 0;
+    for (u32 i = 0; i < 1000; i++) {
+        u8* entry = entry_table + 0xA8 + (0x2C * i);
+        u8* info = info_data + (0x80 * i);
+        u32 r;
+        if (getle32(entry + 0xC) != title_info->tid_high) continue; // not a title id match
+        if (getle32(entry + 0x4) != 1) continue; // not an active entry
+        if ((getle32(entry + 0x18) - i != 0x162) || (getle32(entry + 0x1C) != 0x80) || (getle32(info + 0x08) != 0x40)) continue; // fishy title info / offset
+        for (r = 0; r < 6; r++) {
+            if ((title_info->tid_low[r] != 0) && (getle32(entry + 0x8) == title_info->tid_low[r])) break;
+        }
+        if (r >= 6) continue;
+        *tmd_id = getle32(info + 0x14);
+        *tid_low = title_info->tid_low[r];
+        break; 
+    }
+    
+    return (*tid_low) ? 0 : 1;
+}
+
 u32 DebugSeekTitleInNand(u32* offset_tmd, u32* size_tmd, u32* offset_app, u32* size_app, TitleListInfo* title_info, u32 max_cnt)
 {
     PartitionInfo* ctrnand_info = GetPartitionInfo(P_CTRNAND);
     u8* buffer = (u8*) 0x20316000;
     u32 cnt_count = 0;
     u32 tid_low = 0;
+    u32 tmd_id = 0;
     
     Debug("Searching title \"%s\"...", title_info->name);
-    for (u32 i = 0; i < 6; i++) {
+    Debug("Method 1: Search in title.db...");
+    if (SeekTitleInNandDb(&tid_low, &tmd_id, title_info) == 0) {
         char path[64];
-        if (title_info->tid_low[i] == 0)
-            continue;
-        sprintf(path, "TITLE      %08X   %08X   CONTENT    ????????TMD", (unsigned int) title_info->tid_high, (unsigned int) title_info->tid_low[i]);
-        if (SeekFileInNand(offset_tmd, size_tmd, path, ctrnand_info) == 0) {
-            tid_low = title_info->tid_low[i];
-            break;
+        sprintf(path, "TITLE      %08X   %08X   CONTENT    %08XTMD", (unsigned int) title_info->tid_high, (unsigned int) tid_low, (unsigned int) tmd_id);
+        if (SeekFileInNand(offset_tmd, size_tmd, path, ctrnand_info) != 0)
+            tid_low = 0;
+    }
+    if (!tid_low) {
+        Debug("Method 2: Search in file system...");
+        for (u32 i = 0; i < 6; i++) {
+            char path[64];
+            if (title_info->tid_low[i] == 0)
+                continue;
+            sprintf(path, "TITLE      %08X   %08X   CONTENT    ????????TMD", (unsigned int) title_info->tid_high, (unsigned int) title_info->tid_low[i]);
+            if (SeekFileInNand(offset_tmd, size_tmd, path, ctrnand_info) == 0) {
+                tid_low = title_info->tid_low[i];
+                break;
+            }
         }
     }
     if (!tid_low) {
@@ -220,16 +270,14 @@ u32 InjectFile(u32 param)
 u32 DumpHealthAndSafety(u32 param)
 {
     PartitionInfo* ctrnand_info = GetPartitionInfo(P_CTRNAND);
-    TitleListInfo* health_o3ds = titleList + 3;
-    TitleListInfo* health_n3ds = titleList + 4;
+    TitleListInfo* health = titleList + ((GetUnitPlatform() == PLATFORM_3DS) ? 3 : 4);
     u32 offset_app[4];
     u32 size_app[4];
     u32 offset_tmd;
     u32 size_tmd;
     
     
-    if ((DebugSeekTitleInNand(&offset_tmd, &size_tmd, offset_app, size_app, health_o3ds, 4) != 0) &&
-        (DebugSeekTitleInNand(&offset_tmd, &size_tmd, offset_app, size_app, health_n3ds, 4) != 0))
+    if (DebugSeekTitleInNand(&offset_tmd, &size_tmd, offset_app, size_app, health, 4) != 0)
         return 1;
         
     Debug("Dumping & decrypting APP0...");
@@ -245,8 +293,7 @@ u32 InjectHealthAndSafety(u32 param)
 {
     u8* buffer = BUFFER_ADDRESS;
     PartitionInfo* ctrnand_info = GetPartitionInfo(P_CTRNAND);
-    TitleListInfo* health_o3ds = titleList + 3;
-    TitleListInfo* health_n3ds = titleList + 4;
+    TitleListInfo* health = titleList + ((GetUnitPlatform() == PLATFORM_3DS) ? 3 : 4);
     u32 offset_app[4];
     u32 size_app[4];
     u32 offset_tmd;
@@ -254,8 +301,7 @@ u32 InjectHealthAndSafety(u32 param)
     u32 size_hs;
     
     
-    if ((DebugSeekTitleInNand(&offset_tmd, &size_tmd, offset_app, size_app, health_o3ds, 4) != 0) &&
-        (DebugSeekTitleInNand(&offset_tmd, &size_tmd, offset_app, size_app, health_n3ds, 4) != 0))
+    if (DebugSeekTitleInNand(&offset_tmd, &size_tmd, offset_app, size_app, health, 4) != 0)
         return 1;
     if (size_app[0] > 0x400000) {
         Debug("H&S system app is too big!");
