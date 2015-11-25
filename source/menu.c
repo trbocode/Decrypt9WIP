@@ -68,14 +68,18 @@ u32 ProcessEntry(MenuEntry* entry)
     
     // unlock sequence for dangerous features
     if (entry->dangerous) {
-        u32 unlockSequence[] = { BUTTON_LEFT, BUTTON_RIGHT, BUTTON_DOWN, BUTTON_UP, BUTTON_A };
-        u32 unlockLvlMax = sizeof(unlockSequence) / sizeof(u32);
+        u32 unlockSequenceEmu[] = { BUTTON_LEFT, BUTTON_RIGHT, BUTTON_DOWN, BUTTON_UP, BUTTON_A };
+        u32 unlockSequenceSys[] = { BUTTON_LEFT, BUTTON_UP, BUTTON_RIGHT, BUTTON_UP, BUTTON_A };
+        u32 unlockLvlMax = 5;
+        u32* unlockSequence = (entry->emunand) ? unlockSequenceEmu : unlockSequenceSys;
         u32 unlockLvl = 0;
         DebugClear();
         Debug("You selected \"%s\".", entry->name);
-        Debug("This feature is potentially dangerous!");
-        Debug("If you understand and wish to proceed, enter:");
-        Debug("<Left>, <Right>, <Down>, <Up>, <A>");
+        Debug("This feature writes to the %s.", (entry->emunand) ? "EmuNAND" : "SysNAND");
+        Debug("Doing this is potentially dangerous!");
+        Debug("");
+        Debug("If you wish to proceed, enter:");
+        Debug((entry->emunand) ? "<Left>, <Right>, <Down>, <Up>, <A>" : "<Left>, <Up>, <Right>, <Up>, <A>");
         Debug("");
         Debug("(B to return, START to reboot)");
         while (true) {
