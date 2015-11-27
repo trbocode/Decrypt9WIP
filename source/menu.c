@@ -114,6 +114,18 @@ u32 ProcessEntry(MenuEntry* entry)
     return pad_state;
 }
 
+void BatchScreenshot(MenuInfo* info, bool full_batch)
+{
+    for (u32 idx_m = 0; info[idx_m].name != NULL; idx_m++) {
+        for (u32 idx_s = 0; idx_s < ((full_batch) ? info[idx_m].n_entries : 1); idx_s++) {
+            char filename[16];
+            snprintf(filename, 16, "menu%04lu.bmp", idx_m * 100 + idx_s);
+            DrawMenu(info + idx_m, idx_s, true, true);
+            Screenshot(filename);
+        }
+    }
+}
+
 u32 ProcessMenu(MenuInfo* info, u32 n_entries_main)
 {
     MenuInfo mainMenu;
@@ -174,7 +186,8 @@ u32 ProcessMenu(MenuInfo* info, u32 n_entries_main)
         } else if (pad_state & BUTTON_SELECT) {
             pad_state = UnmountSd();
         } else if (pad_state & BUTTON_X) {
-            Screenshot(NULL);
+            (pad_state & (BUTTON_LEFT | BUTTON_RIGHT)) ?
+                BatchScreenshot(info, pad_state & BUTTON_RIGHT) : Screenshot(NULL);
         } else {
             full_draw = false;
         }
