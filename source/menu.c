@@ -2,6 +2,9 @@
 #include "draw.h"
 #include "hid.h"
 #include "fs.h"
+#ifdef USE_THEME
+#include "theme.h"
+#endif
 #include "decryptor/nand.h"
 
 
@@ -16,6 +19,9 @@ u32 UnmountSd()
     Debug("Put the SD card back in before pressing B!");
     Debug("");
     Debug("(B to return, START to reboot)");
+    #ifdef USE_THEME
+    LoadThemeGfx(GFX_UNMOUNT);
+    #endif
     while (true) {
         pad_state = InputWait();
         if (((pad_state & BUTTON_B) && InitFS()) || (pad_state & BUTTON_START))
@@ -63,6 +69,7 @@ void DrawMenu(MenuInfo* currMenu, u32 index, bool fullDraw, bool subMenu)
 u32 ProcessEntry(MenuEntry* entry)
 {
     u32 pad_state;
+    u32 res = 0;
     
     // unlock sequence for dangerous features
     if (entry->dangerous) {
@@ -80,6 +87,9 @@ u32 ProcessEntry(MenuEntry* entry)
         Debug((entry->emunand) ? "<Left>, <Right>, <Down>, <Up>, <A>" : "<Left>, <Up>, <Right>, <Up>, <A>");
         Debug("");
         Debug("(B to return, START to reboot)");
+        #ifdef USE_THEME
+        LoadThemeGfx((entry->emunand) ? GFX_DANGER_E : GFX_DANGER_S);
+        #endif
         while (true) {
             ShowProgress(unlockLvl, unlockLvlMax);
             if (unlockLvl == unlockLvlMax)
@@ -100,14 +110,17 @@ u32 ProcessEntry(MenuEntry* entry)
     }
     
     // execute this entries function
+    #ifdef USE_THEME
+    LoadThemeGfx(GFX_PROGRESS);
+    #endif
     DebugClear();
-    if (SetNand(entry->emunand) != 0) {
-        Debug("%s: failed!", entry->name);
-    } else {
-        Debug("%s: %s!", entry->name, (*(entry->function))(entry->param) == 0 ? "succeeded" : "failed");
-    }
+    res = (SetNand(entry->emunand) == 0) ? (*(entry->function))(entry->param) : 1;
+    Debug("%s: %s!", entry->name, (res == 0) ? "succeeded" : "failed");
     Debug("");
     Debug("Press B to return, START to reboot.");
+    #ifdef USE_THEME
+    LoadThemeGfx((res == 0) ? GFX_DONE : GFX_FAILED);
+    #endif
     while(!(pad_state = InputWait() & (BUTTON_B | BUTTON_START)));
     
     // returns the last known pad_state
@@ -119,8 +132,13 @@ void BatchScreenshot(MenuInfo* info, bool full_batch)
     for (u32 idx_m = 0; info[idx_m].name != NULL; idx_m++) {
         for (u32 idx_s = 0; idx_s < ((full_batch) ? info[idx_m].n_entries : 1); idx_s++) {
             char filename[16];
-            snprintf(filename, 16, "menu%04lu.bmp", idx_m * 100 + idx_s);
+            snprintf(filename, 16, "menu%04lu.bmp", (idx_m * 100) + idx_s);
+            #ifndef USE_THEME
             DrawMenu(info + idx_m, idx_s, true, true);
+            #else
+            LoadThemeGfxLogo();
+            LoadThemeGfxMenu((idx_m * 100) + idx_s);
+            #endif
             Screenshot(filename);
         }
     }
@@ -136,6 +154,7 @@ u32 ProcessMenu(MenuInfo* info, u32 n_entries_main)
     u32 menuLvl = 0;
     u32 result = MENU_EXIT_REBOOT;
     
+    #ifndef USE_THEME
     // build main menu structure from submenus
     memset(&mainMenu, 0x00, sizeof(MenuInfo));
     for (u32 i = 0; i < n_entries_main && i < MENU_MAX_ENTRIES; i++) {
@@ -152,6 +171,12 @@ u32 ProcessMenu(MenuInfo* info, u32 n_entries_main)
     #endif
     mainMenu.n_entries = (n_entries_main > MENU_MAX_ENTRIES) ? MENU_MAX_ENTRIES : n_entries_main;
     DrawMenu(&mainMenu, 0, true, false);
+    #else
+    currMenu = info;
+    menuLvl = 1;
+    LoadThemeGfxLogo();
+    LoadThemeGfxMenu(0);
+    #endif
     
     // main processing loop
     while (true) {
@@ -167,7 +192,11 @@ u32 ProcessMenu(MenuInfo* info, u32 n_entries_main)
             index = 0;
         } else if (pad_state & BUTTON_A) {
             pad_state = ProcessEntry(currMenu->entries + index);
+        #ifndef USE_THEME
         } else if ((pad_state & BUTTON_B) && (menuLvl > 0)) {
+        #else
+        } else if ((pad_state & BUTTON_B) && (menuLvl > 1)) {
+        #endif
             menuLvl--;
             currMenu = prevMenu[menuLvl];
             index = prevIndex[menuLvl];
@@ -195,7 +224,12 @@ u32 ProcessMenu(MenuInfo* info, u32 n_entries_main)
             result = (pad_state & BUTTON_LEFT) ? MENU_EXIT_POWEROFF : MENU_EXIT_REBOOT;
             break;
         }
+        #ifndef USE_THEME
         DrawMenu(currMenu, index, full_draw, menuLvl > 0);
+        #else
+        if (full_draw) LoadThemeGfxLogo();
+        LoadThemeGfxMenu(((currMenu - info) * 100) + index);
+        #endif
     }
     
     return result;

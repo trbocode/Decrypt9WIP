@@ -10,7 +10,11 @@
 #include "font.h"
 #include "draw.h"
 #include "fs.h"
+#ifdef USE_THEME
+#include "theme.h"
+#endif
 
+#ifndef USE_THEME
 #define STD_COLOR_BG   COLOR_BLACK
 #define STD_COLOR_FONT COLOR_WHITE
 
@@ -22,6 +26,7 @@
 #define DBG_START_X 10
 #define DBG_END_X   (SCREEN_WIDTH_TOP - 10)
 #define DBG_STEP_Y  10
+#endif
 
 #define DBG_N_CHARS_Y   ((DBG_END_Y - DBG_START_Y) / DBG_STEP_Y)
 #define DBG_N_CHARS_X   (((DBG_END_X - DBG_START_X) / 8) + 1)
@@ -153,6 +158,9 @@ bool ImportFrameBuffer(const char* path, u32 use_top) {
 
 void DebugClear()
 {
+    #if defined USE_THEME && defined GFX_DEBUG_BG
+    LoadThemeGfxS(GFX_DEBUG_BG, true);
+    #endif
     memset(debugstr, 0x00, DBG_N_CHARS_X * DBG_N_CHARS_Y);
     ClearScreen(TOP_SCREEN0, SCREEN_WIDTH_TOP, DBG_COLOR_BG);
     ClearScreen(TOP_SCREEN1, SCREEN_WIDTH_TOP, DBG_COLOR_BG);
