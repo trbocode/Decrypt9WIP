@@ -34,9 +34,7 @@ void DrawMenu(MenuInfo* currMenu, u32 index, bool fullDraw, bool subMenu)
     u32 menublock_y1 = menublock_y0 + currMenu->n_entries * 10;
     
     if (fullDraw) { // draw full menu
-        if (!top_screen)
-            ClearScreenFull(true);
-        ClearScreenFull(top_screen);
+        ClearScreenFull(true, !top_screen);
         DrawStringF(menublock_x0, menublock_y0 - 20, top_screen, "%s", currMenu->name);
         DrawStringF(menublock_x0, menublock_y0 - 10, top_screen, "==============================");
         DrawStringF(menublock_x0, menublock_y1 +  0, top_screen, "==============================");
@@ -176,7 +174,7 @@ u32 ProcessMenu(MenuInfo* info, u32 n_entries_main)
         } else if (pad_state & BUTTON_SELECT) {
             pad_state = UnmountSd();
         } else if (pad_state & BUTTON_X) {
-            DumpFrameBuffer();
+            Screenshot(NULL);
         } else {
             full_draw = false;
         }

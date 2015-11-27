@@ -167,6 +167,9 @@ MenuInfo menu[] =
             { "Inject movable.sed",           &InjectFile,           1, 1, F_MOVABLE },
             { "Inject seedsave.bin",          &InjectFile,           1, 1, F_SEEDSAVE }
         }
+    },
+    {
+        NULL, 0, {}, // empty menu to signal end
     }
 };
 
@@ -187,8 +190,7 @@ void PowerOff()
 
 int main()
 {
-    ClearScreenFull(false);
-    ClearScreenFull(true);
+    ClearScreenFull(true, true);
     InitFS();
 
     u32 menu_exit = ProcessMenu(menu, SUBMENU_START);
