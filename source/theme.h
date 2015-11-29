@@ -1,6 +1,7 @@
 #pragma once
-#ifdef USE_THEME
+
 #include "common.h"
+#ifdef USE_THEME
 #include "draw.h"
 
 #define GFX_PROGRESS  "progress.bin"
@@ -30,8 +31,7 @@
 #define DBG_END_X   (SCREEN_WIDTH_TOP - 10)
 #define DBG_STEP_Y  10
 
-void LoadThemeGfxS(const char* filename, bool use_top);
-void LoadThemeGfx(const char* filename);
+void LoadThemeGfx(const char* filename, bool use_top);
 void LoadThemeGfxMenu(u32 index);
 void LoadThemeGfxLogo(void);
 #endif

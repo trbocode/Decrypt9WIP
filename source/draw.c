@@ -12,9 +12,7 @@
 #include "fs.h"
 #ifdef USE_THEME
 #include "theme.h"
-#endif
-
-#ifndef USE_THEME
+#else
 #define STD_COLOR_BG   COLOR_BLACK
 #define STD_COLOR_FONT COLOR_WHITE
 
@@ -142,24 +140,10 @@ void Screenshot(const char* path)
     FileClose();
 }
 
-bool ImportFrameBuffer(const char* path, u32 use_top) {
-    u32 bufsize = BYTES_PER_PIXEL * SCREEN_HEIGHT * ((use_top) ? SCREEN_WIDTH_TOP : SCREEN_WIDTH_BOT);
-    u8* buffer0 = (use_top) ? TOP_SCREEN0 : BOT_SCREEN0;
-    u8* buffer1 = (use_top) ? TOP_SCREEN1 : BOT_SCREEN1;
-    bool result;
-    
-    if (!FileOpen(path)) return false;
-    result = FileRead(buffer0, bufsize, 0);
-    memcpy(buffer1, buffer0, bufsize);
-    FileClose();
-    
-    return result;
-}
-
 void DebugClear()
 {
     #if defined USE_THEME && defined GFX_DEBUG_BG
-    LoadThemeGfxS(GFX_DEBUG_BG, true);
+    LoadThemeGfx(GFX_DEBUG_BG, true);
     #endif
     memset(debugstr, 0x00, DBG_N_CHARS_X * DBG_N_CHARS_Y);
     ClearScreen(TOP_SCREEN0, SCREEN_WIDTH_TOP, DBG_COLOR_BG);

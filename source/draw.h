@@ -44,8 +44,6 @@ void DrawString(unsigned char *screen, const char *str, int x, int y, int color,
 void DrawStringF(int x, int y, bool use_top, const char *format, ...);
 
 void Screenshot(const char* path);
-bool ImportFrameBuffer(const char* path, u32 use_top);
-
 void DebugClear();
 void Debug(const char *format, ...);
 

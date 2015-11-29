@@ -20,7 +20,7 @@ u32 UnmountSd()
     Debug("");
     Debug("(B to return, START to reboot)");
     #ifdef USE_THEME
-    LoadThemeGfx(GFX_UNMOUNT);
+    LoadThemeGfx(GFX_UNMOUNT, false);
     #endif
     while (true) {
         pad_state = InputWait();
@@ -88,7 +88,7 @@ u32 ProcessEntry(MenuEntry* entry)
         Debug("");
         Debug("(B to return, START to reboot)");
         #ifdef USE_THEME
-        LoadThemeGfx((entry->emunand) ? GFX_DANGER_E : GFX_DANGER_S);
+        LoadThemeGfx((entry->emunand) ? GFX_DANGER_E : GFX_DANGER_S, false);
         #endif
         while (true) {
             ShowProgress(unlockLvl, unlockLvlMax);
@@ -111,7 +111,7 @@ u32 ProcessEntry(MenuEntry* entry)
     
     // execute this entries function
     #ifdef USE_THEME
-    LoadThemeGfx(GFX_PROGRESS);
+    LoadThemeGfx(GFX_PROGRESS, false);
     #endif
     DebugClear();
     res = (SetNand(entry->emunand) == 0) ? (*(entry->function))(entry->param) : 1;
@@ -119,7 +119,7 @@ u32 ProcessEntry(MenuEntry* entry)
     Debug("");
     Debug("Press B to return, START to reboot.");
     #ifdef USE_THEME
-    LoadThemeGfx((res == 0) ? GFX_DONE : GFX_FAILED);
+    LoadThemeGfx((res == 0) ? GFX_DONE : GFX_FAILED, false);
     #endif
     while(!(pad_state = InputWait() & (BUTTON_B | BUTTON_START)));
     

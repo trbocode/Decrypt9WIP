@@ -1,8 +1,22 @@
-#ifdef USE_THEME
 #include "theme.h"
+#ifdef USE_THEME
 #include "fs.h"
 
-void LoadThemeGfxS(const char* filename, bool use_top) {
+bool ImportFrameBuffer(const char* path, u32 use_top) {
+    u32 bufsize = BYTES_PER_PIXEL * SCREEN_HEIGHT * ((use_top) ? SCREEN_WIDTH_TOP : SCREEN_WIDTH_BOT);
+    u8* buffer0 = (use_top) ? TOP_SCREEN0 : BOT_SCREEN0;
+    u8* buffer1 = (use_top) ? TOP_SCREEN1 : BOT_SCREEN1;
+    bool result;
+    
+    if (!FileOpen(path)) return false;
+    result = FileRead(buffer0, bufsize, 0);
+    memcpy(buffer1, buffer0, bufsize);
+    FileClose();
+    
+    return result;
+}
+
+void LoadThemeGfx(const char* filename, bool use_top) {
     char path[256];
     #ifdef APP_TITLE
     snprintf(path, 256, "//3ds/%s/UI/%s", APP_TITLE, filename);
@@ -13,18 +27,14 @@ void LoadThemeGfxS(const char* filename, bool use_top) {
         DrawStringF(10, 10, true, "Not found: %s", filename);
 }
 
-void LoadThemeGfx(const char* filename) {
-    LoadThemeGfxS(filename, false); // all standard GFX always go to the bottom
-}
-
 void LoadThemeGfxMenu(u32 index) {
     char filename[16];
     snprintf(filename, 16, "menu%04lu.bin", index);
-    LoadThemeGfxS(filename, !LOGO_TOP); // this goes where the logo goes not
+    LoadThemeGfx(filename, !LOGO_TOP); // this goes where the logo goes not
 }
 
 void LoadThemeGfxLogo(void) {
-    LoadThemeGfxS(GFX_LOGO, LOGO_TOP);
+    LoadThemeGfx(GFX_LOGO, LOGO_TOP);
     #if defined LOGO_TEXT_X && defined LOGO_TEXT_Y
     DrawStringF(LOGO_TEXT_X, LOGO_TEXT_Y -  0, LOGO_TOP, "Remaining SD storage space: %llu MiB", RemainingStorageSpace() / 1024 / 1024);
     DrawStringF(LOGO_TEXT_X, LOGO_TEXT_Y - 10, LOGO_TOP, "Game directory: %s", GAME_DIR);
