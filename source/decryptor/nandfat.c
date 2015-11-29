@@ -75,7 +75,7 @@ u32 SeekFileInNand(u32* offset, u32* size, const char* path, PartitionInfo* part
             return 1;
         found = false;
         DecryptNandToMem(buffer, *offset, cluster_size, partition);
-        for (u32 i = 0x00; i < cluster_size; i += 0x20) {            
+        for (u32 i = 0x00; i < cluster_size; i += 0x20) {
             const static char zeroes[8+3] = { 0x00 };
             // skip invisible, deleted and lfn entries
             if ((buffer[i] == '.') || (buffer[i] == 0xE5) || (buffer[i+0x0B] == 0x0F))

@@ -133,6 +133,17 @@ bool DirMake(const char* path)
     return ret;
 }
 
+bool DebugDirMake(const char* path)
+{
+    Debug("Creating dir %s ...", path);
+    if (!DirMake(path)) {
+        Debug("Could not create %s!", path);
+        return false;
+    }
+    
+    return true;
+}
+
 bool DirOpen(const char* path)
 {
     return (f_opendir(&dir, path) == FR_OK);

@@ -637,7 +637,7 @@ u32 CryptNcch(const char* filename, u32 offset, u32 size, u64 seedId, u8* encryp
                     break;
                 }
             }
-            if (encrypt_flags) // encrypt_flags this after (when encrypting)
+            if (encrypt_flags) // encrypt this last (when encrypting)
                 result |= CryptSdToSd(filename, offset + offset_byte, 0x200, &info0);
             // special ExeFS decryption routine (only .code has new encryption)
             if (size_code > 0) {
