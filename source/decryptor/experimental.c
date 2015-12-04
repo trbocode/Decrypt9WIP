@@ -149,7 +149,7 @@ u32 FormatSdCard(u32 param)
     InitFS();
     Debug("Formatting FAT partition...");
     if (!PartitionFormat("DECRYPT9SD"))
-        return false;
+        return 1;
     /*
     sdmmc_sdcard_writesectors(fat_offset_sectors, fat_info->sct_reserved, (u8*) fat_info);
     memset(buffer, 0x00, BUFFER_MAX_SIZE);
