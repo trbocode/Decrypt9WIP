@@ -7,6 +7,14 @@ static FATFS fs;
 static FIL file;
 static DIR dir;
 
+/* Volume management table for FATFS (default table) */
+PARTITION VolToPart[] = {
+    {0, 1},    /* Logical drive 0 ==> Physical drive 0, 1st partition */
+    {0, 2},    /* Logical drive 1 ==> Physical drive 0, 2nd partition */
+    {1, 0}     /* Logical drive 2 ==> Physical drive 1, auto detection */
+};
+
+
 bool InitFS()
 {
 #ifndef EXEC_GATEWAY
@@ -221,6 +229,13 @@ bool GetFileList(const char* path, char* list, int lsize, bool recursive)
     char fpath[256];
     strncpy(fpath, path, 256);
     return GetFileListWorker(&list, &lsize, fpath, 256, recursive);
+}
+
+bool PartitionFormat(const char* label)
+{
+    bool ret = f_mkfs("0:", 0, 0);
+    if (ret && label) f_setlabel(label);
+    return ret;
 }
 
 bool LogWrite(const char* text)

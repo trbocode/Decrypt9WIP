@@ -6,7 +6,7 @@
 #include "fatfs/sdmmc.h"
 
 #define SD_MINFREE_SECTORS  ((1024 * 1024 * 1024) / 0x200)  // have at least 1GB free
-#define PARTITION_ALIGN     1 // ((4 * 1024 * 1024) / 0x200)     // align at 4MB
+#define PARTITION_ALIGN     ((4 * 1024 * 1024) / 0x200)     // align at 4MB
 
 
 u32 GetDriveSizeSectors(u32 offset_sectors)
@@ -145,7 +145,12 @@ u32 FormatSdCard(u32 param)
     DeinitFS();
     Debug("Writing new master boot record..");
     sdmmc_sdcard_writesectors(0, 1, (u8*) mbr_info);
+    Debug("Mounting SD card...");
+    InitFS();
     Debug("Formatting FAT partition...");
+    if (!PartitionFormat("DECRYPT9SD"))
+        return false;
+    /*
     sdmmc_sdcard_writesectors(fat_offset_sectors, fat_info->sct_reserved, (u8*) fat_info);
     memset(buffer, 0x00, BUFFER_MAX_SIZE);
     for (u32 i = 0; i < (fat_info->fat_n * fat_info->fat_size) + 0x80; i += SECTORS_PER_READ)
@@ -157,6 +162,7 @@ u32 FormatSdCard(u32 param)
     sdmmc_sdcard_writesectors(fat_offset_sectors + fat_info->sct_reserved + (fat_info->fat_n * fat_info->fat_size), 1, buffer);
     Debug("Mounting SD card...");
     InitFS();
+    */
     
     return 0;
 }

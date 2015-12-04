@@ -98,6 +98,20 @@ DRESULT disk_ioctl (
 	void *buff		/* Buffer to send/receive control data */
 )
 {
+    switch (cmd) {
+        case GET_SECTOR_SIZE:
+            *((DWORD*) buff) = 0x200;
+            return RES_OK;
+        case GET_SECTOR_COUNT:
+            *((DWORD*) buff) = getMMCDevice(1)->total_size;
+            return RES_OK;
+        case GET_BLOCK_SIZE:
+            *((DWORD*) buff) = 32768;
+            return RES_OK;
+        case CTRL_SYNC:
+            // nothing to do here - the disk_write function handles that
+            return RES_OK;
+    }
 	return RES_PARERR;
 }
 #endif
