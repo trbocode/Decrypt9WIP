@@ -142,12 +142,12 @@ void Screenshot(const char* path)
 
 void DebugClear()
 {
-    #if defined USE_THEME && defined GFX_DEBUG_BG
-    LoadThemeGfx(GFX_DEBUG_BG, true);
-    #endif
     memset(debugstr, 0x00, DBG_N_CHARS_X * DBG_N_CHARS_Y);
     ClearScreen(TOP_SCREEN0, SCREEN_WIDTH_TOP, DBG_COLOR_BG);
     ClearScreen(TOP_SCREEN1, SCREEN_WIDTH_TOP, DBG_COLOR_BG);
+    #if defined USE_THEME && defined GFX_DEBUG_BG
+    LoadThemeGfx(GFX_DEBUG_BG, true);
+    #endif
     LogWrite("");
 }
 

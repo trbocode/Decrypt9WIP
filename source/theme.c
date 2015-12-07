@@ -24,7 +24,7 @@ void LoadThemeGfx(const char* filename, bool use_top) {
     #endif
     snprintf(path, 256, "//%s/%s", USE_THEME, filename);
     if (!ImportFrameBuffer(path, use_top))
-        DrawStringF(10, 10, true, "Not found: %s", filename);
+        DrawStringF(10, 230, true, "Not found: %s", filename);
 }
 
 void LoadThemeGfxMenu(u32 index) {
