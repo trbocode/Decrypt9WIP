@@ -45,9 +45,9 @@ u32 FormatSdCard(u32 param)
     
     // give the user one last chance to swap the SD card
     DeinitFS();
-    Debug("Insert SD to format now");
-    Debug("Press <A> when ready");
-    while(!(InputWait() & BUTTON_A));
+    Debug("You may insert the SD to format now");
+    Debug("Press <A>+<L> when ready");
+    while((InputWait() & (BUTTON_A|BUTTON_L1)) != (BUTTON_A|BUTTON_L1));
     InitFS();
     
     // check SD size
@@ -94,7 +94,7 @@ u32 FormatSdCard(u32 param)
     InitFS();
     Debug("Formatting FAT partition...");
     if (setup_emunand)
-        Debug("This might take a bit");
+        Debug("This will take some time");
     if (!PartitionFormat("DECRYPT9SD"))
         return 1;
     
