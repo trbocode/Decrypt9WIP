@@ -71,10 +71,12 @@ MenuInfo menu[] =
         }
     },
     {
-        "Experimental Options", 3,
+        "Experimental Options", 5,
         {
-            { "Format SD for EmuNAND",        &FormatSdCard,          0, 0, SD_FORMAT_EMUNAND },
+            { "Format SD (EmuNAND)",          &FormatSdCard,          0, 0, SD_SETUP_EMUNAND },
+            { "Format SD (EmuNAND/auto)",     &FormatSdCard,          0, 0, SD_SETUP_EMUNAND | SD_USE_STARTER },
             { "Format SD (standard)",         &FormatSdCard,          0, 0, 0 },
+            { "Format SD (standard/auto)",    &FormatSdCard,          0, 0, SD_USE_STARTER },
             { "Clone SysNAND to EmuNAND",     &CloneSysNand,          0, 0, 0 }
         }
     },

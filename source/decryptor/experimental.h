@@ -2,7 +2,8 @@
 
 #include "common.h"
 
-#define SD_FORMAT_EMUNAND (1<<0)
+#define SD_SETUP_EMUNAND (1<<0)
+#define SD_USE_STARTER     (1<<1)
 
 typedef struct {
     u8  status;         // 0x80
