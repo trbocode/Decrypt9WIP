@@ -147,36 +147,47 @@ void BatchScreenshot(MenuInfo* info, bool full_batch)
 u32 ProcessMenu(MenuInfo* info, u32 n_entries_main)
 {
     MenuInfo mainMenu;
-    MenuInfo* currMenu = &mainMenu;
+    MenuInfo* currMenu;
     MenuInfo* prevMenu[MENU_MAX_DEPTH];
     u32 prevIndex[MENU_MAX_DEPTH];
+    u32 menuLvlMin;
+    u32 menuLvl;
     u32 index = 0;
-    u32 menuLvl = 0;
     u32 result = MENU_EXIT_REBOOT;
     
     #ifndef USE_THEME
-    // build main menu structure from submenus
-    memset(&mainMenu, 0x00, sizeof(MenuInfo));
-    for (u32 i = 0; i < n_entries_main && i < MENU_MAX_ENTRIES; i++) {
-        mainMenu.entries[i].name = info[i].name;
-        mainMenu.entries[i].function = NULL;
-        mainMenu.entries[i].param = i;
-        mainMenu.entries[i].dangerous = 0;
-        mainMenu.entries[i].emunand = 0;
+    if (n_entries_main > 1) {
+        // build main menu structure from submenus
+        if (n_entries_main > MENU_MAX_ENTRIES) // limit number of entries
+            n_entries_main = MENU_MAX_ENTRIES;
+        memset(&mainMenu, 0x00, sizeof(MenuInfo));
+        for (u32 i = 0; i < n_entries_main; i++) {
+            mainMenu.entries[i].name = info[i].name;
+            mainMenu.entries[i].function = NULL;
+            mainMenu.entries[i].param = i;
+            mainMenu.entries[i].dangerous = 0;
+            mainMenu.entries[i].emunand = 0;
+        }
+        mainMenu.n_entries = n_entries_main;
+        #ifndef BUILD_NAME
+        mainMenu.name = "Decrypt9 Main Menu";
+        #else
+        mainMenu.name = BUILD_NAME;
+        #endif
+        currMenu = &mainMenu;
+        menuLvlMin = 0;
+    } else {
+        currMenu = info;
+        menuLvlMin = 1;
     }
-    #ifndef BUILD_NAME
-    mainMenu.name = "Decrypt9 Main Menu";
-    #else
-    mainMenu.name = BUILD_NAME;
-    #endif
-    mainMenu.n_entries = (n_entries_main > MENU_MAX_ENTRIES) ? MENU_MAX_ENTRIES : n_entries_main;
-    DrawMenu(&mainMenu, 0, true, false);
+    DrawMenu(currMenu, 0, true, false);
     #else
     currMenu = info;
-    menuLvl = 1;
+    menuLvlMin = 1;
     LoadThemeGfxLogo();
     LoadThemeGfxMenu(0);
     #endif
+    menuLvl = menuLvlMin;
     
     // main processing loop
     while (true) {
@@ -192,11 +203,7 @@ u32 ProcessMenu(MenuInfo* info, u32 n_entries_main)
             index = 0;
         } else if (pad_state & BUTTON_A) {
             pad_state = ProcessEntry(currMenu->entries + index);
-        #ifndef USE_THEME
-        } else if ((pad_state & BUTTON_B) && (menuLvl > 0)) {
-        #else
-        } else if ((pad_state & BUTTON_B) && (menuLvl > 1)) {
-        #endif
+        } else if ((pad_state & BUTTON_B) && (menuLvl > menuLvlMin)) {
             menuLvl--;
             currMenu = prevMenu[menuLvl];
             index = prevIndex[menuLvl];
@@ -225,7 +232,7 @@ u32 ProcessMenu(MenuInfo* info, u32 n_entries_main)
             break;
         }
         #ifndef USE_THEME
-        DrawMenu(currMenu, index, full_draw, menuLvl > 0);
+        DrawMenu(currMenu, index, full_draw, menuLvl > menuLvlMin);
         #else
         if (full_draw) LoadThemeGfxLogo();
         LoadThemeGfxMenu(((currMenu - info) * 100) + index);
