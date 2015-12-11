@@ -228,7 +228,7 @@ u32 DebugSeekTitleInNand(u32* offset_tmd, u32* size_tmd, u32* offset_app, u32* s
         }
         sprintf(path, "TITLE      %08X   %08X   CONTENT    %08XAPP", (unsigned int) title_info->tid_high, (unsigned int) tid_low, (unsigned int) cnt_id);
         if (SeekFileInNand(offset_app + i, size_app + i, path, ctrnand_info) != 0) {
-            Debug("APP%i not found!", i);
+            Debug("APP%i not found or fragmented!", i);
             return 1;
         }
         Debug("APP%i found at %08X, size %ukB", i, offset_app[i], size_app[i] / 1024);
