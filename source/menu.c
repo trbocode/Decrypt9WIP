@@ -75,9 +75,12 @@ u32 ProcessEntry(MenuEntry* entry)
     if (entry->dangerous) {
         u32 unlockSequenceEmu[] = { BUTTON_LEFT, BUTTON_RIGHT, BUTTON_DOWN, BUTTON_UP, BUTTON_A };
         u32 unlockSequenceSys[] = { BUTTON_LEFT, BUTTON_UP, BUTTON_RIGHT, BUTTON_UP, BUTTON_A };
-        u32 unlockLvlMax = 5;
+        u32 unlockLvlMax = ((entry->emunand) ? sizeof(unlockSequenceEmu) : sizeof(unlockSequenceSys)) / sizeof(u32);
         u32* unlockSequence = (entry->emunand) ? unlockSequenceEmu : unlockSequenceSys;
         u32 unlockLvl = 0;
+        #ifdef USE_THEME
+        LoadThemeGfx((entry->emunand) ? GFX_DANGER_E : GFX_DANGER_S, false);
+        #endif
         DebugClear();
         Debug("You selected \"%s\".", entry->name);
         Debug("This feature writes to the %s.", (entry->emunand) ? "EmuNAND" : "SysNAND");
@@ -87,9 +90,6 @@ u32 ProcessEntry(MenuEntry* entry)
         Debug((entry->emunand) ? "<Left>, <Right>, <Down>, <Up>, <A>" : "<Left>, <Up>, <Right>, <Up>, <A>");
         Debug("");
         Debug("(B to return, START to reboot)");
-        #ifdef USE_THEME
-        LoadThemeGfx((entry->emunand) ? GFX_DANGER_E : GFX_DANGER_S, false);
-        #endif
         while (true) {
             ShowProgress(unlockLvl, unlockLvlMax);
             if (unlockLvl == unlockLvlMax)
