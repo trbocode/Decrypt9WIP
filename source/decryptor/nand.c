@@ -27,6 +27,12 @@ u32 SetNand(bool use_emunand)
     
     if (use_emunand) {
         u32 nand_size_sectors = getMMCDevice(0)->total_size;
+        // check the MBR for presence of EmuNAND
+        sdmmc_sdcard_readsectors(0, 1, buffer);
+        if (nand_size_sectors > getle32(buffer + 0x1BE + 0x8)) {
+            Debug("SD is not formatted for EmuNAND");
+            return 1;
+        }
         // check for Gateway type EmuNAND
         sdmmc_sdcard_readsectors(nand_size_sectors, 1, buffer);
         if (memcmp(buffer + 0x100, "NCSD", 4) == 0) {
