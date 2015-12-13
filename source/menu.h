@@ -10,8 +10,6 @@
 typedef struct {
     char* name;
     u32 (*function)(u32 param);
-    u32 dangerous;
-    u32 emunand;
     u32 param;
 } MenuEntry;
 

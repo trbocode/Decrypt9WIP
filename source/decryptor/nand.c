@@ -59,11 +59,6 @@ u32 SetNand(bool use_emunand)
     }
 }
 
-bool IsEmuNand()
-{
-    return emunand_header;
-}
-
 static inline int ReadNandSectors(u32 sector_no, u32 numsectors, u8 *out)
 {
     if (emunand_header) {
@@ -244,9 +239,9 @@ u32 DumpNand(u32 param)
     u32 nand_size = getMMCDevice(0)->total_size * NAND_SECTOR_SIZE;
     u32 result = 0;
 
-    Debug("Dumping System NAND. Size (MB): %u", nand_size / (1024 * 1024));
+    Debug("Dumping %sNAND. Size (MB): %u", (param & N_EMUNAND) ? "Emu" : "Sys", nand_size / (1024 * 1024));
 
-    if (!DebugFileCreate((IsEmuNand()) ? "EmuNAND.bin" : "NAND.bin", true))
+    if (!DebugFileCreate((param & N_EMUNAND) ? "EmuNAND.bin" : "NAND.bin", true))
         return 1;
 
     u32 n_sectors = nand_size / NAND_SECTOR_SIZE;
@@ -344,7 +339,10 @@ u32 RestoreNand(u32 param)
     u32 result = 0;
     u8 magic[4];
 
-    if (IsEmuNand()) {
+    if (!(param & N_NANDWRITE)) // developer screwup protection
+        return 1;
+        
+    if (param & N_EMUNAND) {
         if (!DebugFileOpen("EmuNAND.bin") && !DebugFileOpen("NAND.bin"))
             return 1;
     } else if (!DebugFileOpen("NAND.bin"))
@@ -354,14 +352,17 @@ u32 RestoreNand(u32 param)
         Debug("NAND backup has the wrong size!");
         return 1;
     };
-    if(!DebugFileRead(magic, 4, 0x100))
+    if(!DebugFileRead(magic, 4, 0x100)) {
+        FileClose();
         return 1;
+    }
     if (memcmp(magic, "NCSD", 4) != 0) {
+        FileClose();
         Debug("Not a proper NAND backup!");
         return 1;
     }
     
-    Debug("Restoring System NAND. Size (MB): %u", nand_size / (1024 * 1024));
+    Debug("Restoring %sNAND. Size (MB): %u", (param & N_EMUNAND) ? "Emu" : "Sys", nand_size / (1024 * 1024));
 
     u32 n_sectors = nand_size / NAND_SECTOR_SIZE;
     for (u32 i = 0; i < n_sectors; i += SECTORS_PER_READ) {
@@ -423,6 +424,9 @@ u32 InjectNandPartition(PartitionInfo* p)
 u32 InjectNandPartitions(u32 param)
 {
     u32 result = 1;
+    
+    if (!(param & N_NANDWRITE)) // developer screwup protection
+        return 1;
     
     for (u32 partition_id = P_TWLN; partition_id <= P_CTRNAND; partition_id = partition_id << 1)
         result &= (param & partition_id) ? InjectNandPartition(GetPartitionInfo(partition_id)) : 1;

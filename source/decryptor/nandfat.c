@@ -244,9 +244,9 @@ u32 DumpFile(u32 param)
     u32 offset;
     u32 size;
     
-    if (DebugSeekFileInNand(&offset, &size, (IsEmuNand()) ? f_info->name_emu : f_info->name_sys, f_info->path, p_info) != 0)
+    if (DebugSeekFileInNand(&offset, &size, (param & N_EMUNAND) ? f_info->name_emu : f_info->name_sys, f_info->path, p_info) != 0)
         return 1;
-    if (DecryptNandToFile((IsEmuNand()) ? f_info->name_emu : f_info->name_sys, offset, size, p_info) != 0)
+    if (DecryptNandToFile((param & N_EMUNAND) ? f_info->name_emu : f_info->name_sys, offset, size, p_info) != 0)
         return 1;
     
     return 0;
@@ -258,6 +258,9 @@ u32 InjectFile(u32 param)
     PartitionInfo* p_info = GetPartitionInfo(f_info->partition_id);
     u32 offset;
     u32 size;
+    
+    if (!(param & N_NANDWRITE)) // developer screwup protection
+        return 1;
     
     if (DebugSeekFileInNand(&offset, &size, f_info->name_sys, f_info->path, p_info) != 0)
         return 1;
@@ -300,6 +303,9 @@ u32 InjectHealthAndSafety(u32 param)
     u32 size_tmd;
     u32 size_hs;
     
+    
+    if (!(param & N_NANDWRITE)) // developer screwup protection
+        return 1;
     
     if (DebugSeekTitleInNand(&offset_tmd, &size_tmd, offset_app, size_app, health, 4) != 0)
         return 1;

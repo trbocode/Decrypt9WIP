@@ -124,7 +124,7 @@ u32 DecryptTitlekeysNand(u32 param)
     Debug("Decrypted %u unique Title Keys", nKeys);
     
     if(nKeys > 0) {
-        if (!DebugFileCreate((IsEmuNand()) ? "decTitleKeys_emu.bin" : "decTitleKeys.bin", true))
+        if (!DebugFileCreate((param & N_EMUNAND) ? "decTitleKeys_emu.bin" : "decTitleKeys.bin", true))
             return 1;
         if (!DebugFileWrite(info, 0x10 + nKeys * 0x20, 0)) {
             FileClose();

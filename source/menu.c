@@ -68,26 +68,29 @@ void DrawMenu(MenuInfo* currMenu, u32 index, bool fullDraw, bool subMenu)
 
 u32 ProcessEntry(MenuEntry* entry)
 {
+    bool emunand = entry->param & N_EMUNAND;
+    bool warning = entry->param & N_NANDWRITE;
+    
     u32 pad_state;
     u32 res = 0;
     
     // unlock sequence for dangerous features
-    if (entry->dangerous) {
+    if (warning) {
         u32 unlockSequenceEmu[] = { BUTTON_LEFT, BUTTON_RIGHT, BUTTON_DOWN, BUTTON_UP, BUTTON_A };
         u32 unlockSequenceSys[] = { BUTTON_LEFT, BUTTON_UP, BUTTON_RIGHT, BUTTON_UP, BUTTON_A };
-        u32 unlockLvlMax = ((entry->emunand) ? sizeof(unlockSequenceEmu) : sizeof(unlockSequenceSys)) / sizeof(u32);
-        u32* unlockSequence = (entry->emunand) ? unlockSequenceEmu : unlockSequenceSys;
+        u32 unlockLvlMax = ((emunand) ? sizeof(unlockSequenceEmu) : sizeof(unlockSequenceSys)) / sizeof(u32);
+        u32* unlockSequence = (emunand) ? unlockSequenceEmu : unlockSequenceSys;
         u32 unlockLvl = 0;
         #ifdef USE_THEME
-        LoadThemeGfx((entry->emunand) ? GFX_DANGER_E : GFX_DANGER_S, false);
+        LoadThemeGfx((emunand) ? GFX_DANGER_E : GFX_DANGER_S, false);
         #endif
         DebugClear();
         Debug("You selected \"%s\".", entry->name);
-        Debug("This feature writes to the %s.", (entry->emunand) ? "EmuNAND" : "SysNAND");
+        Debug("This feature writes to the %s.", (emunand) ? "EmuNAND" : "SysNAND");
         Debug("Doing this is potentially dangerous!");
         Debug("");
         Debug("If you wish to proceed, enter:");
-        Debug((entry->emunand) ? "<Left>, <Right>, <Down>, <Up>, <A>" : "<Left>, <Up>, <Right>, <Up>, <A>");
+        Debug((emunand) ? "<Left>, <Right>, <Down>, <Up>, <A>" : "<Left>, <Up>, <Right>, <Up>, <A>");
         Debug("");
         Debug("(B to return, START to reboot)");
         while (true) {
@@ -114,7 +117,7 @@ u32 ProcessEntry(MenuEntry* entry)
     LoadThemeGfx(GFX_PROGRESS, false);
     #endif
     DebugClear();
-    res = (SetNand(entry->emunand) == 0) ? (*(entry->function))(entry->param) : 1;
+    res = (SetNand(emunand) == 0) ? (*(entry->function))(entry->param) : 1;
     Debug("%s: %s!", entry->name, (res == 0) ? "succeeded" : "failed");
     Debug("");
     Debug("Press B to return, START to reboot.");
@@ -165,8 +168,6 @@ u32 ProcessMenu(MenuInfo* info, u32 n_entries_main)
             mainMenu.entries[i].name = info[i].name;
             mainMenu.entries[i].function = NULL;
             mainMenu.entries[i].param = i;
-            mainMenu.entries[i].dangerous = 0;
-            mainMenu.entries[i].emunand = 0;
         }
         mainMenu.n_entries = n_entries_main;
         #ifndef BUILD_NAME

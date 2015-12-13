@@ -13,6 +13,11 @@
 #define P_CTRNAND (1<<5)
 #define P_ALL     (P_TWLN | P_TWLP | P_AGBSAVE | P_FIRM0 | P_FIRM1 | P_CTRNAND)
 
+// these two are not handled by the feature functions
+// they have to be handled by the menu system
+#define N_EMUNAND   (1<<30)
+#define N_NANDWRITE (1<<31)
+
 typedef struct {
     char name[16];
     u8  magic[8];
@@ -22,7 +27,6 @@ typedef struct {
     u32 mode;
 } __attribute__((packed)) PartitionInfo;
 
-bool IsEmuNand();
 PartitionInfo* GetPartitionInfo(u32 partition_id);
 u32 GetNandCtr(u8* ctr, u32 offset);
 
