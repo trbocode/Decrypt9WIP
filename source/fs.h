@@ -40,9 +40,6 @@ bool DirRead(char* fname, int fsize);
 /** Get list of files under a given path **/
 bool GetFileList(const char* path, char* list, int lsize, bool recursive);
 
-/** Formats the first (and only) partition using label as name **/
-bool PartitionFormat(const char* label);
-
 /** Writes text to a constantly open log file **/
 bool LogWrite(const char* text);
 

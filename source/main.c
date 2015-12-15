@@ -8,9 +8,8 @@
 #include "decryptor/nand.h"
 #include "decryptor/nandfat.h"
 #include "decryptor/titlekey.h"
-#include "decryptor/experimental.h"
 
-#define SUBMENU_START 6
+#define SUBMENU_START 5
 
 
 MenuInfo menu[] =
@@ -68,16 +67,6 @@ MenuInfo menu[] =
             { "CIA Decryptor (deep)",         &CryptGameFiles,        GC_CIA_PROCESS | GC_CIA_DEEP },
             { "CIA Decryptor (for GW)",       &CryptGameFiles,        GC_CIA_PROCESS | GC_CIA_DEEP | GC_GWFIX },
             { "SD Decryptor/Encryptor",       &CryptSdFiles,          0 }
-        }
-    },
-    {
-        "Experimental Options", 5,
-        {
-            { "Format SD (EmuNAND)",          &FormatSdCard,          SD_SETUP_EMUNAND },
-            { "Format SD (EmuNAND/auto)",     &FormatSdCard,          SD_SETUP_EMUNAND | SD_USE_STARTER },
-            { "Format SD (standard)",         &FormatSdCard,          0 },
-            { "Format SD (standard/auto)",    &FormatSdCard,          SD_USE_STARTER },
-            { "Clone SysNAND to EmuNAND",     &CloneSysNand,          0 }
         }
     },
     // everything below is not contained in the main menu
