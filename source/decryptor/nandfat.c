@@ -213,7 +213,7 @@ u32 DebugSeekTitleInNand(u32* offset_tmd, u32* size_tmd, u32* offset_app, u32* s
     }
     cnt_count = getbe16(buffer + size_sig + 0x9E);
     u32 size_tmd_expected = size_sig + 0xC4 + (0x40 * 0x24) + (cnt_count * 0x30);
-    if (*size_tmd != size_tmd_expected) {
+    if (*size_tmd < size_tmd_expected) {
         Debug("TMD bad size (expected %ub)!", size_tmd_expected );
         return 1;
     }
