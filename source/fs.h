@@ -46,6 +46,9 @@ bool LogWrite(const char* text);
 /** Gets remaining space on SD card in bytes */
 uint64_t RemainingStorageSpace();
 
+/** Gets total space on SD card in bytes */
+uint64_t TotalStorageSpace();
+
 void FileClose();
 
 void DirClose();

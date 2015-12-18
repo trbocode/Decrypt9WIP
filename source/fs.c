@@ -283,3 +283,8 @@ uint64_t RemainingStorageSpace()
 
     return ClustersToBytes(&fs, free_clusters);
 }
+
+uint64_t TotalStorageSpace()
+{
+    return ClustersToBytes(&fs, fs.n_fatent - 2);
+}

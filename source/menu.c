@@ -33,9 +33,10 @@ u32 UnmountSd()
 
 void DrawMenu(MenuInfo* currMenu, u32 index, bool fullDraw, bool subMenu)
 {
+    u32 emunand_state = CheckEmuNand();
     bool top_screen = true;
     u32 menublock_x0 = (top_screen) ? 76 : 36;
-    u32 menublock_x1 = (top_screen) ? 50 : 10;
+    u32 menublock_x1 = (top_screen) ? 52 : 12;
     u32 menublock_y0 = 40;
     u32 menublock_y1 = menublock_y0 + currMenu->n_entries * 10;
     
@@ -47,7 +48,7 @@ void DrawMenu(MenuInfo* currMenu, u32 index, bool fullDraw, bool subMenu)
         DrawStringF(menublock_x0, menublock_y1 + 10, top_screen, (subMenu) ? "A: Choose  B: Return" : "A: Choose");
         DrawStringF(menublock_x0, menublock_y1 + 20, top_screen, "SELECT: Unmount SD");
         DrawStringF(menublock_x0, menublock_y1 + 30, top_screen, "START:  Reboot");
-        DrawStringF(menublock_x1, SCREEN_HEIGHT - 20, top_screen, "Remaining SD storage space: %llu MiB", RemainingStorageSpace() / 1024 / 1024);
+        DrawStringF(menublock_x1, SCREEN_HEIGHT - 20, top_screen, "SD card: %lluMB/%lluMB - %s", RemainingStorageSpace() / 1024 / 1024, TotalStorageSpace() / 1024 / 1024, (emunand_state == EMUNAND_READY) ? "EmuNAND ready" : (emunand_state == EMUNAND_GATEWAY) ? "GW EmuNAND" : (emunand_state == EMUNAND_REDNAND) ? "RedNAND" : "no EmuNAND");
         DrawStringF(menublock_x1, SCREEN_HEIGHT - 30, top_screen, "Game directory: %s", GAME_DIR);
         #ifdef WORK_DIR
         if (DirOpen(WORK_DIR)) {
@@ -68,8 +69,9 @@ void DrawMenu(MenuInfo* currMenu, u32 index, bool fullDraw, bool subMenu)
 
 u32 ProcessEntry(MenuEntry* entry)
 {
-    bool emunand = entry->param & N_EMUNAND;
-    bool warning = entry->param & N_NANDWRITE;
+    bool emunand    = entry->param & N_EMUNAND;
+    bool nand_force = entry->param & N_FORCENAND;
+    bool warning    = entry->param & N_NANDWRITE;
     
     u32 pad_state;
     u32 res = 0;
@@ -117,7 +119,7 @@ u32 ProcessEntry(MenuEntry* entry)
     LoadThemeGfx(GFX_PROGRESS, false);
     #endif
     DebugClear();
-    res = (SetNand(emunand) == 0) ? (*(entry->function))(entry->param) : 1;
+    res = (SetNand(emunand, nand_force) == 0) ? (*(entry->function))(entry->param) : 1;
     Debug("%s: %s!", entry->name, (res == 0) ? "succeeded" : "failed");
     Debug("");
     Debug("Press B to return, START to reboot.");

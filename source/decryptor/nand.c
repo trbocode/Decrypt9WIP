@@ -21,37 +21,54 @@ static u32 emunand_header = 0;
 static u32 emunand_offset = 0;
 
 
-u32 SetNand(bool use_emunand)
+u32 CheckEmuNand(void)
 {
     u8* buffer = BUFFER_ADDRESS;
+    u32 nand_size_sectors = getMMCDevice(0)->total_size;
     
-    if (use_emunand) {
-        u32 nand_size_sectors = getMMCDevice(0)->total_size;
-        // check the MBR for presence of EmuNAND
-        sdmmc_sdcard_readsectors(0, 1, buffer);
-        if (nand_size_sectors > getle32(buffer + 0x1BE + 0x8)) {
-            Debug("SD is not formatted for EmuNAND");
-            return 1;
+    // check the MBR for presence of EmuNAND
+    sdmmc_sdcard_readsectors(0, 1, buffer);
+    if (nand_size_sectors > getle32(buffer + 0x1BE + 0x8))
+        return EMUNAND_NOT_READY;
+    
+    // check for Gateway type EmuNAND
+    sdmmc_sdcard_readsectors(nand_size_sectors, 1, buffer);
+    if (memcmp(buffer + 0x100, "NCSD", 4) == 0)
+        return EMUNAND_GATEWAY;
+    
+    // check for RedNAND type EmuNAND
+    sdmmc_sdcard_readsectors(1, 1, buffer);
+    if (memcmp(buffer + 0x100, "NCSD", 4) == 0)
+        return EMUNAND_REDNAND;
+        
+    // EmuNAND ready but not set up
+    return EMUNAND_READY;
+}
+
+u32 SetNand(bool set_emunand, bool force_emunand)
+{
+    if (set_emunand) {
+        u32 emunand_state = CheckEmuNand();
+        if ((emunand_state == EMUNAND_READY) && force_emunand)
+            emunand_state = EMUNAND_GATEWAY;
+        switch (emunand_state) {
+            case EMUNAND_NOT_READY:
+                Debug("SD is not formatted for EmuNAND");
+                return 1;
+            case EMUNAND_GATEWAY:
+                emunand_header = getMMCDevice(0)->total_size;
+                emunand_offset = 0;
+                Debug("Using EmuNAND @ %06X/%06X", emunand_header, emunand_offset);
+                return 0;
+            case EMUNAND_REDNAND:
+                emunand_header = 1;
+                emunand_offset = 1;
+                Debug("Using RedNAND @ %06X/%06X", emunand_header, emunand_offset);
+                return 0;
+            default:
+                Debug("EmuNAND is not available");
+                return 1;
         }
-        // check for Gateway type EmuNAND
-        sdmmc_sdcard_readsectors(nand_size_sectors, 1, buffer);
-        if (memcmp(buffer + 0x100, "NCSD", 4) == 0) {
-            emunand_header = nand_size_sectors;
-            emunand_offset = 0;
-            Debug("Using EmuNAND @ %06X/%06X", emunand_header, emunand_offset);
-            return 0;
-        }
-        // check for RedNAND type EmuNAND
-        sdmmc_sdcard_readsectors(1, 1, buffer);
-        if (memcmp(buffer + 0x100, "NCSD", 4) == 0) {
-            emunand_header = 1;
-            emunand_offset = 1;
-            Debug("Using RedNAND @ %06X/%06X", emunand_header, emunand_offset);
-            return 0;
-        }
-        // no EmuNAND found
-        Debug("EmuNAND is not available");
-        return 1;
     } else {
         emunand_header = 0;
         emunand_offset = 0;

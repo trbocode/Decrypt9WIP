@@ -15,8 +15,15 @@
 
 // these two are not handled by the feature functions
 // they have to be handled by the menu system
-#define N_EMUNAND   (1<<30)
+#define N_EMUNAND   (1<<29)
+#define N_FORCENAND (1<<30)
 #define N_NANDWRITE (1<<31)
+
+// return values for the CheckEmuNAND() function
+#define EMUNAND_NOT_READY 0
+#define EMUNAND_READY     1
+#define EMUNAND_GATEWAY   2
+#define EMUNAND_REDNAND   3
 
 typedef struct {
     char name[16];
@@ -39,7 +46,8 @@ u32 EncryptFileToNand(const char* filename, u32 offset, u32 size, PartitionInfo*
 u32 InjectNandPartition(PartitionInfo* p);
 
 // --> FEATURE FUNCTIONS <--
-u32 SetNand(bool use_emunand);
+u32 CheckEmuNand(void);
+u32 SetNand(bool set_emunand, bool force_emunand);
 
 u32 CtrNandPadgen(u32 param);
 u32 TwlNandPadgen(u32 param);

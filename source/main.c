@@ -1,7 +1,6 @@
 #include "common.h"
 #include "draw.h"
 #include "fs.h"
-#include "hid.h"
 #include "menu.h"
 #include "i2c.h"
 #include "decryptor/game.h"
@@ -48,7 +47,7 @@ MenuInfo menu[] =
         "EmuNAND Options", 9,
         {
             { "EmuNAND Backup",               &DumpNand,              N_EMUNAND },
-            { "EmuNAND Restore",              &RestoreNand,           N_NANDWRITE | N_EMUNAND },
+            { "EmuNAND Restore",              &RestoreNand,           N_NANDWRITE | N_EMUNAND | N_FORCENAND },
             { "Partition Dump...",            NULL,                   SUBMENU_START + 1 },
             { "Partition Inject...",          NULL,                   SUBMENU_START + 3 },
             { "File Dump...",                 NULL,                   SUBMENU_START + 5 },

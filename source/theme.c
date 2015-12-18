@@ -1,6 +1,7 @@
 #include "theme.h"
 #ifdef USE_THEME
 #include "fs.h"
+#include "decryptor/nand.h"
 
 bool ImportFrameBuffer(const char* path, u32 use_top) {
     u32 bufsize = BYTES_PER_PIXEL * SCREEN_HEIGHT * ((use_top) ? SCREEN_WIDTH_TOP : SCREEN_WIDTH_BOT);
@@ -36,7 +37,8 @@ void LoadThemeGfxMenu(u32 index) {
 void LoadThemeGfxLogo(void) {
     LoadThemeGfx(GFX_LOGO, LOGO_TOP);
     #if defined LOGO_TEXT_X && defined LOGO_TEXT_Y
-    DrawStringF(LOGO_TEXT_X, LOGO_TEXT_Y -  0, LOGO_TOP, "Remaining SD storage space: %llu MiB", RemainingStorageSpace() / 1024 / 1024);
+    u32 emunand_state = CheckEmuNand();
+    DrawStringF(LOGO_TEXT_X, LOGO_TEXT_Y -  0, LOGO_TOP, "SD card: %lluMB free / %lluMB total / %s", RemainingStorageSpace() / 1024 / 1024, TotalStorageSpace() / 1024 / 1024, (emunand_state == EMUNAND_READY) ? "EmuNAND ready" : (emunand_state == EMUNAND_GATEWAY) ? "GW EmuNAND" : (emunand_state == EMUNAND_REDNAND) ? "RedNAND" : "No EmuNAND");
     DrawStringF(LOGO_TEXT_X, LOGO_TEXT_Y - 10, LOGO_TOP, "Game directory: %s", GAME_DIR);
     #ifdef WORK_DIR
     if (DirOpen(WORK_DIR)) {
