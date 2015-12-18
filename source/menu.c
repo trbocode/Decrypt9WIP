@@ -8,6 +8,63 @@
 #include "decryptor/nand.h"
 
 
+#ifdef LOG_FILE
+u32 ScrollOutput()
+{
+    u32 log_start = LogWrite(NULL);
+    
+    // careful, these areas are used by other functions in Decrypt9
+    char** logptr = (char**) 0x20316000;
+    char* logtext = (char*)  0x20400000;
+    u32 log_size = 0; // log size
+    u32 l_total = 0; // total lines
+    u32 l_curr = 0; // current line
+    
+    if (!FileOpen(LOG_FILE))
+        return 0;
+    log_size = FileGetSize();
+    if ((log_size <= log_start) || (log_size - log_start >= 1024 * 1024)) {
+        FileClose();
+        return 0; // allow 1MB of text max
+    }
+    log_size -= log_start;
+    if (!FileRead(logtext, log_size, log_start)) {
+        FileClose();
+        return 0;
+    }
+    FileClose();
+    
+    // read lines
+    logtext[log_size - 1] = '\0';
+    for (char* line = logtext; line != NULL && l_total < 4000; line = strchr(line, '\n')) {
+        *line = '\0';
+        logptr[l_total++] = ++line; 
+    }
+    if (l_total >= 4000) // allow 4000 lines of text max
+        return 0;
+    for (; l_total < DBG_N_CHARS_Y; logptr[l_total++] = logtext + log_size - 1);
+    
+    // here, the actual output starts
+    l_curr = l_total - DBG_N_CHARS_Y ;
+    if (l_curr > 0) l_curr--; // start at the line before the last
+    while (true) {
+        DebugSet((const char**) logptr + l_curr);
+        u32 pad_state = InputWait();
+        if (pad_state & BUTTON_X) {
+            Screenshot(NULL);
+        } else if ((pad_state & BUTTON_UP) && (l_curr > 0)) {
+            l_curr--;
+        } else if ((pad_state & BUTTON_DOWN) && (l_curr < l_total - DBG_N_CHARS_Y)) {
+            l_curr++;
+        } else if (pad_state & (BUTTON_B | BUTTON_START)) {
+            return pad_state;
+        }
+    }
+    
+    return 0;
+}
+#endif
+
 u32 UnmountSd()
 {
     u32 pad_state;
@@ -48,7 +105,7 @@ void DrawMenu(MenuInfo* currMenu, u32 index, bool fullDraw, bool subMenu)
         DrawStringF(menublock_x0, menublock_y1 + 10, top_screen, (subMenu) ? "A: Choose  B: Return" : "A: Choose");
         DrawStringF(menublock_x0, menublock_y1 + 20, top_screen, "SELECT: Unmount SD");
         DrawStringF(menublock_x0, menublock_y1 + 30, top_screen, "START:  Reboot");
-        DrawStringF(menublock_x1, SCREEN_HEIGHT - 20, top_screen, "SD card: %lluMB/%lluMB - %s", RemainingStorageSpace() / 1024 / 1024, TotalStorageSpace() / 1024 / 1024, (emunand_state == EMUNAND_READY) ? "EmuNAND ready" : (emunand_state == EMUNAND_GATEWAY) ? "GW EmuNAND" : (emunand_state == EMUNAND_REDNAND) ? "RedNAND" : "no EmuNAND");
+        DrawStringF(menublock_x1, SCREEN_HEIGHT - 20, top_screen, "SD card: %lluMB/%lluMB & %s", RemainingStorageSpace() / 1024 / 1024, TotalStorageSpace() / 1024 / 1024, (emunand_state == EMUNAND_READY) ? "EmuNAND ready" : (emunand_state == EMUNAND_GATEWAY) ? "GW EmuNAND" : (emunand_state == EMUNAND_REDNAND) ? "RedNAND" : "no EmuNAND");
         DrawStringF(menublock_x1, SCREEN_HEIGHT - 30, top_screen, "Game directory: %s", GAME_DIR);
         #ifdef WORK_DIR
         if (DirOpen(WORK_DIR)) {
@@ -126,7 +183,15 @@ u32 ProcessEntry(MenuEntry* entry)
     #ifdef USE_THEME
     LoadThemeGfx((res == 0) ? GFX_DONE : GFX_FAILED, false);
     #endif
-    while(!(pad_state = InputWait() & (BUTTON_B | BUTTON_START)));
+    while(!((pad_state = InputWait()) & (BUTTON_B | BUTTON_START))) {
+        if (pad_state & BUTTON_X) Screenshot(NULL);
+        #ifdef LOG_FILE
+        else if (pad_state & BUTTON_UP) {
+            pad_state = ScrollOutput();
+            break;
+        }
+        #endif
+    }
     
     // returns the last known pad_state
     return pad_state;

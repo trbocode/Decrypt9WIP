@@ -12,22 +12,7 @@
 #include "fs.h"
 #ifdef USE_THEME
 #include "theme.h"
-#else
-#define STD_COLOR_BG   COLOR_BLACK
-#define STD_COLOR_FONT COLOR_WHITE
-
-#define DBG_COLOR_BG   COLOR_BLACK
-#define DBG_COLOR_FONT COLOR_WHITE
-
-#define DBG_START_Y 10
-#define DBG_END_Y   (SCREEN_HEIGHT - 10)
-#define DBG_START_X 10
-#define DBG_END_X   (SCREEN_WIDTH_TOP - 10)
-#define DBG_STEP_Y  10
 #endif
-
-#define DBG_N_CHARS_Y   ((DBG_END_Y - DBG_START_Y) / DBG_STEP_Y)
-#define DBG_N_CHARS_X   (((DBG_END_X - DBG_START_X) / 8) + 1)
 
 static char debugstr[DBG_N_CHARS_X * DBG_N_CHARS_Y] = { 0 };
 
@@ -84,11 +69,11 @@ void DrawString(u8* screen, const char *str, int x, int y, int color, int bgcolo
 
 void DrawStringF(int x, int y, bool use_top, const char *format, ...)
 {
-    char str[256] = {};
+    char str[512] = {}; // 512 should be more than enough
     va_list va;
 
     va_start(va, format);
-    vsnprintf(str, 256, format, va);
+    vsnprintf(str, 512, format, va);
     va_end(va);
 
     if (use_top) {
@@ -151,6 +136,23 @@ void DebugClear()
     LogWrite("");
 }
 
+void DebugSet(const char **strs)
+{
+    if (strs != NULL) for (int y = 0; y < DBG_N_CHARS_Y; y++) {
+        int pos_dbgstr = DBG_N_CHARS_X * (DBG_N_CHARS_Y - 1 - y);
+        snprintf(debugstr + pos_dbgstr, DBG_N_CHARS_X, "%-*.*s", DBG_N_CHARS_X - 1, DBG_N_CHARS_X - 1, strs[y]);
+    }
+    
+    int pos_y = DBG_START_Y;
+    for (char* str = debugstr + (DBG_N_CHARS_X * (DBG_N_CHARS_Y - 1)); str >= debugstr; str -= DBG_N_CHARS_X) {
+        if (str[0] != '\0') {
+            DrawString(TOP_SCREEN0, str, DBG_START_X, pos_y, DBG_COLOR_FONT, DBG_COLOR_BG);
+            DrawString(TOP_SCREEN1, str, DBG_START_X, pos_y, DBG_COLOR_FONT, DBG_COLOR_BG);
+            pos_y += DBG_STEP_Y;
+        }
+    }
+}
+
 void Debug(const char *format, ...)
 {
     char tempstr[128] = { 0 }; // 128 instead of DBG_N_CHARS_X for log file 
@@ -164,14 +166,7 @@ void Debug(const char *format, ...)
     memmove(debugstr + DBG_N_CHARS_X, debugstr, DBG_N_CHARS_X * (DBG_N_CHARS_Y - 1));
     snprintf(debugstr, DBG_N_CHARS_X, "%-*.*s", DBG_N_CHARS_X - 1, DBG_N_CHARS_X - 1, tempstr);
     
-    int pos_y = DBG_START_Y;
-    for (char* str = debugstr + (DBG_N_CHARS_X * (DBG_N_CHARS_Y - 1)); str >= debugstr; str -= DBG_N_CHARS_X) {
-        if (str[0] != '\0') {
-            DrawString(TOP_SCREEN0, str, DBG_START_X, pos_y, DBG_COLOR_FONT, DBG_COLOR_BG);
-            DrawString(TOP_SCREEN1, str, DBG_START_X, pos_y, DBG_COLOR_FONT, DBG_COLOR_BG);
-            pos_y += DBG_STEP_Y;
-        }
-    }
+    DebugSet(NULL);
 }
 
 void ShowProgress(u64 current, u64 total)

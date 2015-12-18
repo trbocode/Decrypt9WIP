@@ -223,17 +223,20 @@ bool GetFileList(const char* path, char* list, int lsize, bool recursive)
     return GetFileListWorker(&list, &lsize, fpath, 256, recursive);
 }
 
-bool LogWrite(const char* text)
+size_t LogWrite(const char* text)
 {
     #ifdef LOG_FILE
     static FIL lfile;
     static bool lready = false;
+    static size_t lstart = 0;
     
-    if (text == NULL) {
+    if ((text == NULL) && lready) {
         f_sync(&lfile);
         f_close(&lfile);
         lready = false;
-        return true;
+        return lstart; // return the log start
+    } else if (text == NULL) {
+        return 0;
     }
     
     if (!lready) {
@@ -246,8 +249,9 @@ bool LogWrite(const char* text)
         #else
         lready = (f_open(&lfile, LOG_FILE, flags) == FR_OK);
         #endif
-        if (!lready) return false;
-        f_lseek(&lfile, f_size(&lfile));
+        if (!lready) return 0;
+        lstart = f_size(&lfile);
+        f_lseek(&lfile, lstart);
         f_sync(&lfile);
     }
     
@@ -255,12 +259,12 @@ bool LogWrite(const char* text)
     UINT bytes_written;
     UINT tlen = strnlen(text, 128); 
     f_write(&lfile, text, tlen, &bytes_written);
-    if (bytes_written != tlen) return false;
+    if (bytes_written != tlen) return 0;
     f_write(&lfile, &newline, 1, &bytes_written);
-    if (bytes_written != 1) return false;
+    if (bytes_written != 1) return 0;
     #endif
     
-    return true;
+    return f_size(&lfile); // return the current position
 }
 
 static uint64_t ClustersToBytes(FATFS* fs, DWORD clusters)
