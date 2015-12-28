@@ -1028,7 +1028,7 @@ u32 CryptGameFiles(u32 param)
 }
 
 u32 CryptSdFiles(u32 param) {
-    const char* subpaths[] = {"backup", "dbs", "extdata", "title", NULL};
+    const char* subpaths[] = {"dbs", "extdata", "title", NULL};
     char* batch_dir = GAME_DIR;
     u32 n_processed = 0;
     u32 n_failed = 0;
