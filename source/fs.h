@@ -13,6 +13,9 @@ bool DebugFileOpen(const char* path);
 bool FileCreate(const char* path, bool truncate);
 bool DebugFileCreate(const char* path, bool truncate);
 
+/** Copies currently opened file to destination (must provide buffer) */
+size_t FileCopyTo(const char* dest, void* buf, size_t bufsize);
+
 /** Reads contents of the opened file */
 size_t FileRead(void* buf, size_t size, size_t foffset);
 bool DebugFileRead(void* buf, size_t size, size_t foffset);

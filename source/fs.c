@@ -78,6 +78,36 @@ bool DebugFileCreate(const char* path, bool truncate) {
     return true;
 }
 
+size_t FileCopyTo(const char* dest, void* buf, size_t bufsize)
+{
+    unsigned flags = FA_READ | FA_WRITE | FA_CREATE_ALWAYS;
+    size_t fsize = f_size(&file);
+    FIL dfile;
+    #ifdef WORK_DIR
+    if (*dest == '/' || *dest == '\\') dest++;
+    f_chdir(WORK_DIR);
+    bool ret = (f_open(&dfile, dest, flags) == FR_OK);
+    f_chdir("/");
+    #else
+    bool ret = (f_open(&dfile, dest, flags) == FR_OK);
+    #endif
+    if (!ret) return 0;
+    f_lseek(&dfile, 0);
+    f_sync(&dfile);
+    f_lseek(&file, 0);
+    f_sync(&file);
+    for (size_t pos = 0; pos < fsize; pos += bufsize) {
+        UINT bytes_read = 0;
+        UINT bytes_written = 0;
+        ShowProgress(pos, fsize);
+        f_read(&file, buf, bufsize, &bytes_read);
+        f_write(&file, buf, bytes_read, &bytes_written);
+        if (bytes_read != bytes_written) ret = false;
+    }
+    ShowProgress(0, 0); 
+    return (ret) ? fsize : 0;
+}
+
 size_t FileRead(void* buf, size_t size, size_t foffset)
 {
     UINT bytes_read = 0;
