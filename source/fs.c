@@ -14,7 +14,11 @@ bool InitFS()
     *(u32*)0x10000020 = 0;
     *(u32*)0x10000020 = 0x340;
 #endif
-    return (f_mount(&fs, "0:", 1) == FR_OK);
+    bool ret = (f_mount(&fs, "0:", 0) == FR_OK);
+#ifdef WORK_DIR
+    f_chdir(WORK_DIR);
+#endif
+    return ret;
 }
 
 void DeinitFS()
@@ -26,14 +30,13 @@ void DeinitFS()
 bool FileOpen(const char* path)
 {
     unsigned flags = FA_READ | FA_WRITE | FA_OPEN_EXISTING;
+    if (*path == '/')
+        path++;
+    bool ret = (f_open(&file, path, flags) == FR_OK);
     #ifdef WORK_DIR
-    if (*path == '/' || *path == '\\') path++;
-    f_chdir(WORK_DIR);
-    bool ret = (f_open(&file, path, flags) == FR_OK);
-    f_chdir("/");
+    f_chdir("/"); // temporarily change the current directory
     if (!ret) ret = (f_open(&file, path, flags) == FR_OK);
-    #else
-    bool ret = (f_open(&file, path, flags) == FR_OK);
+    f_chdir(WORK_DIR);
     #endif
     f_lseek(&file, 0);
     f_sync(&file);
@@ -55,14 +58,9 @@ bool FileCreate(const char* path, bool truncate)
 {
     unsigned flags = FA_READ | FA_WRITE;
     flags |= truncate ? FA_CREATE_ALWAYS : FA_OPEN_ALWAYS;
-    #ifdef WORK_DIR
-    if (*path == '/' || *path == '\\') path++;
-    f_chdir(WORK_DIR);
+    if (*path == '/')
+        path++;
     bool ret = (f_open(&file, path, flags) == FR_OK);
-    f_chdir("/");
-    #else
-    bool ret = (f_open(&file, path, flags) == FR_OK);
-    #endif
     f_lseek(&file, 0);
     f_sync(&file);
     return ret;
@@ -83,19 +81,13 @@ size_t FileCopyTo(const char* dest, void* buf, size_t bufsize)
     unsigned flags = FA_READ | FA_WRITE | FA_CREATE_ALWAYS;
     size_t fsize = f_size(&file);
     FIL dfile;
-    #ifdef WORK_DIR
-    if (*dest == '/' || *dest == '\\') dest++;
-    f_chdir(WORK_DIR);
     bool ret = (f_open(&dfile, dest, flags) == FR_OK);
-    f_chdir("/");
-    #else
-    bool ret = (f_open(&dfile, dest, flags) == FR_OK);
-    #endif
     if (!ret) return 0;
     f_lseek(&dfile, 0);
     f_sync(&dfile);
     f_lseek(&file, 0);
     f_sync(&file);
+    // make sure the folder exists (!!!)
     for (size_t pos = 0; pos < fsize; pos += bufsize) {
         UINT bytes_read = 0;
         UINT bytes_written = 0;
@@ -220,15 +212,17 @@ bool GetFileListWorker(char** list, int* lsize, char* fpath, int fsize, bool rec
     char* fname = fpath + strnlen(fpath, fsize - 1);
     bool ret = false;
     
-    if (f_opendir(&pdir, fpath) != FR_OK) return false;
+    if (f_opendir(&pdir, fpath) != FR_OK)
+        return false;
     (fname++)[0] = '/';
     fno.lfname = fname;
     fno.lfsize = fsize - (fname - fpath);
     
     while (f_readdir(&pdir, &fno) == FR_OK) {
-        if (fno.fname[0] == '.') continue;
+        if ((strncmp(fno.fname, ".", 2) == 0) || (strncmp(fno.fname, "..", 3) == 0))
+            continue; // filter out virtual entries
         if (fname[0] == 0)
-            strcpy(fname, fno.fname);
+            strncpy(fname, fno.fname, (fsize - 1) - (fname - fpath));
         if (fno.fname[0] == 0) {
             ret = true;
             break;
@@ -248,7 +242,7 @@ bool GetFileListWorker(char** list, int* lsize, char* fpath, int fsize, bool rec
 
 bool GetFileList(const char* path, char* list, int lsize, bool recursive)
 {
-    char fpath[256];
+    char fpath[256]; // 256 is the maximum length of a full path
     strncpy(fpath, path, 256);
     return GetFileListWorker(&list, &lsize, fpath, 256, recursive);
 }
@@ -264,21 +258,14 @@ size_t LogWrite(const char* text)
         f_sync(&lfile);
         f_close(&lfile);
         lready = false;
-        return lstart; // return the log start
+        return lstart; // return the current log start
     } else if (text == NULL) {
         return 0;
     }
     
     if (!lready) {
         unsigned flags = FA_READ | FA_WRITE | FA_OPEN_ALWAYS;
-        #ifdef WORK_DIR
-        f_chdir(WORK_DIR);
         lready = (f_open(&lfile, LOG_FILE, flags) == FR_OK);
-        f_chdir("/");
-        if (!lready) lready = (f_open(&lfile, LOG_FILE, flags) == FR_OK);
-        #else
-        lready = (f_open(&lfile, LOG_FILE, flags) == FR_OK);
-        #endif
         if (!lready) return 0;
         lstart = f_size(&lfile);
         f_lseek(&lfile, lstart);
