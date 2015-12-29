@@ -64,7 +64,7 @@ MenuInfo menu[] =
             { "NCCH/NCSD Encryptor",          &CryptGameFiles,        GC_NCCH_PROCESS | GC_NCCH_ENCRYPT },
             { "CIA Decryptor (shallow)",      &CryptGameFiles,        GC_CIA_PROCESS },
             { "CIA Decryptor (deep)",         &CryptGameFiles,        GC_CIA_PROCESS | GC_CIA_DEEP },
-            { "CIA Decryptor (for GW)",       &CryptGameFiles,        GC_CIA_PROCESS | GC_CIA_DEEP | GC_GWFIX },
+            { "CIA Decryptor (CXI only)",     &CryptGameFiles,        GC_CIA_PROCESS | GC_CIA_DEEP | GC_CXI_ONLY },
             { "SD Decryptor/Encryptor",       &CryptSdFiles,          0 }
         }
     },

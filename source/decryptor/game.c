@@ -708,7 +708,7 @@ u32 CryptNcch(const char* filename, u32 offset, u32 size, u64 seedId, u8* encryp
     return result;
 }
 
-u32 CryptCia(const char* filename, u8* ncch_crypt, bool cia_encrypt, u32 gw_fix)
+u32 CryptCia(const char* filename, u8* ncch_crypt, bool cia_encrypt, bool cxi_only)
 {
     u8* buffer = (u8*) 0x20316600;
     __attribute__((aligned(16))) u8 titlekey[16];
@@ -824,7 +824,7 @@ u32 CryptCia(const char* filename, u8* ncch_crypt, bool cia_encrypt, u32 gw_fix)
     
     if (ncch_crypt)
         Debug("Pass #1: CIA decryption...");
-    if (gw_fix) content_count = gw_fix;
+    if (cxi_only) content_count = 1;
     for (u32 i = 0; i < content_count; i++) {
         u32 size = getbe32(content_list + (0x30 * i) + 0xC);
         u32 offset = next_offset;
@@ -936,7 +936,7 @@ u32 CryptGameFiles(u32 param)
     bool batch_ncch = param & GC_NCCH_PROCESS;
     bool batch_cia = param & GC_CIA_PROCESS;
     bool cia_encrypt = param & GC_CIA_ENCRYPT;
-    bool gw_fix = param & GC_GWFIX;
+    bool cxi_only = param & GC_CXI_ONLY;
     u8* ncch_crypt = (param & GC_NCCH_ENCRYPT) ? ncch_crypt_standard : NULL;
     u8* cia_ncch_crypt = (param & GC_CIA_DEEP) ? ncch_crypt_none : ncch_crypt;
     
@@ -985,7 +985,7 @@ u32 CryptGameFiles(u32 param)
                 continue; // skip NAND backup NCSDs
             Debug("Processing NCSD \"%s\"", path + path_len);
             u32 p;
-            u32 nc = (gw_fix) ? 1 : 8;
+            u32 nc = (cxi_only) ? 1 : 8;
             for (p = 0; p < nc; p++) {
                 u64 seedId = (p) ? getle64(buffer + 0x108) : 0;
                 u32 offset = getle32(buffer + 0x120 + (p*0x8)) * 0x200;
@@ -1005,7 +1005,7 @@ u32 CryptGameFiles(u32 param)
             }
         } else if (batch_cia && (memcmp(buffer, "\x20\x20", 2) == 0)) {
             Debug("Processing CIA \"%s\"", path + path_len);
-            if (CryptCia(path, cia_ncch_crypt, cia_encrypt, (gw_fix) ? 1 : 0) == 0) {
+            if (CryptCia(path, cia_ncch_crypt, cia_encrypt, cxi_only) == 0) {
                 Debug("Success!");
                 n_processed++;
             } else {
@@ -1106,5 +1106,5 @@ u32 CryptSdFiles(u32 param) {
         }
     }
     
-    return 0;
+    return (n_processed) ? 0 : 1;
 }

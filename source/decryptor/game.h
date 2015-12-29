@@ -8,7 +8,7 @@
 #define GC_CIA_DEEP     (1<<2)
 #define GC_NCCH_ENCRYPT (1<<3)
 #define GC_CIA_ENCRYPT  (1<<4)
-#define GC_GWFIX        (1<<5)
+#define GC_CXI_ONLY     (1<<5)
 
 #define MAX_ENTRIES 1024
 
@@ -93,7 +93,7 @@ u32 CryptSdToSd(const char* filename, u32 offset, u32 size, CryptBufferInfo* inf
 u32 GetHashFromFile(const char* filename, u32 offset, u32 size, u8* hash);
 u32 CheckHashFromFile(const char* filename, u32 offset, u32 size, u8* hash);
 u32 CryptNcch(const char* filename, u32 offset, u32 size, u64 seedId, u8* encrypt_flags);
-u32 CryptCia(const char* filename, u8* ncch_crypt, bool cia_encrypt, u32 gw_fix);
+u32 CryptCia(const char* filename, u8* ncch_crypt, bool cia_encrypt, bool cxi_only);
 
 // --> FEATURE FUNCTIONS <--
 u32 NcchPadgen(u32 param);
