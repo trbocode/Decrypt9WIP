@@ -80,24 +80,39 @@ size_t FileCopyTo(const char* dest, void* buf, size_t bufsize)
 {
     unsigned flags = FA_READ | FA_WRITE | FA_CREATE_ALWAYS;
     size_t fsize = f_size(&file);
+    size_t result = fsize;
     FIL dfile;
-    bool ret = (f_open(&dfile, dest, flags) == FR_OK);
-    if (!ret) return 0;
+    // make sure the containing folder exists
+    char tmp[256] = { 0 };
+    strncpy(tmp, dest, sizeof(tmp) - 1);
+    for (char* p = tmp + 1; *p; p++) {
+        if (*p == '/') {
+            char s = *p;
+            *p = 0;
+            f_mkdir(tmp);
+            *p = s;
+        }
+    }
+    // do the actual copying
+    if (f_open(&dfile, dest, flags) != FR_OK)
+        return 0;
     f_lseek(&dfile, 0);
     f_sync(&dfile);
     f_lseek(&file, 0);
     f_sync(&file);
-    // make sure the folder exists (!!!)
     for (size_t pos = 0; pos < fsize; pos += bufsize) {
         UINT bytes_read = 0;
         UINT bytes_written = 0;
         ShowProgress(pos, fsize);
         f_read(&file, buf, bufsize, &bytes_read);
-        f_write(&file, buf, bytes_read, &bytes_written);
-        if (bytes_read != bytes_written) ret = false;
+        f_write(&dfile, buf, bytes_read, &bytes_written);
+        if (bytes_read != bytes_written) {
+            result = 0;
+        }
     }
-    ShowProgress(0, 0); 
-    return (ret) ? fsize : 0;
+    ShowProgress(0, 0);
+    f_close(&dfile);
+    return result;
 }
 
 size_t FileRead(void* buf, size_t size, size_t foffset)
