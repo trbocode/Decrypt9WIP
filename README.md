@@ -111,7 +111,9 @@ This category includes all features that allow the decryption (and encryption) o
 ## Credits by d0k3
 * Everyone mentioned by Archshift above
 * Archshift for starting this project and being a great project maintainer
-* Shadowtrance, dark_samus3 and Syphurith for being of great help developing this
+* patois, delebile, SteveIce10 for Brahma and it's updates
+* mid-kid for CakeHax
+* Shadowtrance, dark_samus3, Syphurith for being of great help developing this
 * profi200 for helpful hints that first made developing some features possible
 * Datalogger, zoogie, atkfromabove, mixups, key1340, k8099 and countless others from the GBAtemp forums for testing, feedback and helpful hints
 * Everyone I forgot about - if you think you deserve to be mentioned, just contact me
