@@ -26,8 +26,8 @@ MenuInfo menu[] =
         "Titlekey Decrypt Options", 3,
         {
             { "Titlekey Decrypt (file)",      &DecryptTitlekeysFile,  0 },
-            { "Titlekey Decrypt (NAND)",      &DecryptTitlekeysNand,  0 },
-            { "Titlekey Decrypt (EMU)",       &DecryptTitlekeysNand,  N_EMUNAND }
+            { "Titlekey Decrypt (SysNAND)",   &DecryptTitlekeysNand,  0 },
+            { "Titlekey Decrypt (EmuNAND)",   &DecryptTitlekeysNand,  N_EMUNAND }
         }
     },
     {
