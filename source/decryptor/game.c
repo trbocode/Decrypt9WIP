@@ -35,20 +35,31 @@ u32 GetSdCtr(u8* ctr, const char* path)
     return 0;
 }
 
-u32 SdInfoGen(SdInfo* info)
+u32 SdInfoGen(SdInfo* info, u8* keyY)
 {
     char* filelist = (char*)0x20400000;
+    char base_path[64];
     
     Debug("Generating SDinfo.bin in memory...");
     
-    if (!GetFileList("/Nintendo 3DS", filelist, 0x100000, true)) {
+    // the keyY is used to generate a proper base path
+    // see here: https://www.3dbrew.org/wiki/Nand/private/movable.sed
+    u32 sha256sum[8];
+    sha_init(SHA256_MODE);
+    sha_update(keyY, 16);
+    sha_get(sha256sum);
+    snprintf(base_path, 63, "/Nintendo 3DS/%08X%08X%08X%08X",
+        (unsigned int) sha256sum[0], (unsigned int) sha256sum[1],
+        (unsigned int) sha256sum[2], (unsigned int) sha256sum[3]);
+    Debug("id0 is %s", base_path + 14);
+    if (!GetFileList(base_path, filelist, 0x100000, true)) {
         Debug("Failed retrieving the filelist");
     }
     
     u32 n_entries = 0;
     SdInfoEntry* entries = info->entries;
     for (char* path = strtok(filelist, "\n"); path != NULL; path = strtok(NULL, "\n")) {
-        u32 plen = strnlen(path, 256);
+        u32 plen = strnlen(path, 255);
         if ((strncmp(path, "/Nintendo 3DS/Private/", 22) == 0) || (plen < 13 + 33 + 33))
             continue;
         // get size in MB
@@ -59,7 +70,7 @@ u32 SdInfoGen(SdInfo* info)
         // skip to relevant part of path
         path += 13 + 33 + 33; // length of ("/Nintendo 3DS" + "/<id0>" + "/<id1>")
         plen -= 13 + 33 + 33;
-        if ((path[0] != '/') || (plen >= 128))
+        if ((strncmp(path, "/dbs", 4) != 0) && (strncmp(path, "/extdata", 8) != 0) && (strncmp(path, "/title", 6) != 0))
             continue;
         // get filename
         char* filename = entries[n_entries].filename;
@@ -69,17 +80,7 @@ u32 SdInfoGen(SdInfo* info)
         strncpy(filename + plen, ".xorpad", (180 - 1) - plen);
         // get AES counter
         GetSdCtr(entries[n_entries].ctr, path);
-        // duplicate check
-        u32 entry_pos;
-        for (entry_pos = 0; entry_pos < n_entries; entry_pos++)
-            if (strncmp(entries[n_entries].filename, entries[entry_pos].filename, 180) == 0)
-                break;
-        if (entry_pos < n_entries) {
-            entries[entry_pos].size_mb = max(entries[entry_pos].size_mb, entries[n_entries].size_mb);
-        } else {
-            n_entries++;
-        }
-        if (n_entries >= MAX_ENTRIES)
+        if (++n_entries >= MAX_ENTRIES)
             break;
     }
     info->n_entries = n_entries;
@@ -232,25 +233,40 @@ u32 NcchPadgen(u32 param)
 u32 SdPadgen(u32 param)
 {
     u32 result;
-    SdInfo *info = (SdInfo*)0x20316000;
-    u8 movable_seed[0x120] = {0};
+    SdInfo *info = (SdInfo*) 0x20316200;
+    u8* movable_sed = (u8*) 0x20316000;
+    bool direct_gen = (param & SD_DIRECT);
 
     // Load console 0x34 keyY from movable.sed if present on SD card
-    if (DebugFileOpen("movable.sed")) {
-        if (!DebugFileRead(&movable_seed, 0x120, 0)) {
+    // With the direct_gen option, load movable.sed from NAND
+    if (direct_gen || DebugFileOpen("movable.sed")) {
+        if (direct_gen) {
+            PartitionInfo* p_info = GetPartitionInfo(P_CTRNAND);
+            u32 offset;
+            u32 size;
+            if (DebugSeekFileInNand(&offset, &size, "movable.sed", "PRIVATE    MOVABLE SED", p_info) != 0)
+                return 1;
+            if (size < 0x120) {
+                Debug("movable.sed has bad size!");
+                return 1;
+            }
+            DecryptNandToMem(movable_sed, offset, 0x120, p_info);
+        } else {
+            if (!DebugFileRead(movable_sed, 0x120, 0)) {
+                FileClose();
+                return 1;
+            }
             FileClose();
-            return 1;
         }
-        FileClose();
-        if (memcmp(movable_seed, "SEED", 4) != 0) {
+        if (memcmp(movable_sed, "SEED", 4) != 0) {
             Debug("movable.sed is corrupt!");
             return 1;
         }
-        setup_aeskeyY(0x34, &movable_seed[0x110]);
+        setup_aeskeyY(0x34, movable_sed + 0x110);
         use_aeskey(0x34);
     }
 
-    if (DebugFileOpen("SDinfo.bin")) {
+    if (!direct_gen && DebugFileOpen("SDinfo.bin")) {
         if (!DebugFileRead(info, 4, 0)) {
             FileClose();
             return 1;
@@ -265,12 +281,15 @@ u32 SdPadgen(u32 param)
             return 1;
         }
         FileClose();
-    } else if (SdInfoGen(info) != 0) {
+    } else if (direct_gen) {
+        if (SdInfoGen(info, movable_sed + 0x110) != 0)
+            return 1;
+    } else {
         return 1;
     }
-
+    
     Debug("Number of entries: %i", info->n_entries);
-
+    
     for(u32 i = 0; i < info->n_entries; i++) {
         Debug ("Creating pad number: %i. Size (MB): %i", i+1, info->entries[i].size_mb);
 

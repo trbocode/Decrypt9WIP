@@ -3,6 +3,8 @@
 #include "common.h"
 #include "decryptor/decryptor.h"
 
+#define SD_DIRECT       (1<<0)
+
 #define GC_NCCH_PROCESS (1<<0)
 #define GC_CIA_PROCESS  (1<<1)
 #define GC_CIA_DEEP     (1<<2)
@@ -88,7 +90,7 @@ typedef struct {
 
 
 u32 GetSdCtr(u8* ctr, const char* path);
-u32 SdInfoGen(SdInfo* info);
+u32 SdInfoGen(SdInfo* info, u8* keyY);
 u32 CryptSdToSd(const char* filename, u32 offset, u32 size, CryptBufferInfo* info);
 u32 GetHashFromFile(const char* filename, u32 offset, u32 size, u8* hash);
 u32 CheckHashFromFile(const char* filename, u32 offset, u32 size, u8* hash);
