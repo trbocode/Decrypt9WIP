@@ -13,7 +13,7 @@
 #define P_CTRNAND (1<<5)
 #define P_ALL     (P_TWLN | P_TWLP | P_AGBSAVE | P_FIRM0 | P_FIRM1 | P_CTRNAND)
 
-// these two are not handled by the feature functions
+// these three are not handled by the feature functions
 // they have to be handled by the menu system
 #define N_EMUNAND   (1<<29)
 #define N_FORCENAND (1<<30)
