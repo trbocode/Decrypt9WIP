@@ -41,7 +41,7 @@ bool DebugDirOpen(const char* path);
 bool DirRead(char* fname, int fsize);
 
 /** Get list of files under a given path **/
-bool GetFileList(const char* path, char* list, int lsize, bool recursive);
+bool GetFileList(const char* path, char* list, int lsize, bool recursive, bool inc_files, bool inc_dirs);
 
 /** Writes text to a constantly open log file **/
 size_t LogWrite(const char* text);

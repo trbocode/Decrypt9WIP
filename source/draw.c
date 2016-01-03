@@ -163,10 +163,14 @@ void Debug(const char *format, ...)
     va_start(va, format);
     vsnprintf(tempstr, 128, format, va);
     va_end(va);
-    LogWrite(tempstr);
     
-    memmove(debugstr + DBG_N_CHARS_X, debugstr, DBG_N_CHARS_X * (DBG_N_CHARS_Y - 1));
-    snprintf(debugstr, DBG_N_CHARS_X, "%-*.*s", DBG_N_CHARS_X - 1, DBG_N_CHARS_X - 1, tempstr);
+    if (*tempstr != '\r') { // not a good way of doing this - improve this later
+        LogWrite(tempstr);
+        memmove(debugstr + DBG_N_CHARS_X, debugstr, DBG_N_CHARS_X * (DBG_N_CHARS_Y - 1));
+        snprintf(debugstr, DBG_N_CHARS_X, "%-*.*s", DBG_N_CHARS_X - 1, DBG_N_CHARS_X - 1, tempstr);
+    } else {
+        snprintf(debugstr, DBG_N_CHARS_X, "%-*.*s", DBG_N_CHARS_X - 1, DBG_N_CHARS_X - 1, tempstr + 1);
+    }
     
     DebugSet(NULL);
 }

@@ -1,5 +1,6 @@
 #include "fs.h"
 #include "draw.h"
+#include "hid.h"
 #include "platform.h"
 #include "decryptor/aes.h"
 #include "decryptor/sha.h"
@@ -35,33 +36,98 @@ u32 GetSdCtr(u8* ctr, const char* path)
     return 0;
 }
 
-u32 SdInfoGen(SdInfo* info, u8* keyY)
+u32 SdFolderSelector(char* path, u8* keyY)
 {
-    char* filelist = (char*)0x20400000;
-    char base_path[64];
-    
-    Debug("Generating SDinfo.bin in memory...");
+    char** dirptr = (char**) 0x20400000; // allow using 0x8000 byte
+    char* dirlist = (char*) 0x20408000; // allow using 0x80000 byte
+    u32 n_dirs = 0;
     
     // the keyY is used to generate a proper base path
     // see here: https://www.3dbrew.org/wiki/Nand/private/movable.sed
     u32 sha256sum[8];
+    char base_path[64];
     sha_init(SHA256_MODE);
     sha_update(keyY, 16);
     sha_get(sha256sum);
     snprintf(base_path, 63, "/Nintendo 3DS/%08X%08X%08X%08X",
         (unsigned int) sha256sum[0], (unsigned int) sha256sum[1],
         (unsigned int) sha256sum[2], (unsigned int) sha256sum[3]);
-    Debug("id0 is %s", base_path + 14);
-    if (!GetFileList(base_path, filelist, 0x100000, true)) {
+    Debug("<id0> is %s", base_path + 14);
+    if (!GetFileList(base_path, dirlist, 0x80000, true, false, true)) {
+        Debug("Failed retrieving the dirlist");
+        return 1;
+    }
+    
+    // parse the dirlist for usable entries
+    for (char* dir = strtok(dirlist, "\n"); dir != NULL; dir = strtok(NULL, "\n")) {
+        if (strnlen(dir, 256) <= 13 + 33 + 33)
+            continue;
+        if (strchrcount(dir, '/') > 6)
+            continue; // allow a maximum depth of 6 for the full folder
+        char* subdir = dir + 13 + 33 + 33; // length of ("/Nintendo 3DS" + "/<id0>" + "/<id1>");
+        if ((strncmp(subdir, "/dbs", 4) != 0) && (strncmp(subdir, "/extdata", 8) != 0) && (strncmp(subdir, "/title", 6) != 0))
+            continue;
+        dirptr[n_dirs++] = dir;
+        if (n_dirs * sizeof(char**) >= 0x8000)
+            return 1;
+    }
+    if (n_dirs == 0)
+        return 1;
+    
+    // let the user choose a directory
+    u32 index = 0;
+    strncpy(path, dirptr[0], 128);
+    Debug("Use arrow keys and <A> to choose a folder");
+    Debug("%s", path + 13 + 33 + 33);
+    while (true) {
+        u32 pad_state = InputWait();
+        u32 cur_lvl = strchrcount(path, '/');
+        if (pad_state & BUTTON_DOWN) { // find next path of same level
+            do {
+                if (++index >= n_dirs)
+                    index = 0;
+            } while (strchrcount(dirptr[index], '/') != cur_lvl);
+        } else if (pad_state & BUTTON_UP) { // find prev path of same level
+            do {
+                index = (index) ? index - 1 : n_dirs - 1;
+            } while (strchrcount(dirptr[index], '/') != cur_lvl);
+        } else if ((pad_state & BUTTON_RIGHT) && (cur_lvl < 6)) { // up one level
+            if ((index < n_dirs - 1) && (strchrcount(dirptr[index+1], '/') > cur_lvl))
+                index++; // this only works because of the sorting of the dir list
+        } else if ((pad_state & BUTTON_LEFT) && (cur_lvl > 4)) { // down one level
+            while ((index > 0) && (cur_lvl == strchrcount(dirptr[index], '/')))
+                index--;
+        } else if (pad_state & BUTTON_A) {
+            break;
+        }
+        strncpy(path, dirptr[index], 128);
+        Debug("\r%s", path + 13 + 33 + 33);
+    }
+    
+    return 0;
+}
+
+u32 SdInfoGen(SdInfo* info, const char* base_path)
+{
+    char* filelist = (char*)0x20400000;
+    
+    // check the base path for validity
+    if ((strncmp(base_path, "/Nintendo 3DS", 13) != 0 ) || (strncmp(base_path, "/Nintendo 3DS/Private/", 22) == 0) ||
+        (strnlen(base_path, 255) < 13 + 33 + 33)) {
+        Debug("Invalid base path given");
+        return 1;
+    }
+        
+    Debug("Generating SDinfo.bin in memory...");
+    if (!GetFileList(base_path, filelist, 0x100000, true, true, false)) {
         Debug("Failed retrieving the filelist");
+        return 1;
     }
     
     u32 n_entries = 0;
     SdInfoEntry* entries = info->entries;
     for (char* path = strtok(filelist, "\n"); path != NULL; path = strtok(NULL, "\n")) {
         u32 plen = strnlen(path, 255);
-        if ((strncmp(path, "/Nintendo 3DS/Private/", 22) == 0) || (plen < 13 + 33 + 33))
-            continue;
         // get size in MB
         if (!FileOpen(path))
             continue;
@@ -265,7 +331,7 @@ u32 SdPadgen(u32 param)
         setup_aeskeyY(0x34, movable_sed + 0x110);
         use_aeskey(0x34);
     }
-
+    
     if (!direct_gen && DebugFileOpen("SDinfo.bin")) {
         if (!DebugFileRead(info, 4, 0)) {
             FileClose();
@@ -282,8 +348,19 @@ u32 SdPadgen(u32 param)
         }
         FileClose();
     } else if (direct_gen) {
-        if (SdInfoGen(info, movable_sed + 0x110) != 0)
+        char base_path[256];
+        Debug("");
+        if (SdFolderSelector(base_path, movable_sed + 0x110) != 0) {
+            Debug("No valid SD data found");
             return 1;
+        }
+        Debug("");
+        if (SdInfoGen(info, base_path) != 0)
+            return 1;
+        if (!info->n_entries) {
+            Debug("Nothing found in selected folder");
+            return 1;
+        }
     } else {
         return 1;
     }
@@ -1099,7 +1176,7 @@ u32 CryptSdFiles(u32 param) {
         u32 bplen;
         Debug("Processing subpath \"%s\"...", subpaths[s]);
         sprintf(basepath, "%s/%s", batch_dir, subpaths[s]);
-        if (!GetFileList(basepath, filelist, 0x100000, true)) {
+        if (!GetFileList(basepath, filelist, 0x100000, true, true, false)) {
             Debug("Not found!");
             continue;
         }

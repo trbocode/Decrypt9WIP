@@ -90,7 +90,8 @@ typedef struct {
 
 
 u32 GetSdCtr(u8* ctr, const char* path);
-u32 SdInfoGen(SdInfo* info, u8* keyY);
+u32 SdFolderSelector(char* path, u8* keyY);
+u32 SdInfoGen(SdInfo* info, const char* base_path);
 u32 CryptSdToSd(const char* filename, u32 offset, u32 size, CryptBufferInfo* info);
 u32 GetHashFromFile(const char* filename, u32 offset, u32 size, u8* hash);
 u32 CheckHashFromFile(const char* filename, u32 offset, u32 size, u8* hash);

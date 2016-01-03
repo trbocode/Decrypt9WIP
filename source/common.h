@@ -56,3 +56,12 @@ inline char* strlower(const char* str) {
         buffer[i] = tolower((unsigned)str[i]);
     return buffer;
 }
+
+inline u32 strchrcount(const char* str, char symbol) {
+    u32 count = 0;
+    for (u32 i = 0; str[i] != '\0'; i++) {
+        if (str[i] == symbol)
+            count++;
+    }
+    return count;
+}

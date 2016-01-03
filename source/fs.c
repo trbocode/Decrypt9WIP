@@ -220,7 +220,7 @@ void DirClose()
     f_closedir(&dir);
 }
 
-bool GetFileListWorker(char** list, int* lsize, char* fpath, int fsize, bool recursive)
+bool GetFileListWorker(char** list, int* lsize, char* fpath, int fsize, bool recursive, bool inc_files, bool inc_dirs)
 {
     DIR pdir;
     FILINFO fno;
@@ -241,13 +241,14 @@ bool GetFileListWorker(char** list, int* lsize, char* fpath, int fsize, bool rec
         if (fno.fname[0] == 0) {
             ret = true;
             break;
-        } else if (fno.fattrib & AM_DIR) {
-            if (recursive && !GetFileListWorker(list, lsize, fpath, fsize, recursive))
-                break;
-        } else {
+        } else if ((inc_files && !(fno.fattrib & AM_DIR)) || (inc_dirs && (fno.fattrib & AM_DIR))) {
             snprintf(*list, *lsize, "%s\n", fpath);
             for(;(*list)[0] != '\0' && (*lsize) > 1; (*list)++, (*lsize)--); 
             if ((*lsize) <= 1) break;
+        }
+        if (recursive && (fno.fattrib & AM_DIR)) {
+            if (!GetFileListWorker(list, lsize, fpath, fsize, recursive, inc_files, inc_dirs))
+                break;
         }
     }
     f_closedir(&pdir);
@@ -255,11 +256,11 @@ bool GetFileListWorker(char** list, int* lsize, char* fpath, int fsize, bool rec
     return ret;
 }
 
-bool GetFileList(const char* path, char* list, int lsize, bool recursive)
+bool GetFileList(const char* path, char* list, int lsize, bool recursive, bool inc_files, bool inc_dirs)
 {
     char fpath[256]; // 256 is the maximum length of a full path
     strncpy(fpath, path, 256);
-    return GetFileListWorker(&list, &lsize, fpath, 256, recursive);
+    return GetFileListWorker(&list, &lsize, fpath, 256, recursive, inc_files, inc_dirs);
 }
 
 size_t LogWrite(const char* text)
