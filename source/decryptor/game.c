@@ -203,7 +203,7 @@ u32 NcchPadgen(u32 param)
         FileClose();
         setup_aeskeyX(0x25, slot0x25KeyX);
     } else {
-        Debug("7.x game decryption will fail on less than 7.x!");
+        Debug("7.x game decryption will fail on less than 7.x");
     }
 
     if (DebugFileOpen("seeddb.bin")) {
@@ -213,7 +213,7 @@ u32 NcchPadgen(u32 param)
         }
         if (!seedinfo->n_entries || seedinfo->n_entries > MAX_ENTRIES) {
             FileClose();
-            Debug("Too many/few seeddb entries.");
+            Debug("Bad number of seeddb entries");
             return 1;
         }
         if (!DebugFileRead(seedinfo->entries, seedinfo->n_entries * sizeof(SeedInfoEntry), 16)) {
@@ -222,7 +222,7 @@ u32 NcchPadgen(u32 param)
         }
         FileClose();
     } else {
-        Debug("9.x seed crypto game decryption will fail!");
+        Debug("9.x seed crypto game decryption will fail");
     }
 
     if (!DebugFileOpen("ncchinfo.bin"))
@@ -233,7 +233,7 @@ u32 NcchPadgen(u32 param)
     }
     if (!info->n_entries || info->n_entries > MAX_ENTRIES) {
         FileClose();
-        Debug("Too many/few entries in ncchinfo.bin");
+        Debug("Bad number of entries in ncchinfo.bin");
         return 1;
     }
     if (info->ncch_info_version == 0xF0000004) { // ncchinfo v4
@@ -270,13 +270,13 @@ u32 NcchPadgen(u32 param)
         if (memcmp(filename, "sdmc:", 5) == 0) // fix sdmc: prefix
             memmove(filename, filename + 5, 112 - 5);
     }
-            
+    
     for (u32 i = 0; i < info->n_entries; i++) {
-        Debug("Creating pad number: %i. Size (MB): %i", i+1, info->entries[i].size_mb);
-
         PadInfo padInfo = {.setKeyY = 1, .size_mb = info->entries[i].size_mb, .mode = AES_CNT_CTRNAND_MODE};
         memcpy(padInfo.ctr, info->entries[i].ctr, 16);
         memcpy(padInfo.filename, info->entries[i].filename, 112);
+        Debug ("%2i: %s (%iMB)", i, info->entries[i].filename, info->entries[i].size_mb);
+        
         if (info->entries[i].usesSeedCrypto) {
             u8 keydata[32];
             memcpy(keydata, info->entries[i].keyY, 16);
@@ -304,12 +304,12 @@ u32 NcchPadgen(u32 param)
 
         if (info->entries[i].uses7xCrypto == 0xA) { 
             if (GetUnitPlatform() == PLATFORM_3DS) { // won't work on an Old 3DS
-                Debug("This can only be generated on N3DS!");
+                Debug("This can only be generated on N3DS");
                 return 1;
             }
             padInfo.keyslot = 0x18;
         } else if (info->entries[i].uses7xCrypto == 0xB) {
-            Debug("Secure4 xorpad cannot be generated yet!");
+            Debug("Secure4 xorpad cannot be generated yet");
             return 1;
         } else if(info->entries[i].uses7xCrypto >> 8 == 0xDEC0DE) // magic value to manually specify keyslot
             padInfo.keyslot = info->entries[i].uses7xCrypto & 0x3F;
@@ -318,12 +318,9 @@ u32 NcchPadgen(u32 param)
         else
             padInfo.keyslot = 0x2C;
         Debug("Using keyslot: %02X", padInfo.keyslot);
-
-        result = CreatePad(&padInfo);
-        if (!result)
-            Debug("Done!");
-        else
-            return 1;
+        
+        if (CreatePad(&padInfo) != 0)
+            return 1; // this can't fail anyways
     }
 
     return 0;
