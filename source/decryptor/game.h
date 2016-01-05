@@ -90,6 +90,7 @@ typedef struct {
 
 
 u32 GetSdCtr(u8* ctr, const char* path);
+u32 GetSd0x34KeyY(u8* movable_keyY, bool from_nand);
 u32 SdFolderSelector(char* path, u8* keyY);
 u32 SdInfoGen(SdInfo* info, const char* base_path);
 u32 CryptSdToSd(const char* filename, u32 offset, u32 size, CryptBufferInfo* info);
@@ -101,6 +102,7 @@ u32 CryptCia(const char* filename, u8* ncch_crypt, bool cia_encrypt, bool cxi_on
 // --> FEATURE FUNCTIONS <--
 u32 NcchPadgen(u32 param);
 u32 SdPadgen(u32 param);
+u32 SdPadgenDirect(u32 param);
 u32 UpdateSeedDb(u32 param);
 u32 CryptGameFiles(u32 param);
 u32 CryptSdFiles(u32 param);

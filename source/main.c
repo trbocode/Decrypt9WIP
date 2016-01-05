@@ -17,9 +17,9 @@ MenuInfo menu[] =
         "XORpad Generator Options", 6,
         {
             { "NCCH Padgen",                  &NcchPadgen,            0 },
-            { "SD Padgen (from file)",        &SdPadgen,              0 },
-            { "SD Padgen (SysNAND folder)",   &SdPadgen,              SD_DIRECT },
-            { "SD Padgen (EmuNAND folder)",   &SdPadgen,              N_EMUNAND | SD_DIRECT },
+            { "SD Padgen (SDinfo.bin)",       &SdPadgen,              0 },
+            { "SD Padgen (SysNAND folder)",   &SdPadgenDirect,        0 },
+            { "SD Padgen (EmuNAND folder)",   &SdPadgenDirect,        N_EMUNAND },
             { "CTRNAND Padgen",               &CtrNandPadgen,         0 },
             { "TWLNAND Padgen",               &TwlNandPadgen,         0 }
         }

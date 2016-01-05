@@ -36,6 +36,39 @@ u32 GetSdCtr(u8* ctr, const char* path)
     return 0;
 }
 
+u32 GetSd0x34KeyY(u8* movable_keyY, bool from_nand)
+{
+    u8 movable_sed[0x200];
+    
+    if (from_nand) { // load console 0x34 keyY from movable.sed from NAND
+        PartitionInfo* p_info = GetPartitionInfo(P_CTRNAND);
+        u32 offset;
+        u32 size;
+        if (DebugSeekFileInNand(&offset, &size, "movable.sed", "PRIVATE    MOVABLE SED", p_info) != 0)
+            return 1;
+        if (size < 0x120) {
+            Debug("movable.sed has bad size!");
+            return 1;
+        }
+        DecryptNandToMem(movable_sed, offset, 0x120, p_info);
+    } else if (DebugFileOpen("movable.sed")) { // load console 0x34 keyY from movable.sed from SD card
+        if (!DebugFileRead(movable_sed, 0x120, 0)) {
+            FileClose();
+            return 1;
+        }
+        FileClose();
+    } else {
+        return 1;
+    }
+    if (memcmp(movable_sed, "SEED", 4) != 0) {
+        Debug("movable.sed is corrupt!");
+        return 1;
+    }
+    memcpy(movable_keyY, movable_sed + 0x110, 0x10);
+    
+    return 0;
+}
+
 u32 SdFolderSelector(char* path, u8* keyY)
 {
     char** dirptr = (char**) 0x20400000; // allow using 0x8000 byte
@@ -298,87 +331,80 @@ u32 NcchPadgen(u32 param)
 
 u32 SdPadgen(u32 param)
 {
-    u32 result;
-    SdInfo *info = (SdInfo*) 0x20316200;
-    u8* movable_sed = (u8*) 0x20316000;
-    bool direct_gen = (param & SD_DIRECT);
+    SdInfo *info = (SdInfo*) 0x20316000;
+    u8 movable_keyY[16];
 
-    // Load console 0x34 keyY from movable.sed if present on SD card
-    // With the direct_gen option, load movable.sed from NAND
-    if (direct_gen || DebugFileOpen("movable.sed")) {
-        if (direct_gen) {
-            PartitionInfo* p_info = GetPartitionInfo(P_CTRNAND);
-            u32 offset;
-            u32 size;
-            if (DebugSeekFileInNand(&offset, &size, "movable.sed", "PRIVATE    MOVABLE SED", p_info) != 0)
-                return 1;
-            if (size < 0x120) {
-                Debug("movable.sed has bad size!");
-                return 1;
-            }
-            DecryptNandToMem(movable_sed, offset, 0x120, p_info);
-        } else {
-            if (!DebugFileRead(movable_sed, 0x120, 0)) {
-                FileClose();
-                return 1;
-            }
-            FileClose();
-        }
-        if (memcmp(movable_sed, "SEED", 4) != 0) {
-            Debug("movable.sed is corrupt!");
-            return 1;
-        }
-        setup_aeskeyY(0x34, movable_sed + 0x110);
+    if (GetSd0x34KeyY(movable_keyY, false) == 0) {
+        Debug("Setting console 0x34 keyY");
+        setup_aeskeyY(0x34, movable_keyY);
         use_aeskey(0x34);
     }
     
-    if (!direct_gen && DebugFileOpen("SDinfo.bin")) {
-        if (!DebugFileRead(info, 4, 0)) {
-            FileClose();
-            return 1;
-        }
-        if (!info->n_entries || info->n_entries > MAX_ENTRIES) {
-            FileClose();
-            Debug("Too many/few entries!");
-            return 1;
-        }
-        if (!DebugFileRead(info->entries, info->n_entries * sizeof(SdInfoEntry), 4)) {
-            FileClose();
-            return 1;
-        }
+    if (!DebugFileOpen("SDinfo.bin"))
+        return 1;
+    if (!DebugFileRead(info, 4, 0)) {
         FileClose();
-    } else if (direct_gen) {
-        char base_path[256];
-        Debug("");
-        if (SdFolderSelector(base_path, movable_sed + 0x110) != 0) {
-            Debug("No valid SD data found");
-            return 1;
-        }
-        Debug("");
-        if (SdInfoGen(info, base_path) != 0)
-            return 1;
-        if (!info->n_entries) {
-            Debug("Nothing found in selected folder");
-            return 1;
-        }
+        return 1;
+    }
+    if (!info->n_entries || info->n_entries > MAX_ENTRIES) {
+        FileClose();
+        Debug("Bad number of entries!");
+        return 1;
+    }
+    if (!DebugFileRead(info->entries, info->n_entries * sizeof(SdInfoEntry), 4)) {
+        FileClose();
+        return 1;
+    }
+    FileClose();
+    
+    Debug("Number of entries: %i", info->n_entries);
+    for(u32 i = 0; i < info->n_entries; i++) {
+        PadInfo padInfo = {.keyslot = 0x34, .setKeyY = 0, .size_mb = info->entries[i].size_mb, .mode = AES_CNT_CTRNAND_MODE};
+        memcpy(padInfo.ctr, info->entries[i].ctr, 16);
+        memcpy(padInfo.filename, info->entries[i].filename, 180);
+        Debug ("%2i: %s (%iMB)", i, info->entries[i].filename, info->entries[i].size_mb);
+        if (CreatePad(&padInfo) != 0)
+            return 1; // this can't fail anyways
+    }
+
+    return 0;
+}
+
+u32 SdPadgenDirect(u32 param)
+{
+    SdInfo *info = (SdInfo*) 0x20316000;
+    char basepath[256];
+    u8 movable_keyY[16];
+    
+    if (GetSd0x34KeyY(movable_keyY, true) == 0) {
+        Debug("Setting console 0x34 keyY");
+        setup_aeskeyY(0x34, movable_keyY);
+        use_aeskey(0x34);
     } else {
+        return 1; // movable.sed has to be present in NAND
+    }
+    
+    Debug("");
+    if (SdFolderSelector(basepath, movable_keyY) != 0) {
+        Debug("No valid SD data found");
+        return 1;
+    }
+    Debug("");
+    if (SdInfoGen(info, basepath) != 0)
+        return 1;
+    if (!info->n_entries) {
+        Debug("Nothing found in selected folder");
         return 1;
     }
     
     Debug("Number of entries: %i", info->n_entries);
-    
     for(u32 i = 0; i < info->n_entries; i++) {
-        Debug ("Creating pad number: %i. Size (MB): %i", i+1, info->entries[i].size_mb);
-
         PadInfo padInfo = {.keyslot = 0x34, .setKeyY = 0, .size_mb = info->entries[i].size_mb, .mode = AES_CNT_CTRNAND_MODE};
         memcpy(padInfo.ctr, info->entries[i].ctr, 16);
         memcpy(padInfo.filename, info->entries[i].filename, 180);
-
-        result = CreatePad(&padInfo);
-        if (!result)
-            Debug("Done!");
-        else
-            return 1;
+        Debug ("%2i: %s (%iMB)", i, info->entries[i].filename, info->entries[i].size_mb);
+        if (CreatePad(&padInfo) != 0)
+            return 1; // this can't fail anyways
     }
 
     return 0;
