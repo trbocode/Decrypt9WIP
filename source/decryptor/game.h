@@ -3,8 +3,6 @@
 #include "common.h"
 #include "decryptor/decryptor.h"
 
-#define SD_DIRECT       (1<<0)
-
 #define GC_NCCH_PROCESS (1<<0)
 #define GC_CIA_PROCESS  (1<<1)
 #define GC_CIA_DEEP     (1<<2)
@@ -106,3 +104,4 @@ u32 SdPadgenDirect(u32 param);
 u32 UpdateSeedDb(u32 param);
 u32 CryptGameFiles(u32 param);
 u32 CryptSdFiles(u32 param);
+u32 DecryptSdFilesDirect(u32 param);

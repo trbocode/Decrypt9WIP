@@ -1158,6 +1158,7 @@ u32 CryptGameFiles(u32 param)
 
 u32 CryptSdFiles(u32 param) {
     const char* subpaths[] = {"dbs", "extdata", "title", NULL};
+    u8 movable_keyY[16] = { 0 };
     char* batch_dir = GAME_DIR;
     u32 n_processed = 0;
     u32 n_failed = 0;
@@ -1173,24 +1174,8 @@ u32 CryptSdFiles(u32 param) {
     DirClose();
     plen = strnlen(batch_dir, 128);
     
-    // Load console 0x34 keyY from movable.sed if present on SD card
-    if (DebugFileOpen("movable.sed")) {
-        u8 movable_keyY[16];
-        u8 magic[4];
-        if (!DebugFileRead(magic, 4, 0)) {
-            FileClose();
-            return 1;
-        }
-        if (memcmp(magic, "SEED", 4) != 0) {
-            FileClose();
-            Debug("movable.sed is corrupt!");
-            return 1;
-        }
-        if (!DebugFileRead(movable_keyY, 0x10, 0x110)) {
-            FileClose();
-            return 1;
-        }
-        FileClose();
+    if (GetSd0x34KeyY(movable_keyY, false) == 0) {
+        Debug("Setting console 0x34 keyY");
         setup_aeskeyY(0x34, movable_keyY);
         use_aeskey(0x34);
     }
@@ -1226,6 +1211,74 @@ u32 CryptSdFiles(u32 param) {
                 Debug("Failed!");
                 n_failed++;
             }
+        }
+    }
+    
+    return (n_processed) ? 0 : 1;
+}
+
+u32 DecryptSdFilesDirect(u32 param) {
+    char* filelist = (char*) 0x20400000;
+    u8 movable_keyY[16] = { 0 };
+    char basepath[256];
+    char* batch_dir = GAME_DIR;
+    u32 n_processed = 0;
+    u32 n_failed = 0;
+    u32 bplen = 0;
+    
+    if (!DebugDirOpen(batch_dir)) {
+        if (!DebugDirOpen(WORK_DIR)) {
+            Debug("No working directory found!");
+            return 1;
+        }
+        batch_dir = WORK_DIR;
+    }
+    DirClose();
+    
+    if (GetSd0x34KeyY(movable_keyY, true) == 0) {
+        Debug("Setting console 0x34 keyY");
+        setup_aeskeyY(0x34, movable_keyY);
+        use_aeskey(0x34);
+    } else {
+        return 1; // movable.sed has to be present in NAND
+    }
+    
+    Debug("");
+    if (SdFolderSelector(basepath, movable_keyY) != 0) {
+        Debug("No valid SD data found");
+        return 1;
+    }
+    if (!GetFileList(basepath, filelist, 0x100000, true, true, false)) {
+        Debug("Nothing found in folder!");
+        return 1;
+    }
+    Debug("");
+    Debug("Using base path %s", basepath);
+    bplen = strnlen(basepath, 256);
+    
+    // main processing loop
+    for (char* srcpath = strtok(filelist, "\n"); srcpath != NULL; srcpath = strtok(NULL, "\n")) {
+        char* subpath = srcpath + 13 + 33 + 33; // length of ("/Nintendo 3DS" + "/<id0>" + "/<id1>")
+        char dstpath[256];
+        u32 fsize = 0;
+        snprintf(dstpath, 256, "%s%s", batch_dir, subpath);
+        CryptBufferInfo info = {.keyslot = 0x34, .setKeyY = 0, .mode = AES_CNT_CTRNAND_MODE};
+        GetSdCtr(info.ctr, subpath);
+        Debug("%2u: %s", n_processed, srcpath + bplen);
+        if (FileOpen(srcpath)) {
+            fsize = FileGetSize();
+            FileCopyTo(dstpath, BUFFER_ADDRESS, BUFFER_MAX_SIZE);
+            FileClose();
+        } else {
+            Debug("Could not open: %s", srcpath + bplen);
+            n_failed++;
+            continue;
+        }
+        if (CryptSdToSd(dstpath, 0, fsize, &info) == 0) {
+            n_processed++;
+        } else {
+            Debug("Failed!");
+            n_failed++;
         }
     }
     

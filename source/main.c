@@ -18,8 +18,8 @@ MenuInfo menu[] =
         {
             { "NCCH Padgen",                  &NcchPadgen,            0 },
             { "SD Padgen (SDinfo.bin)",       &SdPadgen,              0 },
-            { "SD Padgen (SysNAND folder)",   &SdPadgenDirect,        0 },
-            { "SD Padgen (EmuNAND folder)",   &SdPadgenDirect,        N_EMUNAND },
+            { "SD Padgen (SysNAND dir)",      &SdPadgenDirect,        0 },
+            { "SD Padgen (EmuNAND dir)",      &SdPadgenDirect,        N_EMUNAND },
             { "CTRNAND Padgen",               &CtrNandPadgen,         0 },
             { "TWLNAND Padgen",               &TwlNandPadgen,         0 }
         }
@@ -60,14 +60,16 @@ MenuInfo menu[] =
         }
     },
     {
-        "Game Decryptor Options", 6,
+        "Game Decryptor Options", 8,
         {
             { "NCCH/NCSD Decryptor",          &CryptGameFiles,        GC_NCCH_PROCESS },
             { "NCCH/NCSD Encryptor",          &CryptGameFiles,        GC_NCCH_PROCESS | GC_NCCH_ENCRYPT },
             { "CIA Decryptor (shallow)",      &CryptGameFiles,        GC_CIA_PROCESS },
             { "CIA Decryptor (deep)",         &CryptGameFiles,        GC_CIA_PROCESS | GC_CIA_DEEP },
             { "CIA Decryptor (CXI only)",     &CryptGameFiles,        GC_CIA_PROCESS | GC_CIA_DEEP | GC_CXI_ONLY },
-            { "SD Decryptor/Encryptor",       &CryptSdFiles,          0 }
+            { "SD Decryptor/Encryptor",       &CryptSdFiles,          0 },
+            { "SD Decryptor (SysNAND dir)",   &DecryptSdFilesDirect,  0 },
+            { "SD Decryptor (EmuNAND dir)",   &DecryptSdFilesDirect,  N_EMUNAND }
         }
     },
     // everything below is not contained in the main menu
