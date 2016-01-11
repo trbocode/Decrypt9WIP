@@ -157,6 +157,7 @@ void DebugSet(const char **strs)
 
 void Debug(const char *format, ...)
 {
+    static bool adv_output = true;
     char tempstr[128] = { 0 }; // 128 instead of DBG_N_CHARS_X for log file 
     va_list va;
     
@@ -164,12 +165,18 @@ void Debug(const char *format, ...)
     vsnprintf(tempstr, 128, format, va);
     va_end(va);
     
-    if (*tempstr != '\r') { // not a good way of doing this - improve this later
-        LogWrite(tempstr);
+    if (adv_output) {
         memmove(debugstr + DBG_N_CHARS_X, debugstr, DBG_N_CHARS_X * (DBG_N_CHARS_Y - 1));
+    } else {
+        adv_output = true;
+    }
+    
+    if (*tempstr != '\r') { // not a good way of doing this - improve this later
         snprintf(debugstr, DBG_N_CHARS_X, "%-*.*s", DBG_N_CHARS_X - 1, DBG_N_CHARS_X - 1, tempstr);
+        LogWrite(tempstr);
     } else {
         snprintf(debugstr, DBG_N_CHARS_X, "%-*.*s", DBG_N_CHARS_X - 1, DBG_N_CHARS_X - 1, tempstr + 1);
+        adv_output = false;
     }
     
     DebugSet(NULL);

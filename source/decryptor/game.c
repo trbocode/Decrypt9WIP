@@ -111,7 +111,7 @@ u32 SdFolderSelector(char* path, u8* keyY)
     u32 index = 0;
     strncpy(path, dirptr[0], 128);
     Debug("Use arrow keys and <A> to choose a folder");
-    Debug("%s", path + 13 + 33 + 33);
+    Debug("\r%s", path + 13 + 33 + 33);
     while (true) {
         u32 pad_state = InputWait();
         u32 cur_lvl = strchrcount(path, '/');
@@ -131,6 +131,7 @@ u32 SdFolderSelector(char* path, u8* keyY)
             while ((index > 0) && (cur_lvl == strchrcount(dirptr[index], '/')))
                 index--;
         } else if (pad_state & BUTTON_A) {
+            Debug("%s", path + 13 + 33 + 33);
             break;
         }
         strncpy(path, dirptr[index], 128);
@@ -189,8 +190,6 @@ u32 SdInfoGen(SdInfo* info, const char* base_path)
 
 u32 NcchPadgen(u32 param)
 {
-    u32 result;
-
     NcchInfo *info = (NcchInfo*)0x20316000;
     SeedInfo *seedinfo = (SeedInfo*)0x20400000;
 
