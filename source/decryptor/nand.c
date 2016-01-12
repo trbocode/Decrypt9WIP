@@ -220,8 +220,10 @@ u32 OutputFileNameSelector(char* filename, const char* basename, char* extension
         if (n_names * sizeof(char**) >= 0x8000)
             return 1;
     }
-    if (n_names == 0)
+    if (n_names == 0) {
+        Debug("No usable file found");
         return 1;
+    }
     
     u32 index = 0;
     Debug("Use arrow keys and <A> to choose a file");
@@ -535,13 +537,9 @@ u32 RestoreNand(u32 param)
         return 1;
         
     // User file select
-    u32 fn_state = OutputFileNameSelector(filename, "NAND.bin", NULL, NULL, 0, nand_size);
-    if (fn_state == 1) {
-        Debug("No valid backups found");
+    if (OutputFileNameSelector(filename, "NAND.bin", NULL, NULL, 0, nand_size) != 0)
         return 1;
-    } else if (fn_state != 0) {
-        return 1;
-    }
+    
     if (nand_size != FileGetSize()) {
         FileClose();
         Debug("NAND backup has the wrong size!");
@@ -598,14 +596,9 @@ u32 InjectNandPartition(u32 param)
     
     Debug("Encrypting & Injecting %s, size (MB): %u", p_info->name, p_info->size / (1024 * 1024));
     // User file select
-    u32 fn_state = OutputFileNameSelector(filename, p_info->name, "bin",
-        p_info->magic, (p_info->magic[0] != 0xFF) ? 8 : 0, p_info->size);
-    if (fn_state == 1) {
-        Debug("No injectable files found");
+    if (OutputFileNameSelector(filename, p_info->name, "bin",
+        p_info->magic, (p_info->magic[0] != 0xFF) ? 8 : 0, p_info->size) != 0)
         return 1;
-    } else if (fn_state != 0) {
-        return 1;
-    }
     
     // Encryption check
     if (DecryptNandToMem(magic, p_info->offset, 16, p_info) != 0)
