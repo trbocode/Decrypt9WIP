@@ -23,8 +23,8 @@ typedef struct {
 } TitleListInfo;
 
 typedef struct {
-    char name_sys[32];
-    char name_emu[32];
+    char name_l[32];
+    char name_s[32];
     char path[64];
     u32 partition_id;
 } NandFileInfo;

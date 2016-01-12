@@ -23,16 +23,16 @@ TitleListInfo titleList[] = {
 };
 
 NandFileInfo fileList[] = {
-    { "ticket.db",             "ticket_emu.db",         "DBS        TICKET  DB ",                  P_CTRNAND },
-    { "title.db",              "title_emu.db",          "DBS        TITLE   DB ",                  P_CTRNAND },
-    { "import.db",             "import_emu.db",         "DBS        IMPORT  DB ",                  P_CTRNAND },
-    { "certs.db",              "certs_emu.db",          "DBS        CERTS   DB ",                  P_CTRNAND },
-    { "SecureInfo_A",          "SecureInfo_A",          "RW         SYS        SECURE~?   ",       P_CTRNAND },
-    { "LocalFriendCodeSeed_B", "LocalFriendCodeSeed_B", "RW         SYS        LOCALF~?   ",       P_CTRNAND },
-    { "rand_seed",             "rand_seed",             "RW         SYS        RAND_S~?   ",       P_CTRNAND },
-    { "movable.sed",           "movable.sed",           "PRIVATE    MOVABLE SED",                  P_CTRNAND },
-    { "seedsave.bin", "seedsave.bin", "DATA       ???????????SYSDATA    0001000F   00000000   ",   P_CTRNAND },
-    { "updtsave.bin", "updtsave.bin", "DATA       ???????????SYSDATA    0001002C   00000000   ",   P_CTRNAND }
+    { "ticket.db",             "ticket.db",             "DBS        TICKET  DB ",                P_CTRNAND },
+    { "title.db",              "title.db",              "DBS        TITLE   DB ",                P_CTRNAND },
+    { "import.db",             "import.db",             "DBS        IMPORT  DB ",                P_CTRNAND },
+    { "certs.db",              "certs.db",              "DBS        CERTS   DB ",                P_CTRNAND },
+    { "SecureInfo_A",          "SecureInfo",            "RW         SYS        SECURE~?   ",     P_CTRNAND },
+    { "LocalFriendCodeSeed_B", "LocalFriendCodeSeed",   "RW         SYS        LOCALF~?   ",     P_CTRNAND },
+    { "rand_seed",             "rand_seed",             "RW         SYS        RAND_S~?   ",     P_CTRNAND },
+    { "movable.sed",           "movable.sed",           "PRIVATE    MOVABLE SED",                P_CTRNAND },
+    { "seedsave.bin", "seedsave.bin", "DATA       ???????????SYSDATA    0001000F   00000000   ", P_CTRNAND },
+    { "updtsave.bin", "updtsave.bin", "DATA       ???????????SYSDATA    0001002C   00000000   ", P_CTRNAND }
 };
 
 
@@ -242,12 +242,15 @@ u32 DumpFile(u32 param)
 {
     NandFileInfo* f_info = GetNandFileInfo(param);
     PartitionInfo* p_info = GetPartitionInfo(f_info->partition_id);
+    char filename[64];
     u32 offset;
     u32 size;
     
-    if (DebugSeekFileInNand(&offset, &size, (param & N_EMUNAND) ? f_info->name_emu : f_info->name_sys, f_info->path, p_info) != 0)
+    if (DebugSeekFileInNand(&offset, &size, f_info->name_l, f_info->path, p_info) != 0)
         return 1;
-    if (DecryptNandToFile((param & N_EMUNAND) ? f_info->name_emu : f_info->name_sys, offset, size, p_info) != 0)
+    if (InputFileNameSelector(filename, f_info->name_s, NULL, (param & N_EMUNAND)) != 0)
+        return 1;
+    if (DecryptNandToFile(filename, offset, size, p_info) != 0)
         return 1;
     
     return 0;
@@ -257,15 +260,18 @@ u32 InjectFile(u32 param)
 {
     NandFileInfo* f_info = GetNandFileInfo(param);
     PartitionInfo* p_info = GetPartitionInfo(f_info->partition_id);
+    char filename[64];
     u32 offset;
     u32 size;
     
     if (!(param & N_NANDWRITE)) // developer screwup protection
         return 1;
     
-    if (DebugSeekFileInNand(&offset, &size, f_info->name_sys, f_info->path, p_info) != 0)
+    if (DebugSeekFileInNand(&offset, &size, f_info->name_l, f_info->path, p_info) != 0)
         return 1;
-    if (EncryptFileToNand(f_info->name_sys, offset, size, p_info) != 0)
+    if (OutputFileNameSelector(filename, f_info->name_s, NULL, NULL, 0, size) != 0)
+        return 1;
+    if (EncryptFileToNand(filename, offset, size, p_info) != 0)
         return 1;
     
     return 0;
