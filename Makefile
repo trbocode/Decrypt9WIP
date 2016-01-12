@@ -23,8 +23,9 @@ DATA		:=	data
 INCLUDES	:=	include source source/fatfs
 
 #---------------------------------------------------------------------------------
-# Setup some defines
+# THEME: if set to anything, name of the themes file folder inside resources
 #---------------------------------------------------------------------------------
+THEME	:=	
 
 #---------------------------------------------------------------------------------
 # options for code generation
@@ -39,6 +40,10 @@ CFLAGS	:=	-g -Wall -O2\
 CFLAGS	+=	$(INCLUDE) -DEXEC_$(EXEC_METHOD) -DARM9
 
 CFLAGS	+=	-DBUILD_NAME="\"$(TARGET) (`date +'%Y/%m/%d'`)\""
+
+ifneq ($(strip $(THEME)),)
+CFLAGS	+=	-DUSE_THEME=\"\/$(THEME)\"
+endif
 
 CXXFLAGS	:= $(CFLAGS) -fno-rtti -fno-exceptions
 
@@ -157,7 +162,8 @@ release:
 	@-cp $(OUTPUT).3dsx $(RELEASE)/$(TARGET)
 	@-cp $(OUTPUT).smdh $(RELEASE)/$(TARGET)
 	@cp $(CURDIR)/scripts/*.py $(RELEASE)/scripts
-	@-7z a $(RELEASE)/$(TARGET)-d0k3-`date +'%Y%m%d-%H%M%S'`.zip $(RELEASE)/*
+	@-[ ! -n "$(strip $(THEME))" ] || (mkdir $(RELEASE)/$(THEME) && cp $(CURDIR)/resources/$(THEME)/*.bin $(RELEASE)/$(THEME))
+	@-7z a $(RELEASE)/$(TARGET)-`date +'%Y%m%d-%H%M%S'`.zip $(RELEASE)/*
 	
 #---------------------------------------------------------------------------------
 clean:
