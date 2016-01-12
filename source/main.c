@@ -14,14 +14,15 @@
 MenuInfo menu[] =
 {
     {
-        "XORpad Generator Options", 6,
+        "XORpad Generator Options", 7,
         {
             { "NCCH Padgen",                  &NcchPadgen,            0 },
             { "SD Padgen (SDinfo.bin)",       &SdPadgen,              0 },
             { "SD Padgen (SysNAND dir)",      &SdPadgenDirect,        0 },
             { "SD Padgen (EmuNAND dir)",      &SdPadgenDirect,        N_EMUNAND },
             { "CTRNAND Padgen",               &CtrNandPadgen,         0 },
-            { "TWLNAND Padgen",               &TwlNandPadgen,         0 }
+            { "TWLNAND Padgen",               &TwlNandPadgen,         0 },
+            { "FIRM0FIRM1 Padgen",            &Firm0Firm1Padgen,      0 }
         }
     },
     {
