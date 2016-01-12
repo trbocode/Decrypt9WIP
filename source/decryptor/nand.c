@@ -105,7 +105,7 @@ static inline int WriteNandSectors(u32 sector_no, u32 numsectors, u8 *in)
     } else return sdmmc_nand_writesectors(sector_no, numsectors, in);
 }
 
-u32 InputFileNameSelector(char* filename, const char* basename, char* extension, bool emuname) {
+u32 OutputFileNameSelector(char* filename, const char* basename, char* extension, bool emuname) {
     char bases[3][64] = { 0 };
     char* dotpos = NULL;
     
@@ -160,7 +160,7 @@ u32 InputFileNameSelector(char* filename, const char* basename, char* extension,
     return 0;
 }
 
-u32 OutputFileNameSelector(char* filename, const char* basename, char* extension, u8* magic, u32 msize, u32 fsize) {
+u32 InputFileNameSelector(char* filename, const char* basename, char* extension, u8* magic, u32 msize, u32 fsize) {
     char** fnptr = (char**) 0x20400000; // allow using 0x8000 byte
     char* fnlist = (char*) 0x20408000; // allow using 0x80000 byte
     u32 n_names = 0;
@@ -431,7 +431,7 @@ u32 DumpNand(u32 param)
 
     Debug("Dumping %sNAND. Size (MB): %u", (param & N_EMUNAND) ? "Emu" : "Sys", nand_size / (1024 * 1024));
     
-    if (InputFileNameSelector(filename, "NAND.bin", NULL, param & N_EMUNAND) != 0)
+    if (OutputFileNameSelector(filename, "NAND.bin", NULL, param & N_EMUNAND) != 0)
         return 1;
     if (!DebugFileCreate(filename, true))
         return 1;
@@ -477,7 +477,7 @@ u32 DecryptNandPartition(u32 param)
         Debug("Decryption error, please contact us");
         return 1;
     }
-    if (InputFileNameSelector(filename, p_info->name, "bin", param & N_EMUNAND) != 0)
+    if (OutputFileNameSelector(filename, p_info->name, "bin", param & N_EMUNAND) != 0)
         return 1;
     
     return DecryptNandToFile(filename, p_info->offset, p_info->size, p_info);
@@ -539,7 +539,7 @@ u32 RestoreNand(u32 param)
         return 1;
         
     // User file select
-    if (OutputFileNameSelector(filename, "NAND.bin", NULL, NULL, 0, nand_size) != 0)
+    if (InputFileNameSelector(filename, "NAND.bin", NULL, NULL, 0, nand_size) != 0)
         return 1;
     
     if (nand_size != FileGetSize()) {
@@ -598,7 +598,7 @@ u32 InjectNandPartition(u32 param)
     
     Debug("Encrypting & Injecting %s, size (MB): %u", p_info->name, p_info->size / (1024 * 1024));
     // User file select
-    if (OutputFileNameSelector(filename, p_info->name, "bin",
+    if (InputFileNameSelector(filename, p_info->name, "bin",
         p_info->magic, (p_info->magic[0] != 0xFF) ? 8 : 0, p_info->size) != 0)
         return 1;
     

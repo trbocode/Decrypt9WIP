@@ -248,7 +248,7 @@ u32 DumpFile(u32 param)
     
     if (DebugSeekFileInNand(&offset, &size, f_info->name_l, f_info->path, p_info) != 0)
         return 1;
-    if (InputFileNameSelector(filename, f_info->name_s, NULL, (param & N_EMUNAND)) != 0)
+    if (OutputFileNameSelector(filename, f_info->name_s, NULL, (param & N_EMUNAND)) != 0)
         return 1;
     if (DecryptNandToFile(filename, offset, size, p_info) != 0)
         return 1;
@@ -269,7 +269,7 @@ u32 InjectFile(u32 param)
     
     if (DebugSeekFileInNand(&offset, &size, f_info->name_l, f_info->path, p_info) != 0)
         return 1;
-    if (OutputFileNameSelector(filename, f_info->name_s, NULL, NULL, 0, size) != 0)
+    if (InputFileNameSelector(filename, f_info->name_s, NULL, NULL, 0, size) != 0)
         return 1;
     if (EncryptFileToNand(filename, offset, size, p_info) != 0)
         return 1;
