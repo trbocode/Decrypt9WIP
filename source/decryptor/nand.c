@@ -393,13 +393,16 @@ u32 DecryptNandToFile(const char* filename, u32 offset, u32 size, PartitionInfo*
 
 u32 DumpNand(u32 param)
 {
+    char filename[64];
     u8* buffer = BUFFER_ADDRESS;
     u32 nand_size = getMMCDevice(0)->total_size * NAND_SECTOR_SIZE;
     u32 result = 0;
 
     Debug("Dumping %sNAND. Size (MB): %u", (param & N_EMUNAND) ? "Emu" : "Sys", nand_size / (1024 * 1024));
-
-    if (!DebugFileCreate((param & N_EMUNAND) ? "EmuNAND.bin" : "NAND.bin", true))
+    
+    if (InputFileNameSelector(filename, "NAND.bin", NULL, param & N_EMUNAND) != 0)
+        return 1;
+    if (!DebugFileCreate(filename, true))
         return 1;
 
     u32 n_sectors = nand_size / NAND_SECTOR_SIZE;
