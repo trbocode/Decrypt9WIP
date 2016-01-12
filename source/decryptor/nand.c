@@ -125,13 +125,16 @@ u32 OutputFileNameSelector(char* filename, const char* basename, char* extension
     
     u32 fn_id = 0;
     u32 fn_num = 0;
+    char extstr[16] = { 0 };
+    if (extension)
+        snprintf(extstr, 15, ".%s", extension);
     Debug("Use arrow keys and <A> to choose a name");
     while (true) {
         bool exists = false;
         char numstr[2] = { 0 };
         // build and output file name (plus "(!)" if existing)
         numstr[0] = (fn_num > 0) ? '0' + fn_num : '\0';
-        snprintf(filename, 63, "%s%s.%s", bases[fn_id], numstr, extension);
+        snprintf(filename, 63, "%s%s%s", bases[fn_id], numstr, extstr);
         if (FileOpen(filename)) {
             exists = true;
             FileClose();
@@ -192,6 +195,8 @@ u32 InputFileNameSelector(char* filename, const char* basename, char* extension,
     for (char* fn = strtok(fnlist, "\n"); fn != NULL; fn = strtok(NULL, "\n")) {
         u8 data[0x200];
         char* dotpos = strrchr(fn, '.');
+        if (strrchr(fn, '/'))
+            fn = strrchr(fn, '/') + 1;
         if (strnlen(fn, 128) > 63)
             continue; // file name too long
         if ((basename != NULL) && !strstr(fn, base))
