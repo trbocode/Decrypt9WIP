@@ -498,6 +498,7 @@ u32 EncryptFileToNand(const char* filename, u32 offset, u32 size, PartitionInfo*
 
 u32 RestoreNand(u32 param)
 {
+    char filename[64];
     u8* buffer = BUFFER_ADDRESS;
     u32 nand_size = getMMCDevice(0)->total_size * NAND_SECTOR_SIZE;
     u32 result = 0;
@@ -506,11 +507,14 @@ u32 RestoreNand(u32 param)
     if (!(param & N_NANDWRITE)) // developer screwup protection
         return 1;
         
-    if (param & N_EMUNAND) {
-        if (!DebugFileOpen("EmuNAND.bin") && !DebugFileOpen("NAND.bin"))
-            return 1;
-    } else if (!DebugFileOpen("NAND.bin"))
+    // User file select
+    u32 fn_state = OutputFileNameSelector(filename, "NAND.bin", NULL, NULL, 0, nand_size);
+    if (fn_state == 1) {
+        Debug("No valid backups found");
         return 1;
+    } else if (fn_state != 0) {
+        return 1;
+    }
     if (nand_size != FileGetSize()) {
         FileClose();
         Debug("NAND backup has the wrong size!");
