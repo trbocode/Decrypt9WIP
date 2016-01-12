@@ -248,7 +248,7 @@ u32 DumpFile(u32 param)
     
     if (DebugSeekFileInNand(&offset, &size, f_info->name_l, f_info->path, p_info) != 0)
         return 1;
-    if (OutputFileNameSelector(filename, f_info->name_s, NULL, (param & N_EMUNAND)) != 0)
+    if (OutputFileNameSelector(filename, f_info->name_l, NULL, (param & N_EMUNAND)) != 0)
         return 1;
     if (DecryptNandToFile(filename, offset, size, p_info) != 0)
         return 1;
@@ -281,6 +281,7 @@ u32 DumpHealthAndSafety(u32 param)
 {
     PartitionInfo* ctrnand_info = GetPartitionInfo(P_CTRNAND);
     TitleListInfo* health = titleList + ((GetUnitPlatform() == PLATFORM_3DS) ? 3 : 4);
+    char filename[64];
     u32 offset_app[4];
     u32 size_app[4];
     u32 offset_tmd;
@@ -289,11 +290,13 @@ u32 DumpHealthAndSafety(u32 param)
     
     if (DebugSeekTitleInNand(&offset_tmd, &size_tmd, offset_app, size_app, health, 4) != 0)
         return 1;
+    if (OutputFileNameSelector(filename, "hs.app", NULL, (param & N_EMUNAND)) != 0)
+        return 1;
         
     Debug("Dumping & decrypting APP0...");
-    if (DecryptNandToFile("hs.app", offset_app[0], size_app[0], ctrnand_info) != 0)
+    if (DecryptNandToFile(filename, offset_app[0], size_app[0], ctrnand_info) != 0)
         return 1;
-    if (CryptNcch("hs.app", 0, 0, 0, NULL) != 0)
+    if (CryptNcch(filename, 0, 0, 0, NULL) != 0)
         return 1;
         
      return 0;
@@ -304,6 +307,8 @@ u32 InjectHealthAndSafety(u32 param)
     u8* buffer = BUFFER_ADDRESS;
     PartitionInfo* ctrnand_info = GetPartitionInfo(P_CTRNAND);
     TitleListInfo* health = titleList + ((GetUnitPlatform() == PLATFORM_3DS) ? 3 : 4);
+    NcchHeader* ncch = (NcchHeader*) 0x20316000;
+    char filename[64];
     u32 offset_app[4];
     u32 size_app[4];
     u32 offset_tmd;
@@ -320,8 +325,12 @@ u32 InjectHealthAndSafety(u32 param)
         Debug("H&S system app is too big!");
         return 1;
     }
+    if (DecryptNandToMem((void*) ncch, offset_app[0], 0x200, ctrnand_info) != 0)
+        return 1;
+    if (InputFileNameSelector(filename, NULL, "app", ncch->signature, 0x100, 0) != 0)
+        return 1;
     
-    if (!DebugFileOpen("hs.app"))
+    if (!DebugFileOpen(filename))
         return 1;
     size_hs = FileGetSize();
     memset(buffer, 0, size_app[0]);
@@ -341,10 +350,6 @@ u32 InjectHealthAndSafety(u32 param)
         return 1;
     }
     FileClose();
-    
-    NcchHeader* ncch = (NcchHeader*) 0x20316000;
-    if (DecryptNandToMem((void*) ncch, offset_app[0], 0x200, ctrnand_info) != 0)
-        return 1;
     if (CryptNcch("hs.enc", 0, 0, 0, ncch->flags) != 0)
         return 1;
     
