@@ -196,7 +196,9 @@ u32 OutputFileNameSelector(char* filename, const char* basename, char* extension
             continue; // file name too long
         if ((basename != NULL) && !strstr(fn, base))
             continue; // basename check failed
-        if ((extension != NULL) && (strncmp(dotpos + 1, extension, strnlen(extension, 16))))
+        if ((extension != NULL) && (dotpos != NULL) && (strncmp(dotpos + 1, extension, strnlen(extension, 16))))
+            continue; // extension check failed
+        else if ((extension == NULL) != (dotpos == NULL))
             continue; // extension check failed
         if (!FileOpen(fn))
             continue; // file can't be opened
