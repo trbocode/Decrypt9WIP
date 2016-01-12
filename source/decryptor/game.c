@@ -104,15 +104,17 @@ u32 SdFolderSelector(char* path, u8* keyY)
         if (n_dirs * sizeof(char**) >= 0x8000)
             return 1;
     }
-    if (n_dirs == 0)
+    if (n_dirs == 0) {
+        Debug("No valid SD data found");
         return 1;
+    }
     
     // let the user choose a directory
     u32 index = 0;
     strncpy(path, dirptr[0], 128);
     Debug("Use arrow keys and <A> to choose a folder");
-    Debug("\r%s", path + 13 + 33 + 33);
     while (true) {
+        Debug("\r%s", path + 13 + 33 + 33);
         u32 pad_state = InputWait();
         u32 cur_lvl = strchrcount(path, '/');
         if (pad_state & BUTTON_DOWN) { // find next path of same level
@@ -133,9 +135,11 @@ u32 SdFolderSelector(char* path, u8* keyY)
         } else if (pad_state & BUTTON_A) {
             Debug("%s", path + 13 + 33 + 33);
             break;
+        } else if (pad_state & BUTTON_B) {
+            Debug("(cancelled by user)");
+            return 2;
         }
         strncpy(path, dirptr[index], 128);
-        Debug("\r%s", path + 13 + 33 + 33);
     }
     
     return 0;
@@ -381,15 +385,13 @@ u32 SdPadgenDirect(u32 param)
     }
     
     Debug("");
-    if (SdFolderSelector(basepath, movable_keyY) != 0) {
-        Debug("No valid SD data found");
+    if (SdFolderSelector(basepath, movable_keyY) != 0)
         return 1;
-    }
     Debug("");
     if (SdInfoGen(info, basepath) != 0)
         return 1;
     if (!info->n_entries) {
-        Debug("Nothing found in selected folder");
+        Debug("Nothing found in folder");
         return 1;
     }
     
@@ -1240,15 +1242,14 @@ u32 DecryptSdFilesDirect(u32 param) {
     }
     
     Debug("");
-    if (SdFolderSelector(basepath, movable_keyY) != 0) {
-        Debug("No valid SD data found");
+    if (SdFolderSelector(basepath, movable_keyY) != 0)
         return 1;
-    }
     if (!GetFileList(basepath, filelist, 0x100000, true, true, false)) {
-        Debug("Nothing found in folder!");
+        Debug("Nothing found in folder");
         return 1;
     }
     Debug("");
+    
     Debug("Using base path %s", basepath);
     bplen = strnlen(basepath, 256);
     
