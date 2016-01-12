@@ -1,5 +1,6 @@
 #include "fs.h"
 #include "draw.h"
+#include "hid.h"
 #include "platform.h"
 #include "decryptor/aes.h"
 #include "decryptor/decryptor.h"
@@ -102,6 +103,146 @@ static inline int WriteNandSectors(u32 sector_no, u32 numsectors, u8 *in)
         }
         return sdmmc_sdcard_writesectors(sector_no + emunand_offset, numsectors, in);
     } else return sdmmc_nand_writesectors(sector_no, numsectors, in);
+}
+
+u32 InputFileNameSelector(char* filename, const char* basename, char* extension, bool emuname) {
+    char bases[3][64] = { 0 };
+    char* dotpos = NULL;
+    
+    // build first base name and extension
+    strncpy(bases[0], basename, 63);
+    dotpos = strrchr(bases[0], '.');
+    
+    if (dotpos) {
+        *dotpos = '\0';
+        if (!extension)
+            extension = dotpos + 1;
+    }
+    
+    // build other two base names
+    snprintf(bases[1], 63, "%s_%s", bases[0], (emuname) ? "emu" : "sys");
+    snprintf(bases[2], 63, "%s%s" , (emuname) ? "emu" : "sys", bases[0]);
+    
+    u32 fn_id = 0;
+    u32 fn_num = 0;
+    Debug("Use arrow keys and <A> to choose a name");
+    while (true) {
+        bool exists = false;
+        char numstr[2] = { 0 };
+        // build and output file name (plus "(!)" if existing)
+        numstr[0] = (fn_num > 0) ? '0' + fn_num : '\0';
+        snprintf(filename, 63, "%s%s.%s", bases[fn_id], numstr, extension);
+        if (FileOpen(filename)) {
+            exists = true;
+            FileClose();
+        }
+        Debug("\r%s%s", filename, (exists) ? " (!)" : "");
+        // user input routine
+        u32 pad_state = InputWait();
+        if (pad_state & BUTTON_DOWN) { // increment filename id
+            fn_id = (fn_id + 1) % 3;
+            fn_num = 0;
+        } else if (pad_state & BUTTON_UP) { // decrement filename id
+            fn_id = (fn_id > 0) ? fn_id - 1 : 2;
+        } else if ((pad_state & BUTTON_RIGHT) && (fn_num < 9)) { // increment number
+            fn_num++;
+        } else if ((pad_state & BUTTON_LEFT) && (fn_num > 0)) { // decrement number
+            fn_num--;
+        } else if (pad_state & BUTTON_A) {
+            Debug("%s", filename);
+            break;
+        } else if (pad_state & BUTTON_B) {
+            Debug("(cancelled by user)");
+            return 2;
+        }
+    }
+    
+    return 0;
+}
+
+u32 OutputFileNameSelector(char* filename, const char* basename, char* extension, u8* magic, u32 msize, u32 fsize) {
+    char** fnptr = (char**) 0x20400000; // allow using 0x8000 byte
+    char* fnlist = (char*) 0x20408000; // allow using 0x80000 byte
+    u32 n_names = 0;
+    
+    // get the file list - try work directory first
+    if (!GetFileList(WORK_DIR, fnlist, 0x80000, false, true, false) && !GetFileList("/", fnlist, 0x800000, false, true, false)) {
+        Debug("Failed retrieving the file names list");
+        return 1;
+    }
+    
+    // get base name, extension
+    char base[64] = { 0 };
+    if (basename != NULL) {
+        // build base name and extension
+        strncpy(base, basename, 63);
+        char* dotpos = strrchr(base, '.');
+        if (dotpos) {
+            *dotpos = '\0';
+            if (!extension)
+                extension = dotpos + 1;
+        }
+    }
+    
+    // limit magic number size
+    if (msize > 0x200)
+        msize = 0x200;
+    
+    // parse the file names list for usable entries
+    for (char* fn = strtok(fnlist, "\n"); fn != NULL; fn = strtok(NULL, "\n")) {
+        u8 data[0x200];
+        char* dotpos = strrchr(fn, '.');
+        if (strnlen(fn, 128) > 63)
+            continue; // file name too long
+        if ((basename != NULL) && !strstr(fn, base))
+            continue; // basename check failed
+        if ((extension != NULL) && (strncmp(dotpos + 1, extension, strnlen(extension, 16))))
+            continue; // extension check failed
+        if (!FileOpen(fn))
+            continue; // file can't be opened
+        if (fsize && (FileGetSize() != fsize)) {
+            FileClose();
+            continue; // file size check failed
+        }
+        if (msize) {
+            if (FileRead(data, msize, 0) != msize) {
+                FileClose();
+                continue; // can't be read
+            }
+            if (memcmp(data, magic, msize) != 0) {
+                FileClose();
+                continue; // magic number does not match
+            }
+        }
+        FileClose();
+        // this is a match - keep it
+        fnptr[n_names++] = fn;
+        if (n_names * sizeof(char**) >= 0x8000)
+            return 1;
+    }
+    if (n_names == 0)
+        return 1;
+    
+    u32 index = 0;
+    Debug("Use arrow keys and <A> to choose a file");
+    while (true) {
+        snprintf(filename, 63, "%s", fnptr[index]);
+        Debug("\r%s", filename);
+        u32 pad_state = InputWait();
+        if (pad_state & BUTTON_DOWN) { // next filename
+            index = (index + 1) % n_names;
+        } else if (pad_state & BUTTON_UP) { // previous filename
+            index = (index > 0) ? index - 1 : n_names - 1;
+        } else if (pad_state & BUTTON_A) {
+            Debug("%s", filename);
+            break;
+        } else if (pad_state & BUTTON_B) {
+            Debug("(cancelled by user)");
+            return 2;
+        }
+    }
+    
+    return 0;
 }
 
 PartitionInfo* GetPartitionInfo(u32 partition_id)
@@ -278,10 +419,22 @@ u32 DumpNand(u32 param)
     return result;
 }
 
-u32 DecryptNandPartition(PartitionInfo* p_info)
+u32 DecryptNandPartition(u32 param)
 {
-    char filename[32];
+    PartitionInfo* p_info = NULL;
+    char filename[64];
     u8 magic[NAND_SECTOR_SIZE];
+    
+    for (u32 partition_id = P_TWLN; partition_id <= P_CTRNAND; partition_id = partition_id << 1) {
+        if (param & partition_id) {
+            p_info = GetPartitionInfo(partition_id);
+            break;
+        }
+    }
+    if (p_info == NULL) {
+        Debug("No partition to dump");
+        return 1;
+    }
     
     Debug("Dumping & Decrypting %s, size (MB): %u", p_info->name, p_info->size / (1024 * 1024));
     if (DecryptNandToMem(magic, p_info->offset, 16, p_info) != 0)
@@ -290,19 +443,10 @@ u32 DecryptNandPartition(PartitionInfo* p_info)
         Debug("Decryption error, please contact us");
         return 1;
     }
-    snprintf(filename, 32, "%s.bin", p_info->name);
+    if (InputFileNameSelector(filename, p_info->name, "bin", param & N_EMUNAND) != 0)
+        return 1;
     
     return DecryptNandToFile(filename, p_info->offset, p_info->size, p_info);
-}
-
-u32 DecryptNandPartitions(u32 param)
-{
-    u32 result = 0;
-    
-    for (u32 partition_id = P_TWLN; partition_id <= P_CTRNAND; partition_id = partition_id << 1)
-        result |= (param & partition_id) ? DecryptNandPartition(GetPartitionInfo(partition_id)) : 0;
-    
-    return result;
 }
 
 u32 EncryptMemToNand(u8* buffer, u32 offset, u32 size, PartitionInfo* partition)
@@ -398,20 +542,36 @@ u32 RestoreNand(u32 param)
     return result;
 }
 
-u32 InjectNandPartition(PartitionInfo* p_info)
+u32 InjectNandPartition(u32 param)
 {
-    char filename[32];
+    PartitionInfo* p_info = NULL;
+    char filename[64];
     u8 magic[NAND_SECTOR_SIZE];
     
-    // File check
-    snprintf(filename, 32, "%s.bin", p_info->name);
-    if (FileOpen(filename)) {
-        FileClose();
-    } else {
+    if (!(param & N_NANDWRITE)) // developer screwup protection
+        return 1;
+    
+    for (u32 partition_id = P_TWLN; partition_id <= P_CTRNAND; partition_id = partition_id << 1) {
+        if (param & partition_id) {
+            p_info = GetPartitionInfo(partition_id);
+            break;
+        }
+    }
+    if (p_info == NULL) {
+        Debug("No partition to inject to");
         return 1;
     }
     
     Debug("Encrypting & Injecting %s, size (MB): %u", p_info->name, p_info->size / (1024 * 1024));
+    // User file select
+    u32 fn_state = OutputFileNameSelector(filename, p_info->name, "bin",
+        p_info->magic, (p_info->magic[0] != 0xFF) ? 8 : 0, p_info->size);
+    if (fn_state == 1) {
+        Debug("No injectable files found");
+        return 1;
+    } else if (fn_state != 0) {
+        return 1;
+    }
     
     // Encryption check
     if (DecryptNandToMem(magic, p_info->offset, 16, p_info) != 0)
@@ -436,17 +596,4 @@ u32 InjectNandPartition(PartitionInfo* p_info)
     }
     
     return EncryptFileToNand(filename, p_info->offset, p_info->size, p_info);
-}
-
-u32 InjectNandPartitions(u32 param)
-{
-    u32 result = 1;
-    
-    if (!(param & N_NANDWRITE)) // developer screwup protection
-        return 1;
-    
-    for (u32 partition_id = P_TWLN; partition_id <= P_CTRNAND; partition_id = partition_id << 1)
-        result &= (param & partition_id) ? InjectNandPartition(GetPartitionInfo(partition_id)) : 1;
-    
-    return result;
 }

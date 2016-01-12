@@ -11,7 +11,6 @@
 #define P_FIRM0   (1<<3)
 #define P_FIRM1   (1<<4)
 #define P_CTRNAND (1<<5)
-#define P_ALL     (P_TWLN | P_TWLP | P_AGBSAVE | P_FIRM0 | P_FIRM1 | P_CTRNAND)
 
 // these three are not handled by the feature functions
 // they have to be handled by the menu system
@@ -37,13 +36,13 @@ typedef struct {
 PartitionInfo* GetPartitionInfo(u32 partition_id);
 u32 GetNandCtr(u8* ctr, u32 offset);
 
+u32 InputFileNameSelector(char* filename, const char* basename, char* extension, bool emuname);
+u32 OutputFileNameSelector(char* filename, const char* basename, char* extension, u8* magic, u32 msize, u32 fsize);
+
 u32 DecryptNandToMem(u8* buffer, u32 offset, u32 size, PartitionInfo* partition);
 u32 DecryptNandToFile(const char* filename, u32 offset, u32 size, PartitionInfo* partition);
-u32 DecryptNandPartition(PartitionInfo* p);
-
 u32 EncryptMemToNand(u8* buffer, u32 offset, u32 size, PartitionInfo* partition);
 u32 EncryptFileToNand(const char* filename, u32 offset, u32 size, PartitionInfo* partition);
-u32 InjectNandPartition(PartitionInfo* p);
 
 // --> FEATURE FUNCTIONS <--
 u32 CheckEmuNand(void);
@@ -54,5 +53,5 @@ u32 TwlNandPadgen(u32 param);
 
 u32 DumpNand(u32 param);
 u32 RestoreNand(u32 param);
-u32 DecryptNandPartitions(u32 param);
-u32 InjectNandPartitions(u32 param);
+u32 DecryptNandPartition(u32 param);
+u32 InjectNandPartition(u32 param);

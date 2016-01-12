@@ -76,45 +76,45 @@ MenuInfo menu[] =
     {
         "Partition Dump... (SysNAND)", 6, // ID 0
         {
-            { "Dump TWLN Partition",          &DecryptNandPartitions, P_TWLN },
-            { "Dump TWLP Partition",          &DecryptNandPartitions, P_TWLP },
-            { "Dump AGBSAVE Partition",       &DecryptNandPartitions, P_AGBSAVE },
-            { "Dump FIRM0 Partition",         &DecryptNandPartitions, P_FIRM0 },
-            { "Dump FIRM1 Partition",         &DecryptNandPartitions, P_FIRM1 },
-            { "Dump CTRNAND Partition",       &DecryptNandPartitions, P_CTRNAND }
+            { "Dump TWLN Partition",          &DecryptNandPartition, P_TWLN },
+            { "Dump TWLP Partition",          &DecryptNandPartition, P_TWLP },
+            { "Dump AGBSAVE Partition",       &DecryptNandPartition, P_AGBSAVE },
+            { "Dump FIRM0 Partition",         &DecryptNandPartition, P_FIRM0 },
+            { "Dump FIRM1 Partition",         &DecryptNandPartition, P_FIRM1 },
+            { "Dump CTRNAND Partition",       &DecryptNandPartition, P_CTRNAND }
         }
     },
     {
         "Partition Dump...(EmuNAND)", 6, // ID 1
         {
-            { "Dump TWLN Partition",          &DecryptNandPartitions, N_EMUNAND | P_TWLN },
-            { "Dump TWLP Partition",          &DecryptNandPartitions, N_EMUNAND | P_TWLP },
-            { "Dump AGBSAVE Partition",       &DecryptNandPartitions, N_EMUNAND | P_AGBSAVE },
-            { "Dump FIRM0 Partition",         &DecryptNandPartitions, N_EMUNAND | P_FIRM0 },
-            { "Dump FIRM1 Partition",         &DecryptNandPartitions, N_EMUNAND | P_FIRM1 },
-            { "Dump CTRNAND Partition",       &DecryptNandPartitions, N_EMUNAND | P_CTRNAND }
+            { "Dump TWLN Partition",          &DecryptNandPartition, N_EMUNAND | P_TWLN },
+            { "Dump TWLP Partition",          &DecryptNandPartition, N_EMUNAND | P_TWLP },
+            { "Dump AGBSAVE Partition",       &DecryptNandPartition, N_EMUNAND | P_AGBSAVE },
+            { "Dump FIRM0 Partition",         &DecryptNandPartition, N_EMUNAND | P_FIRM0 },
+            { "Dump FIRM1 Partition",         &DecryptNandPartition, N_EMUNAND | P_FIRM1 },
+            { "Dump CTRNAND Partition",       &DecryptNandPartition, N_EMUNAND | P_CTRNAND }
         }
     },
     {
         "Partition Inject... (SysNAND)", 6, // ID 2
         {
-            { "Inject TWLN Partition",        &InjectNandPartitions, N_NANDWRITE | P_TWLN },
-            { "Inject TWLP Partition",        &InjectNandPartitions, N_NANDWRITE | P_TWLP },
-            { "Inject AGBSAVE Partition",     &InjectNandPartitions, N_NANDWRITE | P_AGBSAVE },
-            { "Inject FIRM0 Partition",       &InjectNandPartitions, N_NANDWRITE | P_FIRM0 },
-            { "Inject FIRM1 Partition",       &InjectNandPartitions, N_NANDWRITE | P_FIRM1 },
-            { "Inject CTRNAND Partition",     &InjectNandPartitions, N_NANDWRITE | P_CTRNAND }
+            { "Inject TWLN Partition",        &InjectNandPartition, N_NANDWRITE | P_TWLN },
+            { "Inject TWLP Partition",        &InjectNandPartition, N_NANDWRITE | P_TWLP },
+            { "Inject AGBSAVE Partition",     &InjectNandPartition, N_NANDWRITE | P_AGBSAVE },
+            { "Inject FIRM0 Partition",       &InjectNandPartition, N_NANDWRITE | P_FIRM0 },
+            { "Inject FIRM1 Partition",       &InjectNandPartition, N_NANDWRITE | P_FIRM1 },
+            { "Inject CTRNAND Partition",     &InjectNandPartition, N_NANDWRITE | P_CTRNAND }
         }
     },
     {
         "Partition Inject... (EmuNAND)", 6, // ID 3
         {
-            { "Inject TWLN Partition",        &InjectNandPartitions, N_NANDWRITE | N_EMUNAND | P_TWLN },
-            { "Inject TWLP Partition",        &InjectNandPartitions, N_NANDWRITE | N_EMUNAND | P_TWLP },
-            { "Inject AGBSAVE Partition",     &InjectNandPartitions, N_NANDWRITE | N_EMUNAND | P_AGBSAVE },
-            { "Inject FIRM0 Partition",       &InjectNandPartitions, N_NANDWRITE | N_EMUNAND | P_FIRM0 },
-            { "Inject FIRM1 Partition",       &InjectNandPartitions, N_NANDWRITE | N_EMUNAND | P_FIRM1 },
-            { "Inject CTRNAND Partition",     &InjectNandPartitions, N_NANDWRITE | N_EMUNAND | P_CTRNAND }
+            { "Inject TWLN Partition",        &InjectNandPartition, N_NANDWRITE | N_EMUNAND | P_TWLN },
+            { "Inject TWLP Partition",        &InjectNandPartition, N_NANDWRITE | N_EMUNAND | P_TWLP },
+            { "Inject AGBSAVE Partition",     &InjectNandPartition, N_NANDWRITE | N_EMUNAND | P_AGBSAVE },
+            { "Inject FIRM0 Partition",       &InjectNandPartition, N_NANDWRITE | N_EMUNAND | P_FIRM0 },
+            { "Inject FIRM1 Partition",       &InjectNandPartition, N_NANDWRITE | N_EMUNAND | P_FIRM1 },
+            { "Inject CTRNAND Partition",     &InjectNandPartition, N_NANDWRITE | N_EMUNAND | P_CTRNAND }
         }
     },
     {
