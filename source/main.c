@@ -61,13 +61,15 @@ MenuInfo menu[] =
         }
     },
     {
-        "Game Decryptor Options", 8,
+        "Game Decryptor Options", 10,
         {
             { "NCCH/NCSD Decryptor",          &CryptGameFiles,        GC_NCCH_PROCESS },
             { "NCCH/NCSD Encryptor",          &CryptGameFiles,        GC_NCCH_PROCESS | GC_NCCH_ENCRYPT },
             { "CIA Decryptor (shallow)",      &CryptGameFiles,        GC_CIA_PROCESS },
             { "CIA Decryptor (deep)",         &CryptGameFiles,        GC_CIA_PROCESS | GC_CIA_DEEP },
             { "CIA Decryptor (CXI only)",     &CryptGameFiles,        GC_CIA_PROCESS | GC_CIA_DEEP | GC_CXI_ONLY },
+            { "CIA Encryptor (NCCH)",         &CryptGameFiles,        GC_CIA_PROCESS | GC_NCCH_ENCRYPT },
+            { "CIA Encryptor (CXI only)",     &CryptGameFiles,        GC_CIA_PROCESS | GC_NCCH_ENCRYPT | GC_CXI_ONLY },
             { "SD Decryptor/Encryptor",       &CryptSdFiles,          0 },
             { "SD Decryptor (SysNAND dir)",   &DecryptSdFilesDirect,  0 },
             { "SD Decryptor (EmuNAND dir)",   &DecryptSdFilesDirect,  N_EMUNAND }
