@@ -26,30 +26,66 @@ u32 CheckEmuNand(void)
 {
     u8* buffer = BUFFER_ADDRESS;
     u32 nand_size_sectors = getMMCDevice(0)->total_size;
-    
-    // check the MBR for presence of EmuNAND
+    u32 multi_sectors = (GetUnitPlatform() == PLATFORM_3DS) ? EMUNAND_MULTI_OFFSET_O3DS : EMUNAND_MULTI_OFFSET_N3DS;
+    u32 ret = EMUNAND_NOT_READY;
+
+    // check the MBR for presence of a hidden partition
     sdmmc_sdcard_readsectors(0, 1, buffer);
-    if (nand_size_sectors > getle32(buffer + 0x1BE + 0x8))
-        return EMUNAND_NOT_READY;
+    u32 hidden_sectors = getle32(buffer + 0x1BE + 0x8);
     
-    // check for Gateway type EmuNAND
-    sdmmc_sdcard_readsectors(nand_size_sectors, 1, buffer);
-    if (memcmp(buffer + 0x100, "NCSD", 4) == 0)
-        return EMUNAND_GATEWAY;
+    for (u32 offset_sector = 0; offset_sector + nand_size_sectors < hidden_sectors; offset_sector += multi_sectors) {
+        // check for Gateway type EmuNAND
+        sdmmc_sdcard_readsectors(offset_sector + nand_size_sectors, 1, buffer);
+        if (memcmp(buffer + 0x100, "NCSD", 4) == 0) {
+            ret |= EMUNAND_GATEWAY << (2 * (offset_sector / multi_sectors)); 
+            continue;
+        }
+        // check for RedNAND type EmuNAND
+        sdmmc_sdcard_readsectors(offset_sector + 1, 1, buffer);
+        if (memcmp(buffer + 0x100, "NCSD", 4) == 0) {
+            ret |= EMUNAND_REDNAND << (2 * (offset_sector / multi_sectors)); 
+            continue;
+        }
+        // EmuNAND ready but not set up
+       ret |= EMUNAND_READY << (2 * (offset_sector / multi_sectors)); 
+    }
     
-    // check for RedNAND type EmuNAND
-    sdmmc_sdcard_readsectors(1, 1, buffer);
-    if (memcmp(buffer + 0x100, "NCSD", 4) == 0)
-        return EMUNAND_REDNAND;
-        
-    // EmuNAND ready but not set up
-    return EMUNAND_READY;
+    return ret;
 }
 
 u32 SetNand(bool set_emunand, bool force_emunand)
 {
     if (set_emunand) {
         u32 emunand_state = CheckEmuNand();
+        u32 emunand_count = 0;
+        u32 offset_sector = 0;
+        
+        for (emunand_count = 0; (emunand_state >> (2 * emunand_count)) & 0x3; emunand_count++);
+        if (emunand_count > 1) { // multiple EmuNANDs -> use selector
+            u32 multi_sectors = (GetUnitPlatform() == PLATFORM_3DS) ? EMUNAND_MULTI_OFFSET_O3DS : EMUNAND_MULTI_OFFSET_N3DS;
+            u32 emunand_no = 0;
+            Debug("Use arrow keys and <A> to choose EmuNAND");
+            while (true) {
+                u32 emunandn_state = (emunand_state >> (2 * emunand_no)) & 0x3;
+                offset_sector = emunand_no * multi_sectors;
+                Debug("\rEmuNAND #%u: %s", emunand_no, (emunandn_state == EMUNAND_READY) ? "EmuNAND ready" : (emunandn_state == EMUNAND_GATEWAY) ? "GW EmuNAND" : "RedNAND");
+                // user input routine
+                u32 pad_state = InputWait();
+                if (pad_state & BUTTON_DOWN) {
+                    emunand_no = (emunand_no + 1) % emunand_count;
+                } else if (pad_state & BUTTON_UP) {
+                    emunand_no = (emunand_no) ?  emunand_no - 1 : emunand_count - 1;
+                } else if (pad_state & BUTTON_A) {
+                    Debug("EmuNAND #%u", emunand_no);
+                    emunand_state = emunandn_state;
+                    break;
+                } else if (pad_state & BUTTON_B) {
+                    Debug("(cancelled by user)");
+                    return 2;
+                }
+            }
+        }
+        
         if ((emunand_state == EMUNAND_READY) && force_emunand)
             emunand_state = EMUNAND_GATEWAY;
         switch (emunand_state) {
@@ -57,13 +93,13 @@ u32 SetNand(bool set_emunand, bool force_emunand)
                 Debug("SD is not formatted for EmuNAND");
                 return 1;
             case EMUNAND_GATEWAY:
-                emunand_header = getMMCDevice(0)->total_size;
-                emunand_offset = 0;
+                emunand_header = offset_sector + getMMCDevice(0)->total_size;
+                emunand_offset = offset_sector;
                 Debug("Using EmuNAND @ %06X/%06X", emunand_header, emunand_offset);
                 return 0;
             case EMUNAND_REDNAND:
-                emunand_header = 1;
-                emunand_offset = 1;
+                emunand_header = offset_sector + 1;
+                emunand_offset = offset_sector + 1;
                 Debug("Using RedNAND @ %06X/%06X", emunand_header, emunand_offset);
                 return 0;
             default:
