@@ -136,6 +136,7 @@ void DebugClear()
     LoadThemeGfx(GFX_DEBUG_BG, true);
     #endif
     LogWrite("");
+    LogWrite(NULL);
 }
 
 void DebugSet(const char **strs)

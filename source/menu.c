@@ -36,7 +36,8 @@ u32 ScrollOutput()
     
     // read lines
     logtext[log_size - 1] = '\0';
-    for (char* line = logtext; line != NULL && l_total < 4000; line = strchr(line, '\n')) {
+    logptr[l_total++] = logtext;
+    for (char* line = strchr(logtext, '\n'); line != NULL && l_total < 4000; line = strchr(line, '\n')) {
         *line = '\0';
         logptr[l_total++] = ++line; 
     }
