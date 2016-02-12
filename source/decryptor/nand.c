@@ -141,7 +141,7 @@ static inline int WriteNandSectors(u32 sector_no, u32 numsectors, u8 *in)
     } else return sdmmc_nand_writesectors(sector_no, numsectors, in);
 }
 
-u32 OutputFileNameSelector(char* filename, const char* basename, char* extension, bool emuname) {
+u32 OutputFileNameSelector(char* filename, const char* basename, char* extension) {
     char bases[3][64] = { 0 };
     char* dotpos = NULL;
     
@@ -156,11 +156,11 @@ u32 OutputFileNameSelector(char* filename, const char* basename, char* extension
     }
     
     // build other two base names
-    snprintf(bases[1], 63, "%s_%s", bases[0], (emuname) ? "emu" : "sys");
-    snprintf(bases[2], 63, "%s%s" , (emuname) ? "emu" : "sys", bases[0]);
+    snprintf(bases[1], 63, "%s_%s", bases[0], (emunand_header) ? "emu" : "sys");
+    snprintf(bases[2], 63, "%s%s" , (emunand_header) ? "emu" : "sys", bases[0]);
     
-    u32 fn_id = 0;
-    u32 fn_num = 0;
+    u32 fn_id = (emunand_header) ? 1 : 0;
+    u32 fn_num = (emunand_header) ? (emunand_offset / ((GetUnitPlatform() == PLATFORM_3DS) ? EMUNAND_MULTI_OFFSET_O3DS : EMUNAND_MULTI_OFFSET_N3DS)) : 0;
     bool exists = false;
     char extstr[16] = { 0 };
     if (extension)
@@ -178,7 +178,6 @@ u32 OutputFileNameSelector(char* filename, const char* basename, char* extension
         u32 pad_state = InputWait();
         if (pad_state & BUTTON_DOWN) { // increment filename id
             fn_id = (fn_id + 1) % 3;
-            fn_num = 0;
         } else if (pad_state & BUTTON_UP) { // decrement filename id
             fn_id = (fn_id > 0) ? fn_id - 1 : 2;
         } else if ((pad_state & BUTTON_RIGHT) && (fn_num < 9)) { // increment number
@@ -484,7 +483,7 @@ u32 DumpNand(u32 param)
 
     Debug("Dumping %sNAND. Size (MB): %u", (param & N_EMUNAND) ? "Emu" : "Sys", nand_size / (1024 * 1024));
     
-    if (OutputFileNameSelector(filename, "NAND.bin", NULL, param & N_EMUNAND) != 0)
+    if (OutputFileNameSelector(filename, "NAND.bin", NULL) != 0)
         return 1;
     if (!DebugFileCreate(filename, true))
         return 1;
@@ -530,7 +529,7 @@ u32 DecryptNandPartition(u32 param)
         Debug("Decryption error, please contact us");
         return 1;
     }
-    if (OutputFileNameSelector(filename, p_info->name, "bin", param & N_EMUNAND) != 0)
+    if (OutputFileNameSelector(filename, p_info->name, "bin") != 0)
         return 1;
     
     return DecryptNandToFile(filename, p_info->offset, p_info->size, p_info);
