@@ -209,6 +209,19 @@ u32 NcchPadgen(u32 param)
         Debug("7.x game decryption will fail on less than 7.x");
     }
 
+    if (DebugFileOpen("slot0x11key96.bin")) {
+        u8 slot0x11key96[16] = {0};
+        if (FileRead(&slot0x11key96, 16, 0) != 16) {
+            Debug("slot0x11key96.bin is corrupt!");
+            FileClose();
+            return 1;
+        }
+        FileClose();
+        setup_aeskey(0x11, slot0x11key96);
+    } else {
+        Debug("Secure4 crypto will fail");
+    }
+        
     if (DebugFileOpen("seeddb.bin")) {
         if (!DebugFileRead(seedinfo, 16, 0)) {
             FileClose();
@@ -310,16 +323,15 @@ u32 NcchPadgen(u32 param)
                 Debug("This can only be generated on N3DS");
                 return 1;
             }
-            padInfo.keyslot = 0x18;
+            padInfo.keyslot = 0x18; // Secure3 crypto
         } else if (info->entries[i].uses7xCrypto == 0xB) {
-            Debug("Secure4 xorpad cannot be generated yet");
-            return 1;
+            padInfo.keyslot = 0x11; // Secure4 crypto, needs slot0x11key96.bin
         } else if(info->entries[i].uses7xCrypto >> 8 == 0xDEC0DE) // magic value to manually specify keyslot
             padInfo.keyslot = info->entries[i].uses7xCrypto & 0x3F;
         else if (info->entries[i].uses7xCrypto)
-            padInfo.keyslot = 0x25;
+            padInfo.keyslot = 0x25; // 7.x crypto
         else
-            padInfo.keyslot = 0x2C;
+            padInfo.keyslot = 0x2C; // standard crypto
         Debug("Using keyslot: %02X", padInfo.keyslot);
         
         if (CreatePad(&padInfo) != 0)
@@ -657,8 +669,19 @@ u32 CryptNcch(const char* filename, u32 offset, u32 size, u64 seedId, u8* encryp
     
     // check secure4 crypto
     if (usesSec4Crypto) {
-        Debug("Secure4 crypto is not supported!");
-        return 1;
+        Debug("Warning: Secure4 support is preliminary!");
+        if (FileOpen("slot0x11key96.bin")) {
+            u8 slot0x11key96[16] = {0};
+            if (FileRead(&slot0x11key96, 16, 0) != 16) {
+                Debug("slot0x11key96.bin is corrupt!");
+                FileClose();
+                return 1;
+            }
+            FileClose();
+            setup_aeskey(0x11, slot0x11key96);
+        } else {
+            return 1;
+        }
     }
     
     // check / setup 7x crypto
@@ -724,7 +747,7 @@ u32 CryptNcch(const char* filename, u32 offset, u32 size, u64 seedId, u8* encryp
     memcpy(info0.keyY, ncch->signature, 16);
     memcpy(info1.keyY, (usesSeedCrypto) ? seedKeyY : ncch->signature, 16);
     if (!usesFixedKey)
-        info1.keyslot = (usesSec3Crypto) ? 0x18 : ((uses7xCrypto) ? 0x25 : 0x2C);
+        info1.keyslot = (usesSec4Crypto) ? 0x11 : ((usesSec3Crypto) ? 0x18 : ((uses7xCrypto) ? 0x25 : 0x2C));
     
     Debug("%s ExHdr/ExeFS/RomFS (%ukB/%ukB/%uMB)",
         (encrypt_flags) ? "Encrypt" : "Decrypt",
