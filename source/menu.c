@@ -215,7 +215,6 @@ void BatchScreenshot(MenuInfo* info, bool full_batch)
 
 u32 ProcessMenu(MenuInfo* info, u32 n_entries_main)
 {
-    MenuInfo mainMenu;
     MenuInfo* currMenu;
     MenuInfo* prevMenu[MENU_MAX_DEPTH];
     u32 prevIndex[MENU_MAX_DEPTH];
@@ -225,6 +224,7 @@ u32 ProcessMenu(MenuInfo* info, u32 n_entries_main)
     u32 result = MENU_EXIT_REBOOT;
     
     #ifndef USE_THEME
+    MenuInfo mainMenu;
     if (n_entries_main > 1) {
         // build main menu structure from submenus
         if (n_entries_main > MENU_MAX_ENTRIES) // limit number of entries
