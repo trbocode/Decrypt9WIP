@@ -467,14 +467,21 @@ u32 UpdateSeedDb(u32 param)
     // search and extract seeds
     for ( int n = 0; n < 2; n++ ) {
         // there are two offsets where seeds can be found - 0x07000 & 0x5C000
-        u8* seed_data = buffer + ((n == 0) ? 0x7000 : 0x5C000);
-        for ( size_t i = 0; i < 2000; i++ ) { 
+        static const int seed_offsets[2] = {0x7000, 0x5C000};
+        unsigned char* seed_data = buffer + seed_offsets[n];
+        for ( size_t i = 0; i < 2000; i++ ) {
+            static const u8 zeroes[16] = { 0x00 };
             // magic number is the reversed first 4 byte of a title id
             static const u8 magic[4] = { 0x00, 0x00, 0x04, 0x00 };
             // 2000 seed entries max, splitted into title id and seed area
             u8* titleId = seed_data + (i*8);
             u8* seed = seed_data + (2000*8) + (i*16);
             if (memcmp(titleId + 4, magic, 4) != 0)
+                continue;
+            // Bravely Second demo seed workaround
+            if (memcmp(seed, zeroes, 16) == 0)
+                seed = buffer + seed_offsets[(n+1)%2] + (2000 * 8) + (i*16);
+            if (memcmp(seed, zeroes, 16) == 0)
                 continue;
             // seed found, check if it already exists
             u32 entryPos = 0;
