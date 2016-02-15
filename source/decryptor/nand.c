@@ -324,7 +324,7 @@ u32 CtrNandPadgen(u32 param)
         keyslot = 0x4;
         nand_size = 758;
     } else {
-        keyslot = 0x5;
+        keyslot = (param & PG_FORCESLOT4) ? 0x4 : 0x5;
         nand_size = 1055;
     }
 
