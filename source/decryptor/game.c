@@ -1048,6 +1048,8 @@ u32 CryptCia(const char* filename, u8* ncch_crypt, bool cia_encrypt, bool cxi_on
             u32 size = getbe32(content_list + (0x30 * i) + 0xC);
             u32 offset = next_offset;
             next_offset = offset + size;
+            if (content_list[(0x30 * i) + 0x7] & 0x1)
+                continue; // skip this if still CIA (shallow) encrypted
             Debug("Processing Content %i of %i (%iMB)...", i + 1, content_count, size / (1024*1024));
             ncch_state = CryptNcch(filename, offset, size, titleId, NULL);
             if (!(ncch_crypt[7] & 0x04) && (ncch_state != 1))
