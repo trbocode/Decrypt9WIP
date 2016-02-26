@@ -123,7 +123,7 @@ static inline int ReadNandSectors(u32 sector_no, u32 numsectors, u8 *out)
             numsectors--;
             out += 0x200;
         }
-        return sdmmc_sdcard_readsectors(sector_no + emunand_offset, numsectors, out);
+        return (numsectors) ? sdmmc_sdcard_readsectors(sector_no + emunand_offset, numsectors, out) : 0;
     } else return sdmmc_nand_readsectors(sector_no, numsectors, out);
 }
 
@@ -137,7 +137,7 @@ static inline int WriteNandSectors(u32 sector_no, u32 numsectors, u8 *in)
             numsectors--;
             in += 0x200;
         }
-        return sdmmc_sdcard_writesectors(sector_no + emunand_offset, numsectors, in);
+        return (numsectors) ? sdmmc_sdcard_writesectors(sector_no + emunand_offset, numsectors, in) : 0;
     } else return sdmmc_nand_writesectors(sector_no, numsectors, in);
 }
 
