@@ -35,7 +35,7 @@ MenuInfo menu[] =
         }
     },
     {
-        "SysNAND Options", 8,
+        "SysNAND Options", 9,
         {
             { "NAND Backup",                  &DumpNand,              0 },
             { "NAND Restore",                 &RestoreNand,           N_NANDWRITE },
@@ -44,7 +44,8 @@ MenuInfo menu[] =
             { "File Dump...",                 NULL,                   SUBMENU_START + 4 },
             { "File Inject...",               NULL,                   SUBMENU_START + 6 },
             { "Health&Safety Dump",           &DumpHealthAndSafety,   0 },
-            { "Health&Safety Inject",         &InjectHealthAndSafety, N_NANDWRITE }
+            { "Health&Safety Inject",         &InjectHealthAndSafety, N_NANDWRITE },
+            { "Update SeedDB",                &UpdateSeedDb,          0 }
         }
     },
     {
@@ -122,7 +123,7 @@ MenuInfo menu[] =
         }
     },
     {
-        "File Dump... (SysNAND)", 10, // ID 4
+        "File Dump... (SysNAND)", 11, // ID 4
         {
             { "Dump ticket.db",               &DumpFile,             F_TICKET },
             { "Dump title.db",                &DumpFile,             F_TITLE },
@@ -132,6 +133,7 @@ MenuInfo menu[] =
             { "Dump LocalFriendCodeSeed_B",   &DumpFile,             F_LOCALFRIEND },
             { "Dump rand_seed",               &DumpFile,             F_RANDSEED },
             { "Dump movable.sed",             &DumpFile,             F_MOVABLE },
+            { "Dump seedsave.bin",            &DumpFile,             F_SEEDSAVE },
             { "Dump nagsave.bin",             &DumpFile,             F_NAGSAVE },
             { "Dump nnidsave.bin",            &DumpFile,             F_NNIDSAVE }
         }
