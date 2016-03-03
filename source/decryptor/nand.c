@@ -388,54 +388,24 @@ u32 GetNandCtr(u8* ctr, u32 offset)
 {
     static u8 CtrNandCtr[16];
     static u8 TwlNandCtr[16];
-    static u8* ctr_start = NULL;
     static bool ctr_loaded = false;
     
     if (!ctr_loaded) {
-        static const char* versions[] = {"4.x", "5.x", "6.x", "7.x", "8.x", "9.x"};
-        static const u8* version_ctrs[] = {
-            (u8*)0x080D7CAC,
-            (u8*)0x080D858C,
-            (u8*)0x080D748C,
-            (u8*)0x080D740C,
-            (u8*)0x080D74CC,
-            (u8*)0x080D794C
-        };
-        static const u32 version_ctrs_len = sizeof(version_ctrs) / sizeof(u32);
+        u8 NandCid[16];
+        u8 shasum[32];
         
-        for (u32 i = 0; i < version_ctrs_len; i++) {
-            if (*(u32*)version_ctrs[i] == 0x5C980) {
-                Debug("System version %s", versions[i]);
-                ctr_start = (u8*) version_ctrs[i] + 0x30;
-            }
-        }
+        sdmmc_get_cid( 1, (uint32_t*) NandCid);
+        sha_init(SHA256_MODE);
+        sha_update(NandCid, 16);
+        sha_get(shasum);
+        memcpy(CtrNandCtr, shasum, 16);
         
-        // If value not in previous list start memory scanning (test range)
-        if (ctr_start == NULL) {
-            for (u8* c = (u8*) 0x080D8FFF; c > (u8*) 0x08000000; c--) {
-                if (*(u32*)c == 0x5C980 && *(u32*)(c + 1) == 0x800005C9) {
-                    ctr_start = c + 0x30;
-                    Debug("CTR start 0x%08X", ctr_start);
-                    break;
-                }
-            }
-        }
+        sha_init(SHA1_MODE);
+        sha_update(NandCid, 16);
+        sha_get(shasum);
+        for(u32 i = 0; i < 16; i++) // little endian and reversed order
+            TwlNandCtr[i] = shasum[15-i];
         
-        if (ctr_start) {
-            // the ctr is stored backwards in memory
-            for (u32 i = 0; i < 16; i++) {
-                CtrNandCtr[i] = *(ctr_start + (0xF - i));
-                TwlNandCtr[i] = *(ctr_start + 0x88 + (0xF - i));
-            }
-        } else { // backup solution; load from file
-            if (!DebugFileOpen("nandcid.bin"))
-                return 1;
-            if (!DebugFileRead(TwlNandCtr, 16, 16) || !DebugFileRead(CtrNandCtr, 16, 32)) {
-                FileClose();
-                return 1;
-            }
-            FileClose();
-        }
         ctr_loaded = true;
     }
     
