@@ -3,6 +3,7 @@
 #include "hid.h"
 #include "platform.h"
 #include "decryptor/aes.h"
+#include "decryptor/sha.h"
 #include "decryptor/decryptor.h"
 #include "decryptor/nand.h"
 #include "fatfs/sdmmc.h"
@@ -385,19 +386,23 @@ u32 Firm0Firm1Padgen(u32 param)
 
 u32 GetNandCtr(u8* ctr, u32 offset)
 {
-    static const char* versions[] = {"4.x", "5.x", "6.x", "7.x", "8.x", "9.x"};
-    static const u8* version_ctrs[] = {
-        (u8*)0x080D7CAC,
-        (u8*)0x080D858C,
-        (u8*)0x080D748C,
-        (u8*)0x080D740C,
-        (u8*)0x080D74CC,
-        (u8*)0x080D794C
-    };
-    static const u32 version_ctrs_len = sizeof(version_ctrs) / sizeof(u32);
+    static u8 CtrNandCtr[16];
+    static u8 TwlNandCtr[16];
     static u8* ctr_start = NULL;
+    static bool ctr_loaded = false;
     
-    if (ctr_start == NULL) {
+    if (!ctr_loaded) {
+        static const char* versions[] = {"4.x", "5.x", "6.x", "7.x", "8.x", "9.x"};
+        static const u8* version_ctrs[] = {
+            (u8*)0x080D7CAC,
+            (u8*)0x080D858C,
+            (u8*)0x080D748C,
+            (u8*)0x080D740C,
+            (u8*)0x080D74CC,
+            (u8*)0x080D794C
+        };
+        static const u32 version_ctrs_len = sizeof(version_ctrs) / sizeof(u32);
+        
         for (u32 i = 0; i < version_ctrs_len; i++) {
             if (*(u32*)version_ctrs[i] == 0x5C980) {
                 Debug("System version %s", versions[i]);
@@ -416,24 +421,61 @@ u32 GetNandCtr(u8* ctr, u32 offset)
             }
         }
         
-        if (ctr_start == NULL) {
-            Debug("CTR start not found!");
-            return 1;
+        if (ctr_start) {
+            // the ctr is stored backwards in memory
+            for (u32 i = 0; i < 16; i++) {
+                CtrNandCtr[i] = *(ctr_start + (0xF - i));
+                TwlNandCtr[i] = *(ctr_start + 0x88 + (0xF - i));
+            }
+        } else { // backup solution; load from file
+            if (!DebugFileOpen("nandcid.bin"))
+                return 1;
+            if (!DebugFileRead(TwlNandCtr, 16, 16) || !DebugFileRead(CtrNandCtr, 16, 32)) {
+                FileClose();
+                return 1;
+            }
+            FileClose();
         }
+        ctr_loaded = true;
     }
     
-    // the ctr is stored backwards in memory
-    if (offset >= 0x0B100000) { // CTRNAND/AGBSAVE region
-        for (u32 i = 0; i < 16; i++)
-            ctr[i] = *(ctr_start + (0xF - i));
-    } else { // TWL region
-        for (u32 i = 0; i < 16; i++)
-            ctr[i] = *(ctr_start + 0x88 + (0xF - i));
-    }
-    
-    // increment counter
+    // get the correct CTR and increment counter
+    memcpy(ctr, (offset >= 0x0B100000) ? CtrNandCtr : TwlNandCtr, 16);
     add_ctr(ctr, offset / 0x10);
 
+    return 0;
+}
+
+u32 DumpNandCid(u32 param)
+{
+    u8 nandcid[16*3];
+    u8 shasum[32];
+    
+    // actual NAND CID
+    memcpy(nandcid, (void*) 0x01FFCD84, 16);
+    
+    // TWLNAND CTR
+    sha_init(SHA1_MODE);
+    sha_update(nandcid, 16);
+    sha_get(shasum);
+    for(u32 i = 0; i < 16; i++) // little endian and reversed order
+        nandcid[16+i] = shasum[15-i];
+        
+    // CTRNAND CTR
+    sha_init(SHA256_MODE);
+    sha_update(nandcid, 16);
+    sha_get(shasum);
+    memcpy(nandcid + 32, shasum, 16);
+    
+    // write to file
+    if (!DebugFileCreate("nandcid.bin", true))
+        return 1;
+    if (!DebugFileWrite(nandcid, (16*3), 0)) {
+        FileClose();
+        return 1;
+    }
+    FileClose();
+    
     return 0;
 }
 
