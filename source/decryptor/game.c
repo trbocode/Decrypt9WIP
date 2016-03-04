@@ -69,6 +69,28 @@ u32 GetSd0x34KeyY(u8* movable_keyY, bool from_nand)
     return 0;
 }
 
+u32 LoadKeyXFromFile(u32 keyslot)
+{
+    char filename[32];
+    u8 keyX[16] = {0};
+    
+    snprintf(filename, 31, "slot0x%02XKeyX.bin", (unsigned int) keyslot);
+    if (!FileOpen(filename)) {
+        Debug("Loading %s: not found", filename);
+        return 1;
+    }
+    if (FileRead(keyX, 16, 0) != 16) {
+        Debug("Loading %s: bad file", filename);
+        FileClose();
+        return 1;
+    }
+    FileClose();
+    setup_aeskeyX(keyslot, keyX);
+    Debug("Loading %s: ok", filename);
+    
+    return 0;
+}
+
 u32 SdFolderSelector(char* path, u8* keyY)
 {
     char** dirptr = (char**) 0x20400000; // allow using 0x8000 byte
@@ -197,30 +219,14 @@ u32 NcchPadgen(u32 param)
     NcchInfo *info = (NcchInfo*)0x20316000;
     SeedInfo *seedinfo = (SeedInfo*)0x20400000;
 
-    if (DebugFileOpen("slot0x25KeyX.bin")) {
-        u8 slot0x25KeyX[16] = {0};
-        if (!DebugFileRead(&slot0x25KeyX, 16, 0)) {
-            FileClose();
-            return 1;
-        }
-        FileClose();
-        setup_aeskeyX(0x25, slot0x25KeyX);
-    } else {
-        Debug("7.x game decryption will fail on less than 7.x");
+    if (GetUnitPlatform() == PLATFORM_3DS) {
+        if (LoadKeyXFromFile(0x25) != 0)
+            Debug("7.x crypto will fail on less than 7.x");
+        if (LoadKeyXFromFile(0x18) != 0)
+            Debug("Secure3 crypto will fail");
     }
-
-    if (DebugFileOpen("slot0x11key96.bin")) {
-        u8 slot0x11key96[16] = {0};
-        if (FileRead(&slot0x11key96, 16, 0) != 16) {
-            Debug("slot0x11key96.bin is corrupt!");
-            FileClose();
-            return 1;
-        }
-        FileClose();
-        setup_aeskey(0x11, slot0x11key96);
-    } else {
+    if (LoadKeyXFromFile(0x1B) != 0)
         Debug("Secure4 crypto will fail");
-    }
         
     if (DebugFileOpen("seeddb.bin")) {
         if (!DebugFileRead(seedinfo, 16, 0)) {
@@ -238,7 +244,7 @@ u32 NcchPadgen(u32 param)
         }
         FileClose();
     } else {
-        Debug("9.x seed crypto game decryption will fail");
+        Debug("9.x seed crypto will fail");
     }
 
     if (!DebugFileOpen("ncchinfo.bin"))
@@ -318,14 +324,10 @@ u32 NcchPadgen(u32 param)
         else
             memcpy(padInfo.keyY, info->entries[i].keyY, 16);
 
-        if (info->entries[i].uses7xCrypto == 0xA) { 
-            if (GetUnitPlatform() == PLATFORM_3DS) { // won't work on an Old 3DS
-                Debug("This can only be generated on N3DS");
-                return 1;
-            }
-            padInfo.keyslot = 0x18; // Secure3 crypto
+        if (info->entries[i].uses7xCrypto == 0xA) {
+            padInfo.keyslot = 0x18; // Secure3 crypto, needs slot0x18KeyX.bin on O3DS
         } else if (info->entries[i].uses7xCrypto == 0xB) {
-            padInfo.keyslot = 0x11; // Secure4 crypto, needs slot0x11key96.bin
+            padInfo.keyslot = 0x1B; // Secure4 crypto, needs slot0x1BKeyX.bin
         } else if(info->entries[i].uses7xCrypto >> 8 == 0xDEC0DE) // magic value to manually specify keyslot
             padInfo.keyslot = info->entries[i].uses7xCrypto & 0x3F;
         else if (info->entries[i].uses7xCrypto)
@@ -677,51 +679,16 @@ u32 CryptNcch(const char* filename, u32 offset, u32 size, u64 seedId, u8* encryp
     // check / setup 7x crypto on O3DS
     if (uses7xCrypto && (GetUnitPlatform() == PLATFORM_3DS)) {
         if (usesSec3Crypto) {
-            if (FileOpen("slot0x18KeyX.bin")) {
-                u8 slot0x18KeyX[16] = {0};
-                if (FileRead(&slot0x18KeyX, 16, 0) != 16) {
-                    Debug("slot0x18KeyX.bin is corrupt!");
-                    FileClose();
-                    return 1;
-                }
-                FileClose();
-                setup_aeskeyX(0x18, slot0x18KeyX);
-            } else {
-                Debug("Secure3 needs slot0x18KeyX.bin on O3DS");
+            if (LoadKeyXFromFile(0x18) != 0)
                 return 1;
-            }
-        } else {
-            if (FileOpen("slot0x25KeyX.bin")) {
-                u8 slot0x25KeyX[16] = {0};
-                if (FileRead(&slot0x25KeyX, 16, 0) != 16) {
-                    Debug("slot0x25KeyX.bin is corrupt!");
-                    FileClose();
-                    return 1;
-                }
-                FileClose();
-                setup_aeskeyX(0x25, slot0x25KeyX);
-            } else {
-                Debug("Warning: Need slot0x25KeyX.bin on O3DS < 7.x");
-            }
+        } else if (LoadKeyXFromFile(0x25) != 0) {
+            Debug("Warning: This won't work on O3DS < 7.x");
         }
     }
     
     // setup Secure4 crypto
-    if (usesSec4Crypto) {
-        if (FileOpen("slot0x1BKeyX.bin")) {
-            u8 slot0x1BKeyX[16] = {0};
-            if (FileRead(&slot0x1BKeyX, 16, 0) != 16) {
-                Debug("slot0x1BKeyX.bin is corrupt!");
-                FileClose();
-                return 1;
-            }
-            FileClose();
-            setup_aeskeyX(0x1B, slot0x1BKeyX);
-        } else {
-            Debug("Secure4 needs slot0x1BKeyX.bin");
-            return 1;
-        }
-    }
+    if (usesSec4Crypto && (LoadKeyXFromFile(0x1B != 0)))
+        return 1;
     
     // check / setup seed crypto
     if (usesSeedCrypto) {
@@ -752,6 +719,7 @@ u32 CryptNcch(const char* filename, u32 offset, u32 size, u64 seedId, u8* encryp
             Debug("Need seeddb.bin for seed crypto!");
             return 1;
         }
+        Debug("Loading seed from seeddb.bin: ok");
     }
     
     // basic setup of CryptBufferInfo structs
