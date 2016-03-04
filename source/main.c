@@ -7,8 +7,9 @@
 #include "decryptor/nand.h"
 #include "decryptor/nandfat.h"
 #include "decryptor/titlekey.h"
+#include "decryptor/selftest.h"
 
-#define SUBMENU_START 5
+#define SUBMENU_START 6
 
 
 MenuInfo menu[] =
@@ -76,6 +77,13 @@ MenuInfo menu[] =
             { "SD Decryptor/Encryptor",       &CryptSdFiles,          0 },
             { "SD Decryptor (SysNAND dir)",   &DecryptSdFilesDirect,  0 },
             { "SD Decryptor (EmuNAND dir)",   &DecryptSdFilesDirect,  N_EMUNAND }
+        }
+    },
+    {
+        "Selftest Options", 2,
+        {
+            { "Create Selftest Reference",    &SelfTest,              ST_REFERENCE },
+            { "Run Selftest",                 &SelfTest,              2 }
         }
     },
     // everything below is not contained in the main menu
