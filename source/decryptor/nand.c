@@ -416,39 +416,6 @@ u32 GetNandCtr(u8* ctr, u32 offset)
     return 0;
 }
 
-u32 DumpNandCid(u32 param)
-{
-    u8 nandcid[16*3];
-    u8 shasum[32];
-    
-    // actual NAND CID
-    memcpy(nandcid, (void*) 0x01FFCD84, 16);
-    
-    // TWLNAND CTR
-    sha_init(SHA1_MODE);
-    sha_update(nandcid, 16);
-    sha_get(shasum);
-    for(u32 i = 0; i < 16; i++) // little endian and reversed order
-        nandcid[16+i] = shasum[15-i];
-        
-    // CTRNAND CTR
-    sha_init(SHA256_MODE);
-    sha_update(nandcid, 16);
-    sha_get(shasum);
-    memcpy(nandcid + 32, shasum, 16);
-    
-    // write to file
-    if (!DebugFileCreate("nandcid.bin", true))
-        return 1;
-    if (!DebugFileWrite(nandcid, (16*3), 0)) {
-        FileClose();
-        return 1;
-    }
-    FileClose();
-    
-    return 0;
-}
-
 u32 DecryptNandToMem(u8* buffer, u32 offset, u32 size, PartitionInfo* partition)
 {
     CryptBufferInfo info = {.keyslot = partition->keyslot, .setKeyY = 0, .size = size, .buffer = buffer, .mode = partition->mode};
