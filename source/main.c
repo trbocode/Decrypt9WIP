@@ -82,7 +82,7 @@ MenuInfo menu[] =
         "Selftest Options", 2,
         {
             { "Create Selftest Reference",    &SelfTest,              ST_REFERENCE },
-            { "Run Selftest",                 &SelfTest,              2 }
+            { "Run Selftest",                 &SelfTest,              0 }
         }
     },
     // everything below is not contained in the main menu

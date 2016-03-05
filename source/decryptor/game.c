@@ -219,12 +219,10 @@ u32 NcchPadgen(u32 param)
     NcchInfo *info = (NcchInfo*)0x20316000;
     SeedInfo *seedinfo = (SeedInfo*)0x20400000;
 
-    if (GetUnitPlatform() == PLATFORM_3DS) {
-        if (LoadKeyXFromFile(0x25) != 0)
-            Debug("7.x crypto will fail on less than 7.x");
-        if (LoadKeyXFromFile(0x18) != 0)
-            Debug("Secure3 crypto will fail");
-    }
+    if (LoadKeyXFromFile(0x25) != 0)
+        Debug("7.x crypto will fail on O3DS < 7.x or A9LH");
+    if ((GetUnitPlatform() == PLATFORM_3DS) && (LoadKeyXFromFile(0x18) != 0))
+        Debug("Secure3 crypto will fail");
     if (LoadKeyXFromFile(0x1B) != 0)
         Debug("Secure4 crypto will fail");
         
@@ -676,14 +674,14 @@ u32 CryptNcch(const char* filename, u32 offset, u32 size, u64 seedId, u8* encryp
         setup_aeskey(0x11, (ncch->programId & ((u64) 0x10 << 32)) ? sysKey : zeroKey);
     }
     
-    // check / setup 7x crypto on O3DS
-    if (uses7xCrypto && (GetUnitPlatform() == PLATFORM_3DS)) {
-        if (usesSec3Crypto) {
-            if (LoadKeyXFromFile(0x18) != 0)
-                return 1;
-        } else if (LoadKeyXFromFile(0x25) != 0) {
-            Debug("Warning: This won't work on O3DS < 7.x");
-        }
+    if (uses7xCrypto && (LoadKeyXFromFile(0x1B) != 0)) {
+        Debug("Warning: Won't work on O3DS < 7.x or A9LH");
+    }
+    
+    // setup Secure3 crypto on O3DS
+    if (usesSec3Crypto && (GetUnitPlatform() == PLATFORM_3DS)) {
+        if (LoadKeyXFromFile(0x18) != 0)
+            return 1;
     }
     
     // setup Secure4 crypto
