@@ -4,6 +4,7 @@
 #include "decryptor/sha.h"
 #include "decryptor/selftest.h"
 #include "decryptor/decryptor.h"
+#include "decryptor/game.h"
 #include "decryptor/titlekey.h"
 #include "fatfs/sdmmc.h"
 
@@ -29,7 +30,8 @@
 #define ST_SHA              3
 #define ST_AES_MODE         4
 #define ST_AES_KEYSLOT      5
-#define ST_TITLEKEYS        6
+#define ST_AES_KEYSLOT_Y    6
+#define ST_TITLEKEYS        7
 
 typedef struct {
     char name[16];
@@ -47,7 +49,10 @@ SubTestInfo TestList[] = {
     { "aes_cnt_twl", 16, ST_AES_MODE, AES_CNT_TWLNAND_MODE },
     { "aes_ttk_enc", 16, ST_AES_MODE, AES_CNT_TITLEKEY_DECRYPT_MODE },
     { "aes_ttk_dec", 16, ST_AES_MODE, AES_CNT_TITLEKEY_ENCRYPT_MODE },
-    { "ncch_std_key", 16, ST_AES_KEYSLOT, 0x2C },
+    { "ncch_std_key", 16, ST_AES_KEYSLOT_Y, 0x2C },
+    { "ncch_7x_key", 16, ST_AES_KEYSLOT_Y, 0x25 },
+    { "ncch_sec3_key", 16, ST_AES_KEYSLOT_Y, 0x18 },
+    { "ncch_sec4_key", 16, ST_AES_KEYSLOT_Y, 0x1B },
     { "nand_twl_key", 16, ST_AES_KEYSLOT, 0x03 },
     { "nand_ctro_key", 16, ST_AES_KEYSLOT, 0x04 },
     { "nand_ctrn_key", 16, ST_AES_KEYSLOT, 0x05 },
@@ -87,13 +92,17 @@ u32 SelfTest(u32 param)
             sha_init(param);
             sha_update(teststr, 16);
             sha_get(test_ptr);
-        } else if ((type == ST_AES_MODE) || (type == ST_AES_KEYSLOT)) {
+        } else if ((type == ST_AES_MODE) || (type == ST_AES_KEYSLOT) || (type == ST_AES_KEYSLOT_Y)) {
             CryptBufferInfo info = {.setKeyY = 0, .size = 16, .buffer = test_ptr};
             if (type == ST_AES_MODE) {
                 info.mode = param;
                 info.keyslot = 0x11;
                 setup_aeskey(0x11, (void*) zeroes);
             } else {
+                if (type == ST_AES_KEYSLOT_Y) {
+                    info.setKeyY = 1;
+                    memcpy(info.keyY, zeroes, 16);
+                }
                 info.mode = AES_CNT_CTRNAND_MODE;
                 info.keyslot = param;
             }
@@ -119,12 +128,12 @@ u32 SelfTest(u32 param)
     char filename[32];
     snprintf(filename, 31, "d9_selftest.ref");
     if (selftest) {
-        u8* cmp_ptr = test_data + fsize_test;
+        u8* ref_ptr = test_data + fsize_test;
         if (!DebugFileOpen(filename)) {
             Debug("No reference data available!");
             return 1;
         }
-        if (!DebugFileRead(cmp_ptr, fsize_test, 0)) {
+        if (!DebugFileRead(ref_ptr, fsize_test, 0)) {
             FileClose();
             return 1;
         }
@@ -134,18 +143,25 @@ u32 SelfTest(u32 param)
             Debug("");
             Debug((chk) ? "Failed tests:" : "Passed tests:");
             test_ptr = test_data;
-            cmp_ptr = test_data + fsize_test;
+            ref_ptr = test_data + fsize_test;
             for (u32 i = 0; i < num_tests; i++) {
                 u32 size = TestList[i].size;
                 u32 size_a = align(size, 16);
+                if (chk && (strncmp(test_ptr, ref_ptr, 16) != 0)) {
+                    Debug("%s (bad ref data)", TestList[i].name);
+                    count++;
+                    test_ptr += 16 + size_a;
+                    ref_ptr += 16 + size_a;
+                    continue;
+                }
                 test_ptr += 16;
-                cmp_ptr += 16;
-                if ((!chk && memcmp(test_ptr, cmp_ptr, size) == 0) || (chk && memcmp(test_ptr, cmp_ptr, size) != 0)) {
+                ref_ptr += 16;
+                if ((!chk && memcmp(test_ptr, ref_ptr, size) == 0) || (chk && memcmp(test_ptr, ref_ptr, size) != 0)) {
                     Debug(TestList[i].name);
                     count++;
                 }
                 test_ptr += size_a;
-                cmp_ptr += size_a;
+                ref_ptr += size_a;
             }
             Debug("%u of %u tests %s", count, num_tests, (chk) ? "failed" : "passed");
         }
