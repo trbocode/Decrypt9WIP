@@ -687,7 +687,7 @@ u32 CryptNcch(const char* filename, u32 offset, u32 size, u64 seedId, u8* encryp
     }
     
     // setup Secure4 crypto
-    if (usesSec4Crypto && (LoadKeyXFromFile(0x1B != 0)))
+    if (usesSec4Crypto && (LoadKeyXFromFile(0x1B) != 0))
         return 1;
     
     // check / setup seed crypto
