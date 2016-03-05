@@ -600,15 +600,16 @@ u32 RestoreNand(u32 param)
     u8* buffer = BUFFER_ADDRESS;
     u32 nand_size = getMMCDevice(0)->total_size * NAND_SECTOR_SIZE;
     u32 result = 0;
-    u8 magic[4];
+    u8 magic[16];
 
     if (!(param & N_NANDWRITE)) // developer screwup protection
         return 1;
         
-    // User file select
+    // user file select
     if (InputFileNameSelector(filename, "NAND.bin", NULL, NULL, 0, nand_size) != 0)
         return 1;
     
+    // safety checks
     if (!DebugFileOpen(filename))
         return 1;
     if (nand_size != FileGetSize()) {
@@ -624,6 +625,21 @@ u32 RestoreNand(u32 param)
         FileClose();
         Debug("Not a proper NAND backup!");
         return 1;
+    }
+    for (u32 partition_id = P_TWLN; partition_id <= P_CTRNAND; partition_id = partition_id << 1) {
+        PartitionInfo* partition = GetPartitionInfo(partition_id);
+        CryptBufferInfo info = {.keyslot = partition->keyslot, .setKeyY = 0, .size = 16, .buffer = magic, .mode = partition->mode};
+        if(SetupNandCrypto(info.ctr, partition->offset) != 0)
+            break; // so this check might be not possible, continue anyways
+        if(!DebugFileRead(magic, 16, partition->offset)) {
+            FileClose();
+            return 1;
+        }
+        CryptBuffer(&info);
+        if ((partition->magic[0] != 0xFF) && (memcmp(partition->magic, magic, 8) != 0)) {
+            Debug("Not a proper NAND backup for this 3DS!");
+            return 1;
+        }
     }
     
     Debug("Restoring %sNAND. Size (MB): %u", (param & N_EMUNAND) ? "Emu" : "Sys", nand_size / (1024 * 1024));
