@@ -147,7 +147,7 @@ u32 SelfTest(u32 param)
             for (u32 i = 0; i < num_tests; i++) {
                 u32 size = TestList[i].size;
                 u32 size_a = align(size, 16);
-                if (chk && (strncmp(test_ptr, ref_ptr, 16) != 0)) {
+                if (chk && (strncmp((char*) test_ptr, (char*) ref_ptr, 16) != 0)) {
                     Debug("%s (bad ref data)", TestList[i].name);
                     count++;
                     test_ptr += 16 + size_a;
