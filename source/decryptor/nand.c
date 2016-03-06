@@ -409,6 +409,8 @@ u32 SetupNandCrypto(u8* ctr, u32 offset)
         
         Debug("NAND CID: %08X%08X%08X%08X", getbe32(NandCid), getbe32(NandCid+4), getbe32(NandCid+8), getbe32(NandCid+12));
         
+        initial_setup_done = true;
+        
         
         // part #2: TWL KEY
         u8 TwlKeyY[16];
@@ -440,8 +442,6 @@ u32 SetupNandCrypto(u8* ctr, u32 offset)
             setup_aeskeyY(0x05, CtrNandKeyY);
             Debug("0x05 KeyY: %08X%08X%08X%08X", getbe32(CtrNandKeyY), getbe32(CtrNandKeyY+4), getbe32(CtrNandKeyY+8), getbe32(CtrNandKeyY+12));
         }
-        
-        initial_setup_done = true;
     }
     
     // get the correct CTR and increment counter
