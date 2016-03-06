@@ -407,41 +407,69 @@ u32 SetupNandCrypto(u8* ctr, u32 offset)
         for(u32 i = 0; i < 16; i++) // little endian and reversed order
             TwlNandCtr[i] = shasum[15-i];
         
-        Debug("NAND CID: %08X%08X%08X%08X", getbe32(NandCid), getbe32(NandCid+4), getbe32(NandCid+8), getbe32(NandCid+12));
-        
-        initial_setup_done = true;
-        
-        
+        Debug("NAND CID:  %08X%08X%08X%08X", getbe32(NandCid), getbe32(NandCid+4), getbe32(NandCid+8), getbe32(NandCid+12));
+               
         // part #2: TWL KEY
-        u8 TwlKeyY[16];
-        
-        // see: https://www.3dbrew.org/wiki/Memory_layout#ARM9_ITCM
-        u32 TwlKeyWord3 = 0xE1A00005;
-        memcpy(TwlKeyY, (u8*) 0x01FFD3C8, 12);
-        memcpy(TwlKeyY + 12, &TwlKeyWord3, 4);
-        
-        setup_aeskeyY(0x03, TwlKeyY);
-        Debug("0x03 KeyY: %08X%08X%08X%08X", getbe32(TwlKeyY), getbe32(TwlKeyY+4), getbe32(TwlKeyY+8), getbe32(TwlKeyY+12));
-        
+        while (true) {
+            u32 TwlCustId;
+            u8 TwlKeyX[16];
+            u8 TwlKeyY[16];
+            
+            // see https://3dbrew.org/wiki/OTP_Registers
+            if (!FileOpen("otp0x108.bin")) {
+                Debug("0x03 KeyX: not set, otp0x108.bin not found");
+                Debug("0x03 KeyY: not set, keyX not available");
+                break;
+            }
+            
+            if (!FileRead(&TwlCustId, 4, 0x100)) {
+                Debug("0x03 KeyX: not set, bad file");
+                Debug("0x03 KeyY: not set, keyX not available");
+                FileClose();
+                break;
+            }
+            
+            // see source from https://gbatemp.net/threads/release-twltool-dsi-downgrading-save-injection-etc-multitool.393488/
+            const char* nintendo = "NINTENDO";
+            u32* TwlKeyXW = (u32*) TwlKeyX;
+            memcpy(TwlKeyX + 4, nintendo, 8);
+            TwlKeyXW[3] = 0x08C267B7;
+            if (GetUnitPlatform() == PLATFORM_N3DS)
+                TwlKeyXW[3] ^= 0x00000002;
+            TwlKeyXW[0] = (TwlCustId ^ 0xB358A6AF) | 0x80000000;
+            
+            // see: https://www.3dbrew.org/wiki/Memory_layout#ARM9_ITCM
+            u32 TwlKeyYW3 = 0xE1A00005;
+            memcpy(TwlKeyY, (u8*) 0x01FFD3C8, 12);
+            memcpy(TwlKeyY + 12, &TwlKeyYW3, 4);
+            
+            setup_aeskeyY(0x03, TwlKeyY);
+            Debug("0x03 KeyX: %08X%08X%08X%08X", getbe32(TwlKeyX), getbe32(TwlKeyX+4), getbe32(TwlKeyX+8), getbe32(TwlKeyX+12));
+            Debug("0x03 KeyY: %08X%08X%08X%08X", getbe32(TwlKeyY), getbe32(TwlKeyY+4), getbe32(TwlKeyY+8), getbe32(TwlKeyY+12));
+            break;
+        }
         
         // part #3: CTRNAND N3DS KEY
-        if (GetUnitPlatform() == PLATFORM_N3DS) {
+        while (GetUnitPlatform() == PLATFORM_N3DS) {
             u8 CtrNandKeyY[16];
             
             if (!FileOpen("slot0x05KeyY.bin")) {
-                Debug("0x05 KeyY: not set, file not found");
-                return 1;
+                Debug("0x05 KeyY: not set, slot0x05KeyY.bin not found");
+                break;
             }
             if (FileRead(CtrNandKeyY, 16, 0) != 16) {
                 Debug("0x05 KeyY: not set, bad file");
                 FileClose();
-                return 1;
+                break;
             }
             FileClose();
             
             setup_aeskeyY(0x05, CtrNandKeyY);
             Debug("0x05 KeyY: %08X%08X%08X%08X", getbe32(CtrNandKeyY), getbe32(CtrNandKeyY+4), getbe32(CtrNandKeyY+8), getbe32(CtrNandKeyY+12));
+            break;
         }
+        
+        initial_setup_done = true;
     }
     
     // get the correct CTR and increment counter
