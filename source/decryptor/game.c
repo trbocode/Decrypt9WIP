@@ -674,7 +674,7 @@ u32 CryptNcch(const char* filename, u32 offset, u32 size, u64 seedId, u8* encryp
         setup_aeskey(0x11, (ncch->programId & ((u64) 0x10 << 32)) ? sysKey : zeroKey);
     }
     
-    if (uses7xCrypto && (LoadKeyXFromFile(0x1B) != 0)) {
+    if (uses7xCrypto && (LoadKeyXFromFile(0x25) != 0)) {
         Debug("Warning: Won't work on O3DS < 7.x or A9LH");
     }
     
