@@ -411,10 +411,11 @@ u32 SetupNandCrypto(u8* ctr, u32 offset)
         
         // part #2: TWL KEY
         // see: https://www.3dbrew.org/wiki/Memory_layout#ARM9_ITCM
-        u32* TwlCustId = (u32*) (0x01FFB808+8);
+        u32* TwlCustId = (u32*) (0x01FFB808);
         u8 TwlKeyX[16];
         u8 TwlKeyY[16];
         
+        // thanks b1l1s & Normmatt
         Debug("TWL Customer ID: %08X%08X", TwlCustId[0], TwlCustId[1]);
         
         // see source from https://gbatemp.net/threads/release-twltool-dsi-downgrading-save-injection-etc-multitool.393488/
@@ -431,6 +432,7 @@ u32 SetupNandCrypto(u8* ctr, u32 offset)
         
         setup_aeskeyX(0x03, TwlKeyX);
         setup_aeskeyY(0x03, TwlKeyY);
+        use_aeskey(0x03);
         Debug("0x03 KeyX: %08X%08X%08X%08X", getbe32(TwlKeyX), getbe32(TwlKeyX+4), getbe32(TwlKeyX+8), getbe32(TwlKeyX+12));
         Debug("0x03 KeyY: %08X%08X%08X%08X", getbe32(TwlKeyY), getbe32(TwlKeyY+4), getbe32(TwlKeyY+8), getbe32(TwlKeyY+12));
         
@@ -450,6 +452,7 @@ u32 SetupNandCrypto(u8* ctr, u32 offset)
             FileClose();
             
             setup_aeskeyY(0x05, CtrNandKeyY);
+            use_aeskey(0x05);
             Debug("0x05 KeyY: %08X%08X%08X%08X", getbe32(CtrNandKeyY), getbe32(CtrNandKeyY+4), getbe32(CtrNandKeyY+8), getbe32(CtrNandKeyY+12));
             break;
         }
