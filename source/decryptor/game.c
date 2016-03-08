@@ -297,7 +297,7 @@ u32 NcchPadgen(u32 param)
         memcpy(padInfo.filename, info->entries[i].filename, 112);
         Debug ("%2i: %s (%iMB)", i, info->entries[i].filename, info->entries[i].size_mb);
         
-        if (info->entries[i].usesSeedCrypto) {
+        if (info->entries[i].ncchFlag7 & 0x20) { // seed crypto
             u8 keydata[32];
             memcpy(keydata, info->entries[i].keyY, 16);
             u32 found_seed = 0;
@@ -308,8 +308,7 @@ u32 NcchPadgen(u32 param)
                     break;
                 }
             }
-            if (!found_seed)
-            {
+            if (!found_seed) {
                 Debug("Failed to find seed in seeddb.bin");
                 return 1;
             }
@@ -319,19 +318,27 @@ u32 NcchPadgen(u32 param)
             sha_get(sha256sum);
             memcpy(padInfo.keyY, sha256sum, 16);
         }
-        else
+        else {
             memcpy(padInfo.keyY, info->entries[i].keyY, 16);
-
-        if (info->entries[i].uses7xCrypto == 0xA) {
+        }
+        
+        if (info->entries[i].ncchFlag7 == 0x01) {
+            u8 zeroKey[16] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
+            u8 sysKey[16]  = {0x52, 0x7C, 0xE6, 0x30, 0xA9, 0xCA, 0x30, 0x5F, 0x36, 0x96, 0xF3, 0xCD, 0xE9, 0x54, 0x19, 0x4B};
+            setup_aeskey(0x11, (info->entries[i].titleId & ((u64) 0x10 << 32)) ? sysKey : zeroKey);
+            padInfo.setKeyY = 0;
+            padInfo.keyslot = 0x11; // fixedKey crypto
+        } else if (info->entries[i].ncchFlag3 == 0x0A) {
             padInfo.keyslot = 0x18; // Secure3 crypto, needs slot0x18KeyX.bin on O3DS
-        } else if (info->entries[i].uses7xCrypto == 0xB) {
+        } else if (info->entries[i].ncchFlag3 == 0x0B) {
             padInfo.keyslot = 0x1B; // Secure4 crypto, needs slot0x1BKeyX.bin
-        } else if(info->entries[i].uses7xCrypto >> 8 == 0xDEC0DE) // magic value to manually specify keyslot
-            padInfo.keyslot = info->entries[i].uses7xCrypto & 0x3F;
-        else if (info->entries[i].uses7xCrypto)
+        } else if(info->entries[i].ncchFlag3 >> 8 == 0xDEC0DE) { // magic value to manually specify keyslot
+            padInfo.keyslot = info->entries[i].ncchFlag3 & 0x3F;
+        } else if (info->entries[i].ncchFlag3) {
             padInfo.keyslot = 0x25; // 7.x crypto
-        else
+        } else {
             padInfo.keyslot = 0x2C; // standard crypto
+        }
         Debug("Using keyslot: %02X", padInfo.keyslot);
         
         if (CreatePad(&padInfo) != 0)

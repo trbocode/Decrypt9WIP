@@ -40,8 +40,8 @@ typedef struct {
     u8   keyY[16];
     u32  size_mb;
     u8   reserved[4];
-    u32  usesSeedCrypto;
-    u32  uses7xCrypto;
+    u32  ncchFlag7;
+    u32  ncchFlag3;
     u64  titleId;
     char filename[112];
 } __attribute__((packed)) NcchInfoEntry;
