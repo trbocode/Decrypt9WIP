@@ -728,7 +728,7 @@ u32 CryptNcch(const char* filename, u32 offset, u32 size, u64 seedId, u8* encryp
         for (u32 i = 0; i < 8; i++)
             info0.ctr[i] = ((u8*) &(ncch->partitionId))[7-i];
     }
-    memcpy(info1.ctr, info0.ctr, 8);
+    memcpy(info1.ctr, info0.ctr, 16);
     memcpy(info0.keyY, ncch->signature, 16);
     memcpy(info1.keyY, (usesSeedCrypto) ? seedKeyY : ncch->signature, 16);
     info1.keyslot = (usesSec4Crypto) ? 0x1B : ((usesSec3Crypto) ? 0x18 : ((uses7xCrypto) ? 0x25 : info0.keyslot));
@@ -741,7 +741,7 @@ u32 CryptNcch(const char* filename, u32 offset, u32 size, u64 seedId, u8* encryp
         
     // process ExHeader
     if (ncch->size_exthdr > 0) {
-        memset(info0.ctr + 12, 0x00, 4);
+        memset(info0.ctr + 8, 0x00, 8);
         if (ncch->version == 1)
             add_ctr(info0.ctr, 0x200); // exHeader offset
         else
@@ -753,7 +753,7 @@ u32 CryptNcch(const char* filename, u32 offset, u32 size, u64 seedId, u8* encryp
     if (ncch->size_exefs > 0) {
         u32 offset_byte = ncch->offset_exefs * 0x200;
         u32 size_byte = ncch->size_exefs * 0x200;
-        memset(info0.ctr + 12, 0x00, 4);
+        memset(info0.ctr + 8, 0x00, 8);
         if (ncch->version == 1)
             add_ctr(info0.ctr, offset_byte);
         else
@@ -802,12 +802,13 @@ u32 CryptNcch(const char* filename, u32 offset, u32 size, u64 seedId, u8* encryp
     if (ncch->size_romfs > 0) {
         u32 offset_byte = ncch->offset_romfs * 0x200;
         u32 size_byte = ncch->size_romfs * 0x200;
-        memset(info1.ctr + 12, 0x00, 4);
+        memset(info1.ctr + 8, 0x00, 8);
         if (ncch->version == 1)
             add_ctr(info1.ctr, offset_byte);
         else
             info1.ctr[8] = 3;
-        info1.setKeyY = 1;
+        if (!usesFixedKey)
+            info1.setKeyY = 1;
         result |= CryptSdToSd(filename, offset + offset_byte, size_byte, &info1);
     }
     
