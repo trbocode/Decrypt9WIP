@@ -129,15 +129,10 @@ u32 SelfTest(u32 param)
     snprintf(filename, 31, "d9_selftest.ref");
     if (selftest) {
         u8* ref_ptr = test_data + fsize_test;
-        if (!DebugFileOpen(filename)) {
-            Debug("No reference data available!");
+        if (FileGetData(filename, ref_ptr, fsize_test, 0) != fsize_test) {
+            Debug("No valid reference data available!");
             return 1;
         }
-        if (!DebugFileRead(ref_ptr, fsize_test, 0)) {
-            FileClose();
-            return 1;
-        }
-        FileClose();
         for (u32 chk = 0; chk < 2; chk++) {
             u32 count = 0;
             Debug("");

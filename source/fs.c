@@ -263,6 +263,32 @@ bool GetFileList(const char* path, char* list, int lsize, bool recursive, bool i
     return GetFileListWorker(&list, &lsize, fpath, 256, recursive, inc_files, inc_dirs);
 }
 
+size_t FileGetData(const char* path, void* buf, size_t size, size_t foffset)
+{
+    unsigned flags = FA_READ | FA_OPEN_EXISTING;
+    FIL tmp_file;
+    if (*path == '/')
+        path++;
+    bool exists = (f_open(&tmp_file, path, flags) == FR_OK);
+    #ifdef WORK_DIR
+    if (!exists) {
+        f_chdir("/"); // temporarily change the current directory
+        exists = (f_open(&tmp_file, path, flags) == FR_OK);
+        f_chdir(WORK_DIR);
+    }
+    #endif
+    if (exists) {
+        UINT bytes_read = 0;
+        f_sync(&tmp_file);
+        f_lseek(&tmp_file, foffset);
+        f_read(&tmp_file, buf, size, &bytes_read);
+        f_close(&tmp_file);
+        return bytes_read;
+    }
+    
+    return 0;
+}
+
 size_t LogWrite(const char* text)
 {
     #ifdef LOG_FILE

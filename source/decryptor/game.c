@@ -51,13 +51,8 @@ u32 GetSd0x34KeyY(u8* movable_keyY, bool from_nand)
             return 1;
         }
         DecryptNandToMem(movable_sed, offset, 0x120, p_info);
-    } else if (DebugFileOpen("movable.sed")) { // load console 0x34 keyY from movable.sed from SD card
-        if (!DebugFileRead(movable_sed, 0x120, 0)) {
-            FileClose();
-            return 1;
-        }
-        FileClose();
-    } else {
+    } else if (FileGetData("movable.sed", movable_sed, 0x120, 0) != 0x120) {
+        Debug("movable.sed not found on SD or invalid");
         return 1;
     }
     if (memcmp(movable_sed, "SEED", 4) != 0) {
@@ -75,16 +70,10 @@ u32 LoadKeyXFromFile(u32 keyslot)
     u8 keyX[16] = {0};
     
     snprintf(filename, 31, "slot0x%02XKeyX.bin", (unsigned int) keyslot);
-    if (!FileOpen(filename)) {
-        Debug("Loading %s: not found", filename);
+    if (FileGetData(filename, keyX, 16, 0) != 16) {
+        Debug("Loading %s: not found", filename); // or bad file
         return 1;
     }
-    if (FileRead(keyX, 16, 0) != 16) {
-        Debug("Loading %s: bad file", filename);
-        FileClose();
-        return 1;
-    }
-    FileClose();
     setup_aeskeyX(keyslot, keyX);
     Debug("Loading %s: ok", filename);
     
@@ -608,13 +597,8 @@ u32 CryptNcch(const char* filename, u32 offset, u32 size, u64 seedId, u8* encryp
     u8 seedKeyY[16] = { 0x00 };
     u32 result = 0;
     
-    if (!FileOpen(filename)) // already checked this file
-        return 1;
-    if (!DebugFileRead((void*) ncch, 0x200, offset)) {
-        FileClose();
-        return 1;
-    }
-    FileClose();
+    if (FileGetData(filename, (void*) ncch, 0x200, offset) != 0x200)
+        return 1; // it's impossible to fail here anyways
  
     // check (again) for magic number
     if (memcmp(ncch->magic, "NCCH", 4) != 0) {
@@ -771,13 +755,8 @@ u32 CryptNcch(const char* filename, u32 offset, u32 size, u64 seedId, u8* encryp
             // find .code offset and size
             if (!encrypt_flags) // decrypt this first (when decrypting)
                 result |= CryptSdToSd(filename, offset + offset_byte, 0x200, &info0);
-            if(!FileOpen(filename))
+            if (FileGetData(filename, buffer, 0x200, offset + offset_byte) != 0x200)
                 return 1;
-            if(!DebugFileRead(buffer, 0x200, offset + offset_byte)) {
-                FileClose();
-                return 1;
-            }
-            FileClose();
             for (u32 i = 0; i < 10; i++) {
                 if(memcmp(buffer + (i*0x10), ".code", 5) == 0) {
                     offset_code = getle32(buffer + (i*0x10) + 0x8) + 0x200;
@@ -851,9 +830,8 @@ u32 CryptNcch(const char* filename, u32 offset, u32 size, u64 seedId, u8* encryp
         
         if (ncch->size_exefs > 0) { // thorough exefs verification
             u32 offset_byte = ncch->offset_exefs * 0x200;
-            if(!FileOpen(filename) || !FileRead(buffer, 0x200, offset + offset_byte))
+            if (FileGetData(filename, buffer, 0x200, offset + offset_byte) != 0x200)
                 ver_exefs = 1;
-            FileClose();
             for (u32 i = 0; (i < 10) && (ver_exefs != 1); i++) {
                 u32 offset_exefs_file = offset_byte + getle32(buffer + (i*0x10) + 0x8) + 0x200;
                 u32 size_exefs_file = getle32(buffer + (i*0x10) + 0xC);
@@ -1123,13 +1101,8 @@ u32 CryptGameFiles(u32 param)
     path[path_len++] = '/';
     
     while (DirRead(path + path_len, 256 - path_len)) {
-        if (!FileOpen(path))
+        if (FileGetData(path, buffer, 0x200, 0x0) != 0x200)
             continue;
-        if (!FileRead(buffer, 0x200, 0x0)) {
-            FileClose();
-            continue;
-        }
-        FileClose();
         
         if (batch_ncch && (memcmp(buffer + 0x100, "NCCH", 4) == 0)) {
             Debug("Processing NCCH \"%s\"", path + path_len);

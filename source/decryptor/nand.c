@@ -440,16 +440,10 @@ u32 SetupNandCrypto(u8* ctr, u32 offset)
         while (GetUnitPlatform() == PLATFORM_N3DS) {
             u8 CtrNandKeyY[16];
             
-            if (!FileOpen("slot0x05KeyY.bin")) {
+            if (FileGetData("slot0x05KeyY.bin", CtrNandKeyY, 16, 0) != 16) {
                 Debug("0x05 KeyY: not set, slot0x05KeyY.bin not found");
                 break;
             }
-            if (FileRead(CtrNandKeyY, 16, 0) != 16) {
-                Debug("0x05 KeyY: not set, bad file");
-                FileClose();
-                break;
-            }
-            FileClose();
             
             setup_aeskeyY(0x05, CtrNandKeyY);
             use_aeskey(0x05);
@@ -712,17 +706,14 @@ u32 InjectNandPartition(u32 param)
     }
     
     // File check
-    if (FileOpen(filename)) {
-        if(!DebugFileRead(magic, 8, 0)) {
-            FileClose();
-            return 1;
-        }
+    if (FileGetData(filename, magic, 8, 0) == 8) {
         if ((p_info->magic[0] != 0xFF) && (memcmp(p_info->magic, magic, 8) != 0)) {
             Debug("Bad file content, won't inject");
-            FileClose();
             return 1;
         }
-        FileClose();
+    } else {
+        Debug("File is too small, won't inject");
+        return 1;
     }
     
     return EncryptFileToNand(filename, p_info->offset, p_info->size, p_info);
