@@ -71,8 +71,8 @@ u32 UnmountSd()
     u32 pad_state;
     
     #ifdef USE_THEME
-    DeinitFS();
     LoadThemeGfx(GFX_UNMOUNT, false);
+    DeinitFS();
     #else
     DebugClear();
     Debug("Unmounting SD card...");
