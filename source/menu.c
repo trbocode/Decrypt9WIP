@@ -70,16 +70,18 @@ u32 UnmountSd()
 {
     u32 pad_state;
     
+    #ifdef USE_THEME
+    DeinitFS();
+    LoadThemeGfx(GFX_UNMOUNT, false);
+    #else
     DebugClear();
     Debug("Unmounting SD card...");
-    #ifdef USE_THEME
-    LoadThemeGfx(GFX_UNMOUNT, false);
-    #endif
     DeinitFS();
     Debug("SD is unmounted, you may remove it now.");
     Debug("Put the SD card back in before pressing B!");
     Debug("");
     Debug("(B to return, START to reboot)");
+    #endif
     while (true) {
         pad_state = InputWait();
         if (((pad_state & BUTTON_B) && InitFS()) || (pad_state & BUTTON_START))
