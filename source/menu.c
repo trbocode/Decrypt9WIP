@@ -16,25 +16,15 @@ u32 ScrollOutput()
     // careful, these areas are used by other functions in Decrypt9
     char** logptr = (char**) 0x20316000;
     char* logtext = (char*)  0x20400000;
-    u32 log_size = 0; // log size
+    u32 log_size = FileGetData(LOG_FILE, logtext, 1024 * 1024, log_start); // log size
     u32 l_total = 0; // total lines
     u32 l_curr = 0; // current line
     
-    if (!FileOpen(LOG_FILE))
+    // allow 1MB of text max
+    if ((log_size == 0) || (log_size >= 1024 * 1024))
         return 0;
-    log_size = FileGetSize();
-    if ((log_size <= log_start) || (log_size - log_start >= 1024 * 1024)) {
-        FileClose();
-        return 0; // allow 1MB of text max
-    }
-    log_size -= log_start;
-    if (!FileRead(logtext, log_size, log_start)) {
-        FileClose();
-        return 0;
-    }
-    FileClose();
     
-    // read lines
+    // organize lines
     logtext[log_size - 1] = '\0';
     logptr[l_total++] = logtext;
     for (char* line = strchr(logtext, '\n'); line != NULL && l_total < 4000; line = strchr(line, '\n')) {
