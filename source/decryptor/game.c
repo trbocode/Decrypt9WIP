@@ -286,6 +286,10 @@ u32 NcchPadgen(u32 param)
         memcpy(padInfo.filename, info->entries[i].filename, 112);
         Debug ("%2i: %s (%iMB)", i, info->entries[i].filename, info->entries[i].size_mb);
         
+        // workaround to still be able to process old ncchinfo.bin
+        if ((info->entries[i].ncchFlag7 == 0x01) && info->entries[i].ncchFlag3)
+            info->entries[i].ncchFlag7 = 0x20; // this combination means seed crypto rather than FixedKey
+        
         if (info->entries[i].ncchFlag7 & 0x20) { // seed crypto
             u8 keydata[32];
             memcpy(keydata, info->entries[i].keyY, 16);
