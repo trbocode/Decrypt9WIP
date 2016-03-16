@@ -942,10 +942,10 @@ u32 CryptCia(const char* filename, u8* ncch_crypt, bool cia_encrypt, bool cxi_on
     TitleKeyEntry titlekeyEntry;
     titleId = getbe64(ticket_data + 0x9C);
     memcpy(titlekeyEntry.titleId, ticket_data + 0x9C, 8);
-    memcpy(titlekeyEntry.encryptedTitleKey, ticket_data + 0x7F, 16);
+    memcpy(titlekeyEntry.titleKey, ticket_data + 0x7F, 16);
     titlekeyEntry.commonKeyIndex = *(ticket_data + 0xB1);
     DecryptTitlekey(&titlekeyEntry);
-    memcpy(titlekey, titlekeyEntry.encryptedTitleKey, 16);
+    memcpy(titlekey, titlekeyEntry.titleKey, 16);
     
     // get content data from TMD
     content_count = getbe16(tmd_data + 0x9E);

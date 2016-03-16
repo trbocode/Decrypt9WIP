@@ -8,7 +8,7 @@ typedef struct {
     u32 commonKeyIndex;
     u8  reserved[4];
     u8  titleId[8];
-    u8  encryptedTitleKey[16];
+    u8  titleKey[16];
 } __attribute__((packed)) TitleKeyEntry;
 
 typedef struct {

@@ -114,9 +114,9 @@ u32 SelfTest(u32 param)
             memset(&titlekey, 0x00, sizeof(TitleKeyEntry));
             for (titlekey.commonKeyIndex = 0; titlekey.commonKeyIndex < 6; titlekey.commonKeyIndex++) {
                 memset(titlekey.titleId, 0x00, 8);
-                memset(titlekey.encryptedTitleKey, 0x00, 16);
+                memset(titlekey.titleKey, 0x00, 16);
                 DecryptTitlekey(&titlekey);
-                memcpy(test_ptr + (titlekey.commonKeyIndex * 16), titlekey.encryptedTitleKey, 16);
+                memcpy(test_ptr + (titlekey.commonKeyIndex * 16), titlekey.titleKey, 16);
             }     
         }
         
