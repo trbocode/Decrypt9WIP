@@ -247,9 +247,9 @@ u32 InputFileNameSelector(char* filename, const char* basename, char* extension,
             fn = strrchr(fn, '/') + 1;
         if (strnlen(fn, 128) > 63)
             continue; // file name too long
-        if ((basename != NULL) && !strstr(fn, base))
+        if ((basename != NULL) && !strcasestr(fn, base))
             continue; // basename check failed
-        if ((extension != NULL) && (dotpos != NULL) && (strncmp(dotpos + 1, extension, strnlen(extension, 16))))
+        if ((extension != NULL) && (dotpos != NULL) && (strncasecmp(dotpos + 1, extension, strnlen(extension, 16))))
             continue; // extension check failed
         else if ((extension == NULL) != (dotpos == NULL))
             continue; // extension check failed
