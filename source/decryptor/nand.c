@@ -13,6 +13,10 @@
 #define NAND_HDR_O3DS 1 
 #define NAND_HDR_N3DS 2
 
+// these offsets are used by Multi EmuNAND Creator
+#define EMUNAND_MULTI_OFFSET_O3DS 0x00200000
+#define EMUNAND_MULTI_OFFSET_N3DS 0x00400000
+
 // from an actual N3DS NCSD NAND header, same for all
 static u8 nand_magic_n3ds[0x60] = {
     0x4E, 0x43, 0x53, 0x44, 0x00, 0x00, 0x28, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
@@ -589,16 +593,16 @@ u32 DecryptNandPartition(u32 param)
             break;
         }
     }
-    if (p_info == NULL) {
-        Debug("No partition to dump");
+    if (p_info == NULL)
         return 1;
-    }
     
     Debug("Dumping & Decrypting %s, size (MB): %u", p_info->name, p_info->size / (1024 * 1024));
     if (DecryptNandToMem(magic, p_info->offset, 16, p_info) != 0)
         return 1;
     if ((p_info->magic[0] != 0xFF) && (memcmp(p_info->magic, magic, 8) != 0)) {
-        Debug("Decryption error, please contact us");
+        Debug("Corrupt partition or decryption error");
+        if (p_info->keyslot == 0x05)
+            Debug("(or slot0x05keyY not set up");
         return 1;
     }
     if (OutputFileNameSelector(filename, p_info->name, "bin") != 0)
@@ -738,10 +742,8 @@ u32 InjectNandPartition(u32 param)
             break;
         }
     }
-    if (p_info == NULL) {
-        Debug("No partition to inject to");
+    if (p_info == NULL)
         return 1;
-    }
     
     Debug("Encrypting & Injecting %s, size (MB): %u", p_info->name, p_info->size / (1024 * 1024));
     // User file select
@@ -753,7 +755,9 @@ u32 InjectNandPartition(u32 param)
     if (DecryptNandToMem(magic, p_info->offset, 16, p_info) != 0)
         return 1;
     if ((p_info->magic[0] != 0xFF) && (memcmp(p_info->magic, magic, 8) != 0)) {
-        Debug("Decryption error, please contact us");
+        Debug("Corrupt partition or decryption error");
+        if (p_info->keyslot == 0x05)
+            Debug("(or slot0x05keyY not set up");
         return 1;
     }
     

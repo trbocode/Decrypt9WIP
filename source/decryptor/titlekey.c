@@ -91,8 +91,8 @@ u32 DecryptTitlekeysNand(u32 param)
     
     Debug("Decrypting Title Keys...");
     memset(info, 0, 0x10);
-    for (u32 t_offset = 0; t_offset < size; t_offset += NAND_SECTOR_SIZE * (SECTORS_PER_READ-1)) {
-        u32 read_bytes = min(NAND_SECTOR_SIZE * SECTORS_PER_READ, (size - t_offset));
+    for (u32 t_offset = 0; t_offset < size; t_offset += BUFFER_MAX_SIZE - NAND_SECTOR_SIZE) {
+        u32 read_bytes = min(BUFFER_MAX_SIZE, (size - t_offset));
         ShowProgress(t_offset, size);
         DecryptNandToMem(buffer, offset + t_offset, read_bytes, ctrnand_info);
         for (u32 i = 0; i < read_bytes - NAND_SECTOR_SIZE; i++) {
