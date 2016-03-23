@@ -50,7 +50,8 @@ u32 GetSd0x34KeyY(u8* movable_keyY, bool from_nand)
             Debug("movable.sed has bad size!");
             return 1;
         }
-        DecryptNandToMem(movable_sed, offset, 0x120, p_info);
+        if (DecryptNandToMem(movable_sed, offset, 0x120, p_info) != 0)
+            return 1;
     } else if (FileGetData("movable.sed", movable_sed, 0x120, 0) != 0x120) {
         Debug("movable.sed not found on SD or invalid");
         return 1;
@@ -441,7 +442,8 @@ u32 UpdateSeedDb(u32 param)
         Debug("Expected %ukB, failed!", 0xAC000);
         return 1;
     }
-    DecryptNandToMem(buffer, offset, size, ctrnand_info);
+    if (DecryptNandToMem(buffer, offset, size, ctrnand_info) != 0)
+        return 1;
     
     // load / create seeddb.bin
     if (DebugFileOpen("seeddb.bin")) {
@@ -1274,7 +1276,10 @@ u32 DecryptSdFilesDirect(u32 param) {
         Debug("%2u: %s", n_processed, srcpath + bplen);
         if (FileOpen(srcpath)) {
             fsize = FileGetSize();
-            FileCopyTo(dstpath, BUFFER_ADDRESS, BUFFER_MAX_SIZE);
+            if (FileCopyTo(dstpath, BUFFER_ADDRESS, BUFFER_MAX_SIZE) != fsize) {
+                Debug("Could not copy: %s", srcpath + bplen);
+                n_failed++;
+            }
             FileClose();
         } else {
             Debug("Could not open: %s", srcpath + bplen);

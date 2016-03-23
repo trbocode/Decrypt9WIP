@@ -62,7 +62,8 @@ u32 SeekFileInNand(u32* offset, u32* size, const char* path, PartitionInfo* part
     if (strnlen(path, 256) % (8+3) != 0)
         return 1;
     
-    DecryptNandToMem(buffer, p_offset, NAND_SECTOR_SIZE, partition);
+    if (DecryptNandToMem(buffer, p_offset, NAND_SECTOR_SIZE, partition) != 0)
+        return 1;
     
     // good FAT header description found here: http://www.compuphase.com/mbr_fat.htm
     u32 fat_start = NAND_SECTOR_SIZE * getle16(buffer + 0x0E);
@@ -76,7 +77,8 @@ u32 SeekFileInNand(u32* offset, u32* size, const char* path, PartitionInfo* part
         if (*offset - p_offset > p_size)
             return 1;
         found = false;
-        DecryptNandToMem(buffer, *offset, cluster_size, partition);
+        if (DecryptNandToMem(buffer, *offset, cluster_size, partition) != 0)
+            return 1;
         for (u32 i = 0x00; i < cluster_size; i += 0x20) {
             const static char zeroes[8+3] = { 0x00 };
             // skip invisible, deleted and lfn entries
@@ -101,7 +103,8 @@ u32 SeekFileInNand(u32* offset, u32* size, const char* path, PartitionInfo* part
     if (found && (*size > cluster_size)) {  
         if (fat_size / fat_count > 0x100000) // prevent buffer overflow
             return 1; // fishy FAT table size - should never happen
-        DecryptNandToMem(buffer, p_offset + fat_start, fat_size / fat_count, partition);
+        if (DecryptNandToMem(buffer, p_offset + fat_start, fat_size / fat_count, partition) != 0)
+            return 1;
         for (u32 i = 0; i < (*size - 1) / cluster_size; i++) {
             if (*(((u16*) buffer) + fat_pos + i) != fat_pos + i + 1)
                 return 1;

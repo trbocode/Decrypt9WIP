@@ -175,11 +175,10 @@ static inline int WriteNandSectors(u32 sector_no, u32 numsectors, u8 *in)
 static u32 CheckNandHeader(u8* header) {
     u8 lheader[0x200];
     
-    if (header != NULL) {
+    if (header != NULL)
         memcpy(lheader, header, 0x200);
-    } else {
-        ReadNandSectors(0, 1, lheader);
-    }
+    else if (ReadNandSectors(0, 1, lheader) != 0)
+        return NAND_HDR_UNK;
     
     if (memcmp(lheader + 0x100, nand_magic_n3ds, 0x60) == 0) {
         return NAND_HDR_N3DS;
@@ -520,7 +519,10 @@ u32 DecryptNandToMem(u8* buffer, u32 offset, u32 size, PartitionInfo* partition)
 
     u32 n_sectors = (size + NAND_SECTOR_SIZE - 1) / NAND_SECTOR_SIZE;
     u32 start_sector = offset / NAND_SECTOR_SIZE;
-    ReadNandSectors(start_sector, n_sectors, buffer);
+    if (ReadNandSectors(start_sector, n_sectors, buffer) != 0) {
+        Debug("%sNAND read error", (emunand_header) ? "Emu" : "Sys");
+        return 1;
+    }
     CryptBuffer(&info);
 
     return 0;
@@ -537,8 +539,8 @@ u32 DecryptNandToFile(const char* filename, u32 offset, u32 size, PartitionInfo*
     for (u32 i = 0; i < size; i += NAND_SECTOR_SIZE * SECTORS_PER_READ) {
         u32 read_bytes = min(NAND_SECTOR_SIZE * SECTORS_PER_READ, (size - i));
         ShowProgress(i, size);
-        DecryptNandToMem(buffer, offset + i, read_bytes, partition);
-        if(!DebugFileWrite(buffer, read_bytes, i)) {
+        if ((DecryptNandToMem(buffer, offset + i, read_bytes, partition) != 0) ||
+            !DebugFileWrite(buffer, read_bytes, i)) {
             result = 1;
             break;
         }
@@ -568,8 +570,12 @@ u32 DumpNand(u32 param)
     for (u32 i = 0; i < n_sectors; i += SECTORS_PER_READ) {
         u32 read_sectors = min(SECTORS_PER_READ, (n_sectors - i));
         ShowProgress(i, n_sectors);
-        ReadNandSectors(i, read_sectors, buffer);
-        if(!DebugFileWrite(buffer, NAND_SECTOR_SIZE * read_sectors, i * NAND_SECTOR_SIZE)) {
+        if (ReadNandSectors(i, read_sectors, buffer) != 0)  {
+            Debug("%sNAND read error", (emunand_header) ? "Emu" : "Sys");
+            result = 1;
+            break;
+        }
+        if (!DebugFileWrite(buffer, NAND_SECTOR_SIZE * read_sectors, i * NAND_SECTOR_SIZE)) {
             result = 1;
             break;
         }
@@ -620,7 +626,10 @@ u32 EncryptMemToNand(u8* buffer, u32 offset, u32 size, PartitionInfo* partition)
     u32 n_sectors = (size + NAND_SECTOR_SIZE - 1) / NAND_SECTOR_SIZE;
     u32 start_sector = offset / NAND_SECTOR_SIZE;
     CryptBuffer(&info);
-    WriteNandSectors(start_sector, n_sectors, buffer);
+    if (WriteNandSectors(start_sector, n_sectors, buffer) != 0) {
+        Debug("%NAND write error", (emunand_header) ? "Emu" : "Sys");
+        return 1;
+    }
 
     return 0;
 }
@@ -642,11 +651,11 @@ u32 EncryptFileToNand(const char* filename, u32 offset, u32 size, PartitionInfo*
     for (u32 i = 0; i < size; i += NAND_SECTOR_SIZE * SECTORS_PER_READ) {
         u32 read_bytes = min(NAND_SECTOR_SIZE * SECTORS_PER_READ, (size - i));
         ShowProgress(i, size);
-        if(!DebugFileRead(buffer, read_bytes, i)) {
+        if (!DebugFileRead(buffer, read_bytes, i) ||
+            (EncryptMemToNand(buffer, offset + i, read_bytes, partition) != 0)) {
             result = 1;
             break;
         }
-        EncryptMemToNand(buffer, offset + i, read_bytes, partition);
     }
 
     ShowProgress(0, 0);
@@ -686,24 +695,26 @@ u32 RestoreNand(u32 param)
     nand_hdr_type = CheckNandHeader(buffer);
     if ((nand_hdr_type == NAND_HDR_UNK) || (GetUnitPlatform() == PLATFORM_3DS && (nand_hdr_type != NAND_HDR_O3DS))) {
         FileClose();
-        Debug("NAND header not recognized!");
+        Debug("NAND header not recognized");
         return 1;
     }
     
-    for (u32 p_num = 0; p_num < 6; p_num++) {
-        PartitionInfo* partition = partitions + p_num;
+    for (u32 p_num = 0; p_num < 6; p_num++) { 
+        PartitionInfo* partition = partitions + p_num; // workaround for files, not possible with GetPartitionInfo()
         if ((p_num == 5) && (GetUnitPlatform() == PLATFORM_N3DS)) // special N3DS partition types
             partition = (nand_hdr_type == NAND_HDR_N3DS) ? partitions + 6 : partitions + 7;
         CryptBufferInfo info = {.keyslot = partition->keyslot, .setKeyY = 0, .size = 16, .buffer = magic, .mode = partition->mode};
-        if(SetupNandCrypto(info.ctr, partition->offset) != 0)
+        if (SetupNandCrypto(info.ctr, partition->offset) != 0)
             break; // so this check might be not possible, continue anyways
-        if(!DebugFileRead(magic, 16, partition->offset)) {
+        if (!DebugFileRead(magic, 16, partition->offset)) {
             FileClose();
             return 1;
         }
         CryptBuffer(&info);
         if ((partition->magic[0] != 0xFF) && (memcmp(partition->magic, magic, 8) != 0)) {
-            Debug("Not a proper NAND backup for this 3DS!");
+            Debug("Not a proper NAND backup for this 3DS");
+            if (partition->keyslot == 0x05)
+                Debug("(or slot0x05keyY not set up");
             return 1;
         }
     }
@@ -714,11 +725,15 @@ u32 RestoreNand(u32 param)
     for (u32 i = 0; i < n_sectors; i += SECTORS_PER_READ) {
         u32 read_sectors = min(SECTORS_PER_READ, (n_sectors - i));
         ShowProgress(i, n_sectors);
-        if(!DebugFileRead(buffer, NAND_SECTOR_SIZE * read_sectors, i * NAND_SECTOR_SIZE)) {
+        if (!DebugFileRead(buffer, NAND_SECTOR_SIZE * read_sectors, i * NAND_SECTOR_SIZE)) {
             result = 1;
             break;
         }
-        WriteNandSectors(i, read_sectors, buffer);
+        if (WriteNandSectors(i, read_sectors, buffer) != 0) {
+            Debug("%NAND write error", (emunand_header) ? "Emu" : "Sys");
+            result = 1;
+            break;
+        }
     }
 
     ShowProgress(0, 0);
