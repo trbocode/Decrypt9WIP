@@ -118,7 +118,7 @@ void DrawMenu(MenuInfo* currMenu, u32 index, bool fullDraw, bool subMenu)
 u32 ProcessEntry(MenuEntry* entry)
 {
     bool emunand    = entry->param & N_EMUNAND;
-    bool nand_force = entry->param & N_FORCENAND;
+    bool nand_force = entry->param & N_FORCEEMU;
     bool warning    = entry->param & N_NANDWRITE;
     
     u32 pad_state;

@@ -193,6 +193,104 @@ static u32 CheckNandHeader(u8* header) {
     return NAND_HDR_UNK;
 }
 
+static u32 CheckNandDumpIntegrity(const char* path) {
+    u8 header[0x200];
+    u32 nand_hdr_type = NAND_HDR_UNK;
+    
+    if (!DebugFileOpen(path))
+        return 1;
+    
+    // size check
+    if (FileGetSize() < NAND_MIN_SIZE) {
+        FileClose();
+        Debug("NAND dump is too small");
+        return 1;
+    }
+    
+    // header check
+    if(!DebugFileRead(header, 0x200, 0)) {
+        FileClose();
+        return 1;
+    }
+    nand_hdr_type = CheckNandHeader(header);
+    if ((nand_hdr_type == NAND_HDR_UNK) || (GetUnitPlatform() == PLATFORM_3DS && (nand_hdr_type != NAND_HDR_O3DS))) {
+        FileClose();
+        Debug("NAND header not recognized");
+        return 1;
+    }
+    
+    // magic number / crypto check
+    for (u32 p_num = 0; p_num < 6; p_num++) { 
+        PartitionInfo* partition = partitions + p_num; // workaround for files, not possible with GetPartitionInfo()
+        if ((p_num == 5) && (GetUnitPlatform() == PLATFORM_N3DS)) // special N3DS partition types
+            partition = (nand_hdr_type == NAND_HDR_N3DS) ? partitions + 6 : partitions + 7;
+        CryptBufferInfo info = {.keyslot = partition->keyslot, .setKeyY = 0, .size = 16, .buffer = header, .mode = partition->mode};
+        if (SetupNandCrypto(info.ctr, partition->offset) != 0) {
+            FileClose();
+            return 1;
+        }
+        if (!DebugFileRead(header, 16, partition->offset)) {
+            FileClose();
+            return 1;
+        }
+        CryptBuffer(&info);
+        if ((partition->magic[0] != 0xFF) && (memcmp(partition->magic, header, 8) != 0)) {
+            FileClose();
+            Debug("Not a proper NAND backup for this 3DS");
+            if (partition->keyslot == 0x05)
+                Debug("(or slot0x05keyY not set up");
+            return 1;
+        }
+    }
+    
+    // firm hash check
+    for (u32 f_num = 0; f_num < 2; f_num++) { 
+        PartitionInfo* partition = partitions + 3 + f_num;
+        CryptBufferInfo info = {.keyslot = partition->keyslot, .setKeyY = 0, .size = 0x200, .buffer = header, .mode = partition->mode};
+        if (SetupNandCrypto(info.ctr, partition->offset) != 0) {
+            FileClose();
+            return 1;
+        }
+        if (!DebugFileRead(header, 0x200, partition->offset)) {
+            FileClose();
+            return 1;
+        }
+        CryptBuffer(&info);
+        for (u32 section = 0; section < 4; section++) {
+            u8 l_sha256[32];
+            u32 offset = partition->offset + getle32(header + 0x40 + 0x00 + (0x30*section));
+            u32 size = getle32(header + 0x40 + 0x08 + (0x30*section));
+            u8* sha256 = header + 0x40 + 0x10 + (0x30*section);
+            if (!size)
+                continue;
+            sha_init(SHA256_MODE);
+            for (u32 i = 0; i < size; i += BUFFER_MAX_SIZE) {
+                u8* buffer = BUFFER_ADDRESS;
+                u32 read_bytes = min(BUFFER_MAX_SIZE, (size - i));
+                info.size = read_bytes;
+                info.buffer = buffer;
+                SetupNandCrypto(info.ctr, offset + i);
+                FileRead(buffer, read_bytes, offset + i);
+                CryptBuffer(&info);
+                sha_update(buffer, read_bytes);
+            }
+            sha_get(l_sha256);
+            if (memcmp(l_sha256, sha256, 32) != 0) {
+                FileClose();
+                Debug("FIRM%u section%u hash mismatch", f_num, section);
+                Debug("offset: %08X, size: %08X", offset, size);
+                Debug("expect: %08X", getbe32(sha256));
+                Debug("got   : %08X", getbe32(l_sha256));
+                return 1;
+            }
+        }
+    }
+    
+    FileClose();
+    
+    return 0;
+}
+
 u32 OutputFileNameSelector(char* filename, const char* basename, char* extension) {
     char bases[3][64] = { 0 };
     char* dotpos = NULL;
@@ -262,7 +360,7 @@ u32 OutputFileNameSelector(char* filename, const char* basename, char* extension
     return 0;
 }
 
-u32 InputFileNameSelector(char* filename, const char* basename, char* extension, u8* magic, u32 msize, u32 fsize) {
+u32 InputFileNameSelector(char* filename, const char* basename, char* extension, u8* magic, u32 msize, u32 fsize, bool accept_bigger) {
     char** fnptr = (char**) 0x20400000; // allow using 0x8000 byte
     char* fnlist = (char*) 0x20408000; // allow using 0x80000 byte
     u32 n_names = 0;
@@ -307,9 +405,12 @@ u32 InputFileNameSelector(char* filename, const char* basename, char* extension,
                 continue; // extension check failed
             if (!FileOpen(fn))
                 continue; // file can't be opened
-            if (fsize && (FileGetSize() != fsize)) {
+            if (fsize && (FileGetSize() < fsize)) {
                 FileClose();
-                continue; // file size check failed
+                continue; // file minimum size check failed
+            } else if (fsize && !accept_bigger && (FileGetSize() != fsize)) {
+                FileClose();
+                continue; // file exact size check failed
             }
             if (msize) {
                 if (FileRead(data, msize, 0) != msize) {
@@ -563,7 +664,7 @@ u32 DumpNand(u32 param)
 {
     char filename[64];
     u8* buffer = BUFFER_ADDRESS;
-    u32 nand_size = getMMCDevice(0)->total_size * NAND_SECTOR_SIZE;
+    u32 nand_size = (param & NB_MINSIZE) ? NAND_MIN_SIZE : getMMCDevice(0)->total_size * NAND_SECTOR_SIZE;
     u32 result = 0;
 
     Debug("Dumping %sNAND. Size (MB): %u", (param & N_EMUNAND) ? "Emu" : "Sys", nand_size / (1024 * 1024));
@@ -571,7 +672,7 @@ u32 DumpNand(u32 param)
     if (!DebugCheckFreeSpace(nand_size))
         return 1;
     
-    if (OutputFileNameSelector(filename, "NAND.bin", NULL) != 0)
+    if (OutputFileNameSelector(filename, (param & NB_MINSIZE) ? "NANDmin.bin" : "NAND.bin", NULL) != 0)
         return 1;
     if (!DebugFileCreate(filename, true))
         return 1;
@@ -678,60 +779,29 @@ u32 RestoreNand(u32 param)
 {
     char filename[64];
     u8* buffer = BUFFER_ADDRESS;
-    u32 nand_hdr_type = NAND_HDR_UNK;
     u32 nand_size = getMMCDevice(0)->total_size * NAND_SECTOR_SIZE;
-    u32 dump_size = 0;
     u32 result = 0;
-    u8 magic[16];
 
     if (!(param & N_NANDWRITE)) // developer screwup protection
         return 1;
         
     // user file select
-    if (InputFileNameSelector(filename, "NAND.bin", NULL, NULL, 0, nand_size) != 0)
+    if (InputFileNameSelector(filename, "NAND.bin", NULL, NULL, 0, NAND_MIN_SIZE, true) != 0)
         return 1;
     
     // safety checks
-    if (!DebugFileOpen(filename))
-        return 1;
-    dump_size = FileGetSize();
-    if (dump_size < NAND_MIN_SIZE) {
-        FileClose();
-        Debug("NAND backup is too small!");
-        return 1;
-    } else if (dump_size < nand_size) {
-        Debug("Small NAND backup, using minimum size...");
-        nand_size = NAND_MIN_SIZE;
-    }
-    if(!DebugFileRead(buffer, 0x200, 0)) {
-        FileClose();
-        return 1;
-    }
-    nand_hdr_type = CheckNandHeader(buffer);
-    if ((nand_hdr_type == NAND_HDR_UNK) || (GetUnitPlatform() == PLATFORM_3DS && (nand_hdr_type != NAND_HDR_O3DS))) {
-        FileClose();
-        Debug("NAND header not recognized");
-        return 1;
+    if (!(param & NR_NOCHECKS)) {
+        Debug("Validating NAND dump %s...", filename);
+        if (CheckNandDumpIntegrity(filename) != 0)
+            return 1;
     }
     
-    for (u32 p_num = 0; p_num < 6; p_num++) { 
-        PartitionInfo* partition = partitions + p_num; // workaround for files, not possible with GetPartitionInfo()
-        if ((p_num == 5) && (GetUnitPlatform() == PLATFORM_N3DS)) // special N3DS partition types
-            partition = (nand_hdr_type == NAND_HDR_N3DS) ? partitions + 6 : partitions + 7;
-        CryptBufferInfo info = {.keyslot = partition->keyslot, .setKeyY = 0, .size = 16, .buffer = magic, .mode = partition->mode};
-        if (SetupNandCrypto(info.ctr, partition->offset) != 0)
-            break; // so this check might be not possible, continue anyways
-        if (!DebugFileRead(magic, 16, partition->offset)) {
-            FileClose();
-            return 1;
-        }
-        CryptBuffer(&info);
-        if ((partition->magic[0] != 0xFF) && (memcmp(partition->magic, magic, 8) != 0)) {
-            Debug("Not a proper NAND backup for this 3DS");
-            if (partition->keyslot == 0x05)
-                Debug("(or slot0x05keyY not set up");
-            return 1;
-        }
+    // open file, adjust size if required - NAND dump has at least min size (checked two times) at this point
+    if (!FileOpen(filename))
+        return 1;
+    if (FileGetSize() < nand_size) {
+        Debug("Small NAND backup, using minimum size...");
+        nand_size = NAND_MIN_SIZE;
     }
     
     Debug("Restoring %sNAND. Size (MB): %u", (param & N_EMUNAND) ? "Emu" : "Sys", nand_size / (1024 * 1024));
@@ -778,7 +848,7 @@ u32 InjectNandPartition(u32 param)
     Debug("Encrypting & Injecting %s, size (MB): %u", p_info->name, p_info->size / (1024 * 1024));
     // User file select
     if (InputFileNameSelector(filename, p_info->name, "bin",
-        p_info->magic, (p_info->magic[0] != 0xFF) ? 8 : 0, p_info->size) != 0)
+        p_info->magic, (p_info->magic[0] != 0xFF) ? 8 : 0, p_info->size, false) != 0)
         return 1;
     
     // Encryption check
@@ -803,4 +873,18 @@ u32 InjectNandPartition(u32 param)
     }
     
     return EncryptFileToNand(filename, p_info->offset, p_info->size, p_info);
+}
+
+u32 ValidateNandDump(u32 param)
+{
+    char filename[64];
+        
+    // user file select
+    if (InputFileNameSelector(filename, "NAND.bin", NULL, NULL, 0, NAND_MIN_SIZE, true) != 0)
+        return 1;
+    Debug("Validating NAND dump %s...", filename);
+    if (CheckNandDumpIntegrity(filename) != 0)
+        return 1;
+    
+    return 0;
 }

@@ -273,7 +273,7 @@ u32 InjectFile(u32 param)
     
     if (DebugSeekFileInNand(&offset, &size, f_info->name_l, f_info->path, p_info) != 0)
         return 1;
-    if (InputFileNameSelector(filename, f_info->name_s, NULL, NULL, 0, size) != 0)
+    if (InputFileNameSelector(filename, f_info->name_s, NULL, NULL, 0, size, false) != 0)
         return 1;
     if (EncryptFileToNand(filename, offset, size, p_info) != 0)
         return 1;
@@ -331,7 +331,7 @@ u32 InjectHealthAndSafety(u32 param)
     }
     if (DecryptNandToMem((void*) ncch, offset_app[0], 0x200, ctrnand_info) != 0)
         return 1;
-    if (InputFileNameSelector(filename, NULL, "app", ncch->signature, 0x100, 0) != 0)
+    if (InputFileNameSelector(filename, NULL, "app", ncch->signature, 0x100, 0, false) != 0)
         return 1;
     
     if (!DebugFileOpen(filename))

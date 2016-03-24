@@ -35,28 +35,26 @@ MenuInfo menu[] =
         }
     },
     {
-        "SysNAND Options", 9,
+        "SysNAND Options", 8,
         {
-            { "NAND Backup",                  &DumpNand,              0 },
-            { "NAND Restore",                 &RestoreNand,           N_NANDWRITE },
-            { "Partition Dump...",            NULL,                   SUBMENU_START + 0 },
-            { "Partition Inject...",          NULL,                   SUBMENU_START + 2 },
-            { "File Dump...",                 NULL,                   SUBMENU_START + 4 },
-            { "File Inject...",               NULL,                   SUBMENU_START + 6 },
+            { "SysNAND Backup/Restore...",    NULL,                   SUBMENU_START + 0 },
+            { "Partition Dump...",            NULL,                   SUBMENU_START + 2 },
+            { "Partition Inject...",          NULL,                   SUBMENU_START + 4 },
+            { "File Dump...",                 NULL,                   SUBMENU_START + 6 },
+            { "File Inject...",               NULL,                   SUBMENU_START + 8 },
             { "Health&Safety Dump",           &DumpHealthAndSafety,   0 },
             { "Health&Safety Inject",         &InjectHealthAndSafety, N_NANDWRITE },
             { "Update SeedDB",                &UpdateSeedDb,          0 }
         }
     },
     {
-        "EmuNAND Options", 9,
+        "EmuNAND Options", 8,
         {
-            { "EmuNAND Backup",               &DumpNand,              N_EMUNAND },
-            { "EmuNAND Restore",              &RestoreNand,           N_NANDWRITE | N_EMUNAND | N_FORCENAND },
-            { "Partition Dump...",            NULL,                   SUBMENU_START + 1 },
-            { "Partition Inject...",          NULL,                   SUBMENU_START + 3 },
-            { "File Dump...",                 NULL,                   SUBMENU_START + 5 },
-            { "File Inject...",               NULL,                   SUBMENU_START + 7 },
+            { "EmuNAND Backup/Restore...",    NULL,                   SUBMENU_START + 1 },
+            { "Partition Dump...",            NULL,                   SUBMENU_START + 3 },
+            { "Partition Inject...",          NULL,                   SUBMENU_START + 5 },
+            { "File Dump...",                 NULL,                   SUBMENU_START + 7 },
+            { "File Inject...",               NULL,                   SUBMENU_START + 9 },
             { "Health&Safety Dump",           &DumpHealthAndSafety,   N_EMUNAND },
             { "Health&Safety Inject",         &InjectHealthAndSafety, N_NANDWRITE | N_EMUNAND },
             { "Update SeedDB",                &UpdateSeedDb,          N_EMUNAND }
@@ -85,7 +83,27 @@ MenuInfo menu[] =
     },
     // everything below is not contained in the main menu
     {
-        "Partition Dump... (SysNAND)", 6, // ID 0
+        "SysNAND Backup/Restore Options", 5, // ID 0
+        {
+            { "NAND Backup",                  &DumpNand,              0 },
+            { "NAND Backup (min size)",       &DumpNand,              NB_MINSIZE },
+            { "NAND Restore",                 &RestoreNand,           N_NANDWRITE },
+            { "NAND Restore (forced)",        &RestoreNand,           N_NANDWRITE | NR_NOCHECKS },
+            { "Validate NAND Dump",           &ValidateNandDump,      0 }
+        }
+    },
+    {
+        "EmuNAND Backup/Restore Options", 5, // ID 1
+        {
+            { "NAND Backup",                  &DumpNand,              N_EMUNAND },
+            { "NAND Backup (min size)",       &DumpNand,              N_EMUNAND | NB_MINSIZE },
+            { "NAND Restore",                 &RestoreNand,           N_NANDWRITE | N_EMUNAND | N_FORCEEMU },
+            { "NAND Restore (forced)",        &RestoreNand,           N_NANDWRITE | N_EMUNAND | N_FORCEEMU | NR_NOCHECKS },
+            { "Validate NAND Dump",           &ValidateNandDump,      0 } // same as the one in SysNAND backup & restore, but so what?
+        }
+    },
+    {
+        "Partition Dump... (SysNAND)", 6, // ID 2
         {
             { "Dump TWLN Partition",          &DecryptNandPartition, P_TWLN },
             { "Dump TWLP Partition",          &DecryptNandPartition, P_TWLP },
@@ -96,7 +114,7 @@ MenuInfo menu[] =
         }
     },
     {
-        "Partition Dump...(EmuNAND)", 6, // ID 1
+        "Partition Dump...(EmuNAND)", 6, // ID 3
         {
             { "Dump TWLN Partition",          &DecryptNandPartition, N_EMUNAND | P_TWLN },
             { "Dump TWLP Partition",          &DecryptNandPartition, N_EMUNAND | P_TWLP },
@@ -107,7 +125,7 @@ MenuInfo menu[] =
         }
     },
     {
-        "Partition Inject... (SysNAND)", 6, // ID 2
+        "Partition Inject... (SysNAND)", 6, // ID 4
         {
             { "Inject TWLN Partition",        &InjectNandPartition, N_NANDWRITE | P_TWLN },
             { "Inject TWLP Partition",        &InjectNandPartition, N_NANDWRITE | P_TWLP },
@@ -118,7 +136,7 @@ MenuInfo menu[] =
         }
     },
     {
-        "Partition Inject... (EmuNAND)", 6, // ID 3
+        "Partition Inject... (EmuNAND)", 6, // ID 5
         {
             { "Inject TWLN Partition",        &InjectNandPartition, N_NANDWRITE | N_EMUNAND | P_TWLN },
             { "Inject TWLP Partition",        &InjectNandPartition, N_NANDWRITE | N_EMUNAND | P_TWLP },
@@ -129,7 +147,7 @@ MenuInfo menu[] =
         }
     },
     {
-        "File Dump... (SysNAND)", 11, // ID 4
+        "File Dump... (SysNAND)", 11, // ID 6
         {
             { "Dump ticket.db",               &DumpFile,             F_TICKET },
             { "Dump title.db",                &DumpFile,             F_TITLE },
@@ -145,7 +163,7 @@ MenuInfo menu[] =
         }
     },
     {
-        "File Dump... (EmuNAND)", 11, // ID 5
+        "File Dump... (EmuNAND)", 11, // ID 7
         {
             { "Dump ticket.db",               &DumpFile,             N_EMUNAND | F_TICKET },
             { "Dump title.db",                &DumpFile,             N_EMUNAND | F_TITLE },
@@ -161,7 +179,7 @@ MenuInfo menu[] =
         }
     },
     {
-        "File Inject... (SysNAND)", 10, // ID 6
+        "File Inject... (SysNAND)", 11, // ID 8
         {
             { "Inject ticket.db",             &InjectFile,           N_NANDWRITE | F_TICKET },
             { "Inject title.db",              &InjectFile,           N_NANDWRITE | F_TITLE },
@@ -171,12 +189,13 @@ MenuInfo menu[] =
             { "Inject LocalFriendCodeSeed_B", &InjectFile,           N_NANDWRITE | F_LOCALFRIEND },
             { "Inject rand_seed",             &InjectFile,           N_NANDWRITE | F_RANDSEED },
             { "Inject movable.sed",           &InjectFile,           N_NANDWRITE | F_MOVABLE },
+            { "Inject seedsave.bin",          &InjectFile,           N_NANDWRITE | F_SEEDSAVE },
             { "Inject nagsave.bin",           &InjectFile,           N_NANDWRITE | F_NAGSAVE },
             { "Inject nnidsave.bin",          &InjectFile,           N_NANDWRITE | F_NNIDSAVE }
         }
     },
     {
-        "File Inject... (EmuNAND)", 11, // ID 7
+        "File Inject... (EmuNAND)", 11, // ID 9
         {
             { "Inject ticket.db",             &InjectFile,           N_NANDWRITE | N_EMUNAND | F_TICKET },
             { "Inject title.db",              &InjectFile,           N_NANDWRITE | N_EMUNAND | F_TITLE },
