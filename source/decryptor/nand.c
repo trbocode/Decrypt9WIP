@@ -17,6 +17,10 @@
 #define EMUNAND_MULTI_OFFSET_O3DS 0x00200000
 #define EMUNAND_MULTI_OFFSET_N3DS 0x00400000
 
+// minimum sizes for O3DS / N3DS NAND
+// see: http://3dbrew.org/wiki/Flash_Filesystem
+#define NAND_MIN_SIZE ((GetUnitPlatform() == PLATFORM_3DS) ? 0x3AF00000 : 0x4D800000)
+
 // from an actual N3DS NCSD NAND header, same for all
 static u8 nand_magic_n3ds[0x60] = {
     0x4E, 0x43, 0x53, 0x44, 0x00, 0x00, 0x28, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
@@ -674,8 +678,9 @@ u32 RestoreNand(u32 param)
 {
     char filename[64];
     u8* buffer = BUFFER_ADDRESS;
-    u32 nand_size = getMMCDevice(0)->total_size * NAND_SECTOR_SIZE;
     u32 nand_hdr_type = NAND_HDR_UNK;
+    u32 nand_size = getMMCDevice(0)->total_size * NAND_SECTOR_SIZE;
+    u32 dump_size = 0;
     u32 result = 0;
     u8 magic[16];
 
@@ -689,11 +694,15 @@ u32 RestoreNand(u32 param)
     // safety checks
     if (!DebugFileOpen(filename))
         return 1;
-    if (nand_size != FileGetSize()) {
+    dump_size = FileGetSize();
+    if (dump_size < NAND_MIN_SIZE) {
         FileClose();
-        Debug("NAND backup has the wrong size!");
+        Debug("NAND backup is too small!");
         return 1;
-    };
+    } else if (dump_size < nand_size) {
+        Debug("Small NAND backup, using minimum size...");
+        nand_size = NAND_MIN_SIZE;
+    }
     if(!DebugFileRead(buffer, 0x200, 0)) {
         FileClose();
         return 1;
