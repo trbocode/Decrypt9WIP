@@ -533,6 +533,9 @@ u32 DecryptNandToFile(const char* filename, u32 offset, u32 size, PartitionInfo*
     u8* buffer = BUFFER_ADDRESS;
     u32 result = 0;
 
+    if (!DebugCheckFreeSpace(size))
+        return 1;
+    
     if (!DebugFileCreate(filename, true))
         return 1;
 
@@ -560,6 +563,9 @@ u32 DumpNand(u32 param)
     u32 result = 0;
 
     Debug("Dumping %sNAND. Size (MB): %u", (param & N_EMUNAND) ? "Emu" : "Sys", nand_size / (1024 * 1024));
+    
+    if (!DebugCheckFreeSpace(nand_size))
+        return 1;
     
     if (OutputFileNameSelector(filename, "NAND.bin", NULL) != 0)
         return 1;

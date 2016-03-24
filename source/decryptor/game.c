@@ -1276,6 +1276,8 @@ u32 DecryptSdFilesDirect(u32 param) {
         Debug("%2u: %s", n_processed, srcpath + bplen);
         if (FileOpen(srcpath)) {
             fsize = FileGetSize();
+            if (!DebugCheckFreeSpace(fsize))
+                return 1;
             if (FileCopyTo(dstpath, BUFFER_ADDRESS, BUFFER_MAX_SIZE) != fsize) {
                 Debug("Could not copy: %s", srcpath + bplen);
                 n_failed++;
