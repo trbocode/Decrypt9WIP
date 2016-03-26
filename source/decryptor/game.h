@@ -9,6 +9,8 @@
 #define GC_NCCH_ENCRYPT (1<<3)
 #define GC_CIA_ENCRYPT  (1<<4)
 #define GC_CXI_ONLY     (1<<5)
+#define GC_BOSS_PROCESS (1<<6)
+#define GC_BOSS_ENCRYPT (1<<7) 
 
 #define MAX_ENTRIES 1024
 
@@ -92,11 +94,12 @@ u32 GetSd0x34KeyY(u8* movable_keyY, bool from_nand);
 u32 LoadKeyXFromFile(u32 keyslot);
 u32 SdFolderSelector(char* path, u8* keyY);
 u32 SdInfoGen(SdInfo* info, const char* base_path);
-u32 CryptSdToSd(const char* filename, u32 offset, u32 size, CryptBufferInfo* info);
+u32 CryptSdToSd(const char* filename, u32 offset, u32 size, CryptBufferInfo* info, bool handle_offset16);
 u32 GetHashFromFile(const char* filename, u32 offset, u32 size, u8* hash);
-u32 CheckHashFromFile(const char* filename, u32 offset, u32 size, u8* hash);
+u32 CheckHashFromFile(const char* filename, u32 offset, u32 size, const u8* hash);
 u32 CryptNcch(const char* filename, u32 offset, u32 size, u64 seedId, u8* encrypt_flags);
 u32 CryptCia(const char* filename, u8* ncch_crypt, bool cia_encrypt, bool cxi_only);
+u32 CryptBoss(const char* filename, bool encrypt);
 
 // --> FEATURE FUNCTIONS <--
 u32 NcchPadgen(u32 param);

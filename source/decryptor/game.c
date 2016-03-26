@@ -518,10 +518,10 @@ u32 UpdateSeedDb(u32 param)
     return 0;
 }
 
-u32 CryptSdToSd(const char* filename, u32 offset, u32 size, CryptBufferInfo* info)
+u32 CryptSdToSd(const char* filename, u32 offset, u32 size, CryptBufferInfo* info, bool handle_offset16)
 {
     u8* buffer = BUFFER_ADDRESS;
-    u32 offset_16 = offset % 16;
+    u32 offset_16 = (handle_offset16) ? offset % 16 : 0;
     u32 result = 0;
 
     // no DebugFileOpen() - at this point the file has already been checked enough
@@ -584,7 +584,7 @@ u32 GetHashFromFile(const char* filename, u32 offset, u32 size, u8* hash)
     return 0;
 }
 
-u32 CheckHashFromFile(const char* filename, u32 offset, u32 size, u8* hash)
+u32 CheckHashFromFile(const char* filename, u32 offset, u32 size, const u8* hash)
 {
     u8 digest[32];
     
@@ -743,7 +743,7 @@ u32 CryptNcch(const char* filename, u32 offset, u32 size, u64 seedId, u8* encryp
             add_ctr(info0.ctr, 0x200); // exHeader offset
         else
             info0.ctr[8] = 1;
-        result |= CryptSdToSd(filename, offset + 0x200, 0x800, &info0);
+        result |= CryptSdToSd(filename, offset + 0x200, 0x800, &info0, true);
     }
     
     // process ExeFS
@@ -760,7 +760,7 @@ u32 CryptNcch(const char* filename, u32 offset, u32 size, u64 seedId, u8* encryp
             u32 size_code = 0;
             // find .code offset and size
             if (!encrypt_flags) // decrypt this first (when decrypting)
-                result |= CryptSdToSd(filename, offset + offset_byte, 0x200, &info0);
+                result |= CryptSdToSd(filename, offset + offset_byte, 0x200, &info0, true);
             if (FileGetData(filename, buffer, 0x200, offset + offset_byte) != 0x200)
                 return 1;
             for (u32 i = 0; i < 10; i++) {
@@ -771,22 +771,22 @@ u32 CryptNcch(const char* filename, u32 offset, u32 size, u64 seedId, u8* encryp
                 }
             }
             if (encrypt_flags) // encrypt this last (when encrypting)
-                result |= CryptSdToSd(filename, offset + offset_byte, 0x200, &info0);
+                result |= CryptSdToSd(filename, offset + offset_byte, 0x200, &info0, true);
             // special ExeFS decryption routine (only .code has new encryption)
             if (size_code > 0) {
-                result |= CryptSdToSd(filename, offset + offset_byte + 0x200, offset_code - 0x200, &info0);
+                result |= CryptSdToSd(filename, offset + offset_byte + 0x200, offset_code - 0x200, &info0, true);
                 memcpy(info1.ctr, info0.ctr, 16); // this depends on the exeFS file offsets being aligned (which they are)
                 add_ctr(info0.ctr, size_code / 0x10);
                 info0.setKeyY = info1.setKeyY = 1;
-                result |= CryptSdToSd(filename, offset + offset_byte + offset_code, size_code, &info1);
+                result |= CryptSdToSd(filename, offset + offset_byte + offset_code, size_code, &info1, true);
                 result |= CryptSdToSd(filename,
                     offset + offset_byte + offset_code + size_code,
-                    size_byte - (offset_code + size_code), &info0);
+                    size_byte - (offset_code + size_code), &info0, true);
             } else {
-                result |= CryptSdToSd(filename, offset + offset_byte + 0x200, size_byte - 0x200, &info0);
+                result |= CryptSdToSd(filename, offset + offset_byte + 0x200, size_byte - 0x200, &info0, true);
             }
         } else {
-            result |= CryptSdToSd(filename, offset + offset_byte, size_byte, &info0);
+            result |= CryptSdToSd(filename, offset + offset_byte, size_byte, &info0, true);
         }
     }
     
@@ -801,7 +801,7 @@ u32 CryptNcch(const char* filename, u32 offset, u32 size, u64 seedId, u8* encryp
             info1.ctr[8] = 3;
         if (!usesFixedKey)
             info1.setKeyY = 1;
-        result |= CryptSdToSd(filename, offset + offset_byte, size_byte, &info1);
+        result |= CryptSdToSd(filename, offset + offset_byte, size_byte, &info1, true);
     }
     
     // set NCCH header flags
@@ -992,7 +992,7 @@ u32 CryptCia(const char* filename, u8* ncch_crypt, bool cia_encrypt, bool cxi_on
         Debug("%scrypting Content %i of %i (%iMB)...", (cia_encrypt) ? "En" : "De", i + 1, content_count, size / (1024*1024));
         memset(info.ctr, 0x00, 16);
         memcpy(info.ctr, content_list + (0x30 * i) + 4, 2);
-        if (CryptSdToSd(filename, offset, size, &info) != 0) {
+        if (CryptSdToSd(filename, offset, size, &info, true) != 0) {
             Debug("%scryption failed!", (cia_encrypt) ? "En" : "De");
             result = 1;
             continue;
@@ -1072,11 +1072,88 @@ u32 CryptCia(const char* filename, u8* ncch_crypt, bool cia_encrypt, bool cxi_on
     return result;
 }
 
+u32 CryptBoss(const char* filename, bool encrypt)
+{
+    const u8 boss_magic[] = {0x62, 0x6F, 0x73, 0x73, 0x00, 0x01, 0x00, 0x01};
+    CryptBufferInfo info = {.setKeyY = 0, .keyslot = 0x38, .mode = AES_CNT_CTRNAND_MODE};
+    u8 boss_header[0x28];
+    u8 content_header[0x14] = { 0x00 };
+    u8 content_header_sha256[0x20];
+    u8 l_sha256[0x20];
+    u32 fsize = 0;
+    bool encrypted = true;
+    
+    // base BOSS file checks
+    if (!FileOpen(filename)) // already checked this file
+        return 1;
+    if (!DebugFileRead(boss_header, 0x28, 0x00)) {
+        FileClose();
+        return 1;
+    }
+    if (memcmp(boss_magic, boss_header, 8) != 0) {
+        Debug("Not a BOSS file");
+        FileClose();
+        return 1;
+    }
+    fsize = getbe32(boss_header + 8);
+    if ((fsize != FileGetSize()) || (fsize < 0x52)) {
+        Debug("BOSS file has bad size");
+        FileClose();
+        return 1;
+    }
+    FileClose();
+
+    // BOSS file verification / encryption check
+    if (FileGetData(filename, content_header, 0x12, 0x28) != 0x12)
+        return 1;
+    if (FileGetData(filename, content_header_sha256, 0x20, 0x3A) != 0x20)
+        return 1;
+    sha_init(SHA256_MODE);
+    sha_update(content_header, 0x14);
+    sha_get(l_sha256);
+    encrypted = (memcmp(content_header_sha256, l_sha256, 0x20) != 0);
+    if (encrypt == encrypted) {
+        Debug("BOSS is already %scrypted", (encrypted) ? "en" : "de");
+        return 1;
+    }
+    
+    if (!encrypted) {
+        Debug("BOSS verification: OK");
+    }
+    
+    // BOSS file decryption
+    Debug("%scrypting BOSS...", (encrypt) ? "En" : "De");
+    memset(info.ctr, 0x00, 16);
+    memcpy(info.ctr, boss_header + 0x1C, 12);
+    info.ctr[15] = 0x01;
+    Debug("CTR: %08X%08X%08X%08X", getbe32(info.ctr), getbe32(info.ctr + 4), getbe32(info.ctr + 8), getbe32(info.ctr + 12));
+    CryptSdToSd(filename, 0x28, fsize - 0x28, &info, false);
+    
+    // BOSS file verification (#2)
+    if (!encrypt) {
+        if (FileGetData(filename, content_header, 0x12, 0x28) != 0x12)
+            return 1;
+        if (FileGetData(filename, content_header_sha256, 0x20, 0x3A) != 0x20)
+            return 1;
+        sha_init(SHA256_MODE);
+        sha_update(content_header, 0x14);
+        sha_get(l_sha256);
+        if (memcmp(content_header_sha256, l_sha256, 0x20) == 0) {
+            Debug("BOSS verification: OK");
+        } else {
+            Debug("BOSS verification: Failed");
+            return 1;
+        }
+    }
+    
+    return 0;
+}
 
 u32 CryptGameFiles(u32 param)
 {
     u8 ncch_crypt_none[8]     = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x04 };
     u8 ncch_crypt_standard[8] = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
+    const u8 boss_magic[] = {0x62, 0x6F, 0x73, 0x73, 0x00, 0x01, 0x00, 0x01};
     const char* ncsd_partition_name[8] = {
         "Executable", "Manual", "DPC", "Unknown", "Unknown", "Unknown", "UpdateN3DS", "UpdateO3DS" 
     };
@@ -1085,6 +1162,8 @@ u32 CryptGameFiles(u32 param)
     
     bool batch_ncch = param & GC_NCCH_PROCESS;
     bool batch_cia = param & GC_CIA_PROCESS;
+    bool batch_boss = param & GC_BOSS_PROCESS;
+    bool boss_encrypt = param & GC_BOSS_ENCRYPT;
     bool cia_encrypt = param & GC_CIA_ENCRYPT;
     bool cxi_only = param & GC_CXI_ONLY;
     u8* ncch_crypt = (param & GC_NCCH_ENCRYPT) ? ncch_crypt_standard : NULL;
@@ -1145,6 +1224,15 @@ u32 CryptGameFiles(u32 param)
         } else if (batch_cia && (memcmp(buffer, "\x20\x20", 2) == 0)) {
             Debug("Processing CIA \"%s\"", path + path_len);
             if (CryptCia(path, cia_ncch_crypt, cia_encrypt, cxi_only) == 0) {
+                Debug("Success!");
+                n_processed++;
+            } else {
+                Debug("Failed!");
+                n_failed++;
+            }
+        } else if (batch_boss && (memcmp(buffer, boss_magic, 8) == 0)) {
+            Debug("Processing BOSS \"%s\"", path + path_len);
+            if (CryptBoss(path, boss_encrypt) == 0) {
                 Debug("Success!");
                 n_processed++;
             } else {
@@ -1215,7 +1303,7 @@ u32 CryptSdFiles(u32 param) {
                 continue;
             }
             Debug("%2u: %s", n_processed, path + bplen);
-            if (CryptSdToSd(path, 0, fsize, &info) == 0) {
+            if (CryptSdToSd(path, 0, fsize, &info, true) == 0) {
                 n_processed++;
             } else {
                 Debug("Failed!");
@@ -1288,7 +1376,7 @@ u32 DecryptSdFilesDirect(u32 param) {
             n_failed++;
             continue;
         }
-        if (CryptSdToSd(dstpath, 0, fsize, &info) == 0) {
+        if (CryptSdToSd(dstpath, 0, fsize, &info, true) == 0) {
             n_processed++;
         } else {
             Debug("Failed!");
