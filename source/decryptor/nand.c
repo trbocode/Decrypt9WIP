@@ -814,17 +814,46 @@ u32 RestoreNand(u32 param)
     Debug("Restoring %sNAND. Size (MB): %u", (param & N_EMUNAND) ? "Emu" : "Sys", nand_size / (1024 * 1024));
 
     u32 n_sectors = nand_size / NAND_SECTOR_SIZE;
-    for (u32 i = 0; i < n_sectors; i += SECTORS_PER_READ) {
-        u32 read_sectors = min(SECTORS_PER_READ, (n_sectors - i));
-        ShowProgress(i, n_sectors);
-        if (!DebugFileRead(buffer, NAND_SECTOR_SIZE * read_sectors, i * NAND_SECTOR_SIZE)) {
-            result = 1;
-            break;
+    if (!(param & NR_KEEPA9LH)) { // standard, full restore
+        for (u32 i = 0; i < n_sectors; i += SECTORS_PER_READ) {
+            u32 read_sectors = min(SECTORS_PER_READ, (n_sectors - i));
+            ShowProgress(i, n_sectors);
+            if (!DebugFileRead(buffer, NAND_SECTOR_SIZE * read_sectors, i * NAND_SECTOR_SIZE)) {
+                result = 1;
+                break;
+            }
+            if (WriteNandSectors(i, read_sectors, buffer) != 0) {
+                Debug("%NAND write error", (emunand_header) ? "Emu" : "Sys");
+                result = 1;
+                break;
+            }
         }
-        if (WriteNandSectors(i, read_sectors, buffer) != 0) {
-            Debug("%NAND write error", (emunand_header) ? "Emu" : "Sys");
-            result = 1;
-            break;
+    } else { // ARM9loaderhax preserving restore
+        for (u32 section = 0; section < 3; section++) {
+            u32 start_sector, end_sector;
+            if (section == 0) { // NAND header
+                start_sector = 0;
+                end_sector = 1;
+            } else if (section == 1) { // TWLN, TWLP & AGBSAVE
+                start_sector = partitions[0].offset / NAND_SECTOR_SIZE;
+                end_sector = ((partitions[2].offset + partitions[2].size) - partitions[0].offset) / NAND_SECTOR_SIZE;
+            } else { // CTRNAND (full size) (FIRM skipped)
+                start_sector = 0x0B930000 / NAND_SECTOR_SIZE;
+                end_sector = n_sectors;
+            }
+            for (u32 i = start_sector; i < end_sector; i += SECTORS_PER_READ) {
+                u32 read_sectors = min(SECTORS_PER_READ, (end_sector - i));
+                ShowProgress(i, n_sectors);
+                if (!DebugFileRead(buffer, NAND_SECTOR_SIZE * read_sectors, i * NAND_SECTOR_SIZE)) {
+                    result = 1;
+                    break;
+                }
+                if (WriteNandSectors(i, read_sectors, buffer) != 0) {
+                    Debug("%NAND write error", (emunand_header) ? "Emu" : "Sys");
+                    result = 1;
+                    break;
+                }
+            }
         }
     }
 

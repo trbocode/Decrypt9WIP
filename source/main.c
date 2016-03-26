@@ -61,7 +61,7 @@ MenuInfo menu[] =
         }
     },
     {
-        "Game Decryptor Options", 9,
+        "Game Decryptor Options", 11,
         {
             { "NCCH/NCSD Decryptor",          &CryptGameFiles,        GC_NCCH_PROCESS },
             { "NCCH/NCSD Encryptor",          &CryptGameFiles,        GC_NCCH_PROCESS | GC_NCCH_ENCRYPT },
@@ -69,6 +69,8 @@ MenuInfo menu[] =
             { "CIA Decryptor (deep)",         &CryptGameFiles,        GC_CIA_PROCESS | GC_CIA_DEEP },
             { "CIA Decryptor (CXI only)",     &CryptGameFiles,        GC_CIA_PROCESS | GC_CIA_DEEP | GC_CXI_ONLY },
             { "CIA Encryptor (NCCH)",         &CryptGameFiles,        GC_CIA_PROCESS | GC_NCCH_ENCRYPT },
+            { "BOSS Decryptor",               &CryptGameFiles,        GC_BOSS_PROCESS },
+            { "BOSS Encryptor",               &CryptGameFiles,        GC_BOSS_PROCESS | GC_BOSS_ENCRYPT },
             { "SD Decryptor/Encryptor",       &CryptSdFiles,          0 },
             { "SD Decryptor (SysNAND dir)",   &DecryptSdFilesDirect,  0 },
             { "SD Decryptor (EmuNAND dir)",   &DecryptSdFilesDirect,  N_EMUNAND }
@@ -83,22 +85,24 @@ MenuInfo menu[] =
     },
     // everything below is not contained in the main menu
     {
-        "SysNAND Backup/Restore Options", 5, // ID 0
+        "SysNAND Backup/Restore Options", 6, // ID 0
         {
             { "NAND Backup",                  &DumpNand,              0 },
             { "NAND Backup (min size)",       &DumpNand,              NB_MINSIZE },
             { "NAND Restore",                 &RestoreNand,           N_NANDWRITE },
             { "NAND Restore (forced)",        &RestoreNand,           N_NANDWRITE | NR_NOCHECKS },
+            { "NAND Restore (keep a9lh)",     &RestoreNand,           N_NANDWRITE | NR_KEEPA9LH },
             { "Validate NAND Dump",           &ValidateNandDump,      0 }
         }
     },
     {
-        "EmuNAND Backup/Restore Options", 5, // ID 1
+        "EmuNAND Backup/Restore Options", 6, // ID 1
         {
             { "NAND Backup",                  &DumpNand,              N_EMUNAND },
             { "NAND Backup (min size)",       &DumpNand,              N_EMUNAND | NB_MINSIZE },
             { "NAND Restore",                 &RestoreNand,           N_NANDWRITE | N_EMUNAND | N_FORCEEMU },
             { "NAND Restore (forced)",        &RestoreNand,           N_NANDWRITE | N_EMUNAND | N_FORCEEMU | NR_NOCHECKS },
+            { "NAND Restore (keep a9lh)",     &RestoreNand,           N_NANDWRITE | N_EMUNAND | N_FORCEEMU | NR_KEEPA9LH },
             { "Validate NAND Dump",           &ValidateNandDump,      0 } // same as the one in SysNAND backup & restore, but so what?
         }
     },
