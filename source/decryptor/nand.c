@@ -21,6 +21,10 @@
 // see: http://3dbrew.org/wiki/Flash_Filesystem
 #define NAND_MIN_SIZE ((GetUnitPlatform() == PLATFORM_3DS) ? 0x3AF00000 : 0x4D800000)
 
+// see below
+#define IS_NAND_HEADER(hdr) ((memcmp(buffer + 0x100, nand_magic_n3ds, 0x60) == 0) ||\
+                             (memcmp(buffer + 0x100, nand_magic_o3ds, 0x60) == 0))
+
 // from an actual N3DS NCSD NAND header, same for all
 static u8 nand_magic_n3ds[0x60] = {
     0x4E, 0x43, 0x53, 0x44, 0x00, 0x00, 0x28, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
@@ -61,6 +65,7 @@ u32 CheckEmuNand(void)
 {
     u8* buffer = BUFFER_ADDRESS;
     u32 nand_size_sectors = getMMCDevice(0)->total_size;
+    u32 nand_size_sectors_min = NAND_MIN_SIZE / NAND_SECTOR_SIZE;
     u32 multi_sectors = (GetUnitPlatform() == PLATFORM_3DS) ? EMUNAND_MULTI_OFFSET_O3DS : EMUNAND_MULTI_OFFSET_N3DS;
     u32 ret = EMUNAND_NOT_READY;
 
@@ -68,21 +73,23 @@ u32 CheckEmuNand(void)
     sdmmc_sdcard_readsectors(0, 1, buffer);
     u32 hidden_sectors = getle32(buffer + 0x1BE + 0x8);
     
-    for (u32 offset_sector = 0; offset_sector + nand_size_sectors < hidden_sectors; offset_sector += multi_sectors) {
-        // check for Gateway type EmuNAND
-        sdmmc_sdcard_readsectors(offset_sector + nand_size_sectors, 1, buffer);
-        if (memcmp(buffer + 0x100, "NCSD", 4) == 0) {
-            ret |= EMUNAND_GATEWAY << (2 * (offset_sector / multi_sectors)); 
-            continue;
-        }
+    for (u32 offset_sector = 0; offset_sector + nand_size_sectors_min < hidden_sectors; offset_sector += multi_sectors) {
         // check for RedNAND type EmuNAND
         sdmmc_sdcard_readsectors(offset_sector + 1, 1, buffer);
-        if (memcmp(buffer + 0x100, "NCSD", 4) == 0) {
+        if (IS_NAND_HEADER(buffer)) {
             ret |= EMUNAND_REDNAND << (2 * (offset_sector / multi_sectors)); 
             continue;
         }
+        if (hidden_sectors - offset_sector <= nand_size_sectors)
+            break;
+        // check for Gateway type EmuNAND
+        sdmmc_sdcard_readsectors(offset_sector + nand_size_sectors, 1, buffer);
+        if (IS_NAND_HEADER(buffer)) {
+            ret |= EMUNAND_GATEWAY << (2 * (offset_sector / multi_sectors)); 
+            continue;
+        }
         // EmuNAND ready but not set up
-       ret |= EMUNAND_READY << (2 * (offset_sector / multi_sectors)); 
+       ret |= EMUNAND_READY << (2 * (offset_sector / multi_sectors));
     }
     
     return ret;
