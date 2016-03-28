@@ -250,6 +250,7 @@ static u32 CheckNandDumpIntegrity(const char* path) {
     }
     
     // firm hash check
+    u32 firm_corruption = 0;
     for (u32 f_num = 0; f_num < 2; f_num++) { 
         PartitionInfo* partition = partitions + 3 + f_num;
         CryptBufferInfo info = {.keyslot = partition->keyslot, .setKeyY = 0, .size = 0x200, .buffer = header, .mode = partition->mode};
@@ -284,12 +285,15 @@ static u32 CheckNandDumpIntegrity(const char* path) {
             if (memcmp(l_sha256, sha256, 32) != 0) {
                 FileClose();
                 Debug("FIRM%u section%u hash mismatch", f_num, section);
-                Debug("offset: %08X, size: %08X", offset, size);
-                Debug("expect: %08X", getbe32(sha256));
-                Debug("got   : %08X", getbe32(l_sha256));
-                return 1;
+                firm_corruption |= (1<<f_num);
             }
         }
+    }
+    if (firm_corruption == 0x3) {
+        Debug("FIRM0 and FIRM1 are corrupt");
+        return 1;
+    } else if (firm_corruption != 0x0) {
+        Debug("FIRM%i is corrupt (non critical)", (firm_corruption == 0x2) ? 1 : 0);
     }
     
     FileClose();
