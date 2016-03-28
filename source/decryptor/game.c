@@ -27,9 +27,7 @@ u32 GetSdCtr(u8* ctr, const char* path)
             break;
         }
     }
-    sha_init(SHA256_MODE);
-    sha_update(hashstr, (plen + 1) * 2);
-    sha_get(sha256sum);
+    sha_quick(sha256sum, hashstr, (plen + 1) * 2, SHA256_MODE);
     for (u32 i = 0; i < 16; i++)
         ctr[i] = sha256sum[i] ^ sha256sum[i+16];
     
@@ -91,9 +89,7 @@ u32 SdFolderSelector(char* path, u8* keyY)
     // see here: https://www.3dbrew.org/wiki/Nand/private/movable.sed
     u32 sha256sum[8];
     char base_path[64];
-    sha_init(SHA256_MODE);
-    sha_update(keyY, 16);
-    sha_get(sha256sum);
+    sha_quick(sha256sum, keyY, 16, SHA256_MODE);
     snprintf(base_path, 63, "/Nintendo 3DS/%08X%08X%08X%08X",
         (unsigned int) sha256sum[0], (unsigned int) sha256sum[1],
         (unsigned int) sha256sum[2], (unsigned int) sha256sum[3]);
@@ -307,9 +303,7 @@ u32 NcchPadgen(u32 param)
                 return 1;
             }
             u8 sha256sum[32];
-            sha_init(SHA256_MODE);
-            sha_update(keydata, 32);
-            sha_get(sha256sum);
+            sha_quick(sha256sum, keydata, 32, SHA256_MODE);
             memcpy(padInfo.keyY, sha256sum, 16);
         }
         else {
@@ -698,9 +692,7 @@ u32 CryptNcch(const char* filename, u32 offset, u32 size, u64 seedId, u8* encryp
                     memcpy(keydata, ncch->signature, 16);
                     memcpy(keydata + 16, entry->external_seed, 16);
                     u8 sha256sum[32];
-                    sha_init(SHA256_MODE);
-                    sha_update(keydata, 32);
-                    sha_get(sha256sum);
+                    sha_quick(sha256sum, keydata, 32, SHA256_MODE);
                     memcpy(seedKeyY, sha256sum, 16);
                     found = 1;
                 }
@@ -1045,16 +1037,12 @@ u32 CryptCia(const char* filename, u8* ncch_crypt, bool cia_encrypt, bool cxi_on
             for (u32 i = 0, kc = 0; i < 64 && kc < content_count; i++) {
                 u32 k = getbe16(tmd_data + 0xC4 + (i * 0x24) + 0x02);
                 u8 chunk_hash[32];
-                sha_init(SHA256_MODE);
-                sha_update(content_list + kc * 0x30, k * 0x30);
-                sha_get(chunk_hash);
+                sha_quick(chunk_hash, content_list + kc * 0x30, k * 0x30, SHA256_MODE);
                 memcpy(tmd_data + 0xC4 + (i * 0x24) + 0x04, chunk_hash, 32);
                 kc += k;
             }
             u8 tmd_hash[32];
-            sha_init(SHA256_MODE);
-            sha_update(tmd_data + 0xC4, 64 * 0x24);
-            sha_get(tmd_hash);
+            sha_quick(tmd_hash, tmd_data + 0xC4, 64 * 0x24, SHA256_MODE);
             memcpy(tmd_data + 0xA4, tmd_hash, 32);
         }
     }
@@ -1108,9 +1096,7 @@ u32 CryptBoss(const char* filename, bool encrypt)
         return 1;
     if (FileGetData(filename, content_header_sha256, 0x20, 0x3A) != 0x20)
         return 1;
-    sha_init(SHA256_MODE);
-    sha_update(content_header, 0x14);
-    sha_get(l_sha256);
+    sha_quick(l_sha256, content_header, 0x14, SHA256_MODE);
     encrypted = (memcmp(content_header_sha256, l_sha256, 0x20) != 0);
     if (encrypt == encrypted) {
         Debug("BOSS is already %scrypted", (encrypted) ? "en" : "de");
@@ -1135,9 +1121,7 @@ u32 CryptBoss(const char* filename, bool encrypt)
             return 1;
         if (FileGetData(filename, content_header_sha256, 0x20, 0x3A) != 0x20)
             return 1;
-        sha_init(SHA256_MODE);
-        sha_update(content_header, 0x14);
-        sha_get(l_sha256);
+        sha_quick(l_sha256, content_header, 0x14, SHA256_MODE);
         if (memcmp(content_header_sha256, l_sha256, 0x20) == 0) {
             Debug("BOSS verification: OK");
         } else {

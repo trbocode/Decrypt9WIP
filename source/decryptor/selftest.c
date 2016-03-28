@@ -89,9 +89,7 @@ u32 SelfTest(u32 param)
         } else if (type == ST_NAND_CID_MEM) {
             memcpy(test_ptr, (void*) 0x01FFCD84, 16);
         } else if (type == ST_SHA) {
-            sha_init(param);
-            sha_update(teststr, 16);
-            sha_get(test_ptr);
+            sha_quick(test_ptr, teststr, 16, param);
         } else if ((type == ST_AES_MODE) || (type == ST_AES_KEYSLOT) || (type == ST_AES_KEYSLOT_Y)) {
             CryptBufferInfo info = {.setKeyY = 0, .size = 16, .buffer = test_ptr};
             if (type == ST_AES_MODE) {

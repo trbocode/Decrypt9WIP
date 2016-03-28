@@ -375,15 +375,11 @@ u32 InjectHealthAndSafety(u32 param)
     for (u32 i = 0, kc = 0; i < 64 && kc < cnt_count; i++) {
         u32 k = getbe16(tmd_data + 0xC4 + (i * 0x24) + 0x02);
         u8* chunk_hash = tmd_data + 0xC4 + (i * 0x24) + 0x04;
-        sha_init(SHA256_MODE);
-        sha_update(content_list + kc * 0x30, k * 0x30);
-        sha_get(chunk_hash);
+        sha_quick(chunk_hash, content_list + kc * 0x30, k * 0x30, SHA256_MODE);
         kc += k;
     }
     u8* tmd_hash = tmd_data + 0xA4;
-    sha_init(SHA256_MODE);
-    sha_update(tmd_data + 0xC4, 64 * 0x24);
-    sha_get(tmd_hash);
+    sha_quick(tmd_hash, tmd_data + 0xC4, 64 * 0x24, SHA256_MODE);
     tmd_data = (u8*) 0x20316000;
     if (EncryptMemToNand(tmd_data, offset_tmd, size_tmd, ctrnand_info) != 0)
         return 1; 

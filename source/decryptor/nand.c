@@ -561,14 +561,10 @@ u32 SetupNandCrypto(u8* ctr, u32 offset)
         u8 shasum[32];
         
         sdmmc_get_cid( 1, (uint32_t*) NandCid);
-        sha_init(SHA256_MODE);
-        sha_update(NandCid, 16);
-        sha_get(shasum);
+        sha_quick(shasum, NandCid, 16, SHA256_MODE);
         memcpy(CtrNandCtr, shasum, 16);
         
-        sha_init(SHA1_MODE);
-        sha_update(NandCid, 16);
-        sha_get(shasum);
+        sha_quick(shasum, NandCid, 16, SHA1_MODE);
         for(u32 i = 0; i < 16; i++) // little endian and reversed order
             TwlNandCtr[i] = shasum[15-i];
         
