@@ -70,17 +70,16 @@ u32 CheckEmuNand(void)
     u32 ret = EMUNAND_NOT_READY;
 
     // check the MBR for presence of a hidden partition
-    sdmmc_sdcard_readsectors(0, 1, buffer);
-    u32 hidden_sectors = getle32(buffer + 0x1BE + 0x8);
+    u32 hidden_sectors = NumHiddenSectors();
     
-    for (u32 offset_sector = 0; offset_sector + nand_size_sectors_min < hidden_sectors; offset_sector += multi_sectors) {
+    for (u32 offset_sector = 0; offset_sector + nand_size_sectors_min <= hidden_sectors; offset_sector += multi_sectors) {
         // check for RedNAND type EmuNAND
         sdmmc_sdcard_readsectors(offset_sector + 1, 1, buffer);
         if (IS_NAND_HEADER(buffer)) {
             ret |= EMUNAND_REDNAND << (2 * (offset_sector / multi_sectors)); 
             continue;
         }
-        if (hidden_sectors - offset_sector <= nand_size_sectors)
+        if (hidden_sectors < offset_sector + nand_size_sectors)
             break;
         // check for Gateway type EmuNAND
         sdmmc_sdcard_readsectors(offset_sector + nand_size_sectors, 1, buffer);
@@ -673,7 +672,12 @@ u32 DumpNand(u32 param)
     u8* buffer = BUFFER_ADDRESS;
     u32 nand_size = (param & NB_MINSIZE) ? NAND_MIN_SIZE : getMMCDevice(0)->total_size * NAND_SECTOR_SIZE;
     u32 result = 0;
-
+    
+    
+    // check actual EmuNAND size
+    if (emunand_offset + getMMCDevice(0)->total_size > NumHiddenSectors())
+        nand_size = NAND_MIN_SIZE;
+    
     Debug("Dumping %sNAND. Size (MB): %u", (param & N_EMUNAND) ? "Emu" : "Sys", nand_size / (1024 * 1024));
     
     if (!DebugCheckFreeSpace(nand_size))
@@ -803,7 +807,17 @@ u32 RestoreNand(u32 param)
             return 1;
     }
     
-    // open file, adjust size if required - NAND dump has at least min size (checked two times) at this point
+    // check EmuNAND partition size
+    if ((NumHiddenSectors() - emunand_offset) * NAND_SECTOR_SIZE < NAND_MIN_SIZE) {
+        Debug("Error: Not enough space in EmuNAND partition");
+        return 1; // this really should not happen
+    } else if (emunand_offset + getMMCDevice(0)->total_size > NumHiddenSectors()) {
+        Debug("Small EmuNAND, using minimum size...");
+        nand_size = NAND_MIN_SIZE;
+    }
+    
+    // open file, adjust size if required
+    // NAND dump has at least min size (checked 2x at this point)
     if (!FileOpen(filename))
         return 1;
     if (FileGetSize() < nand_size) {
