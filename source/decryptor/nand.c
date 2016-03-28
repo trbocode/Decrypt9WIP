@@ -283,7 +283,6 @@ static u32 CheckNandDumpIntegrity(const char* path) {
             }
             sha_get(l_sha256);
             if (memcmp(l_sha256, sha256, 32) != 0) {
-                FileClose();
                 Debug("FIRM%u section%u hash mismatch", f_num, section);
                 firm_corruption |= (1<<f_num);
             }
@@ -291,6 +290,7 @@ static u32 CheckNandDumpIntegrity(const char* path) {
     }
     if (firm_corruption == 0x3) {
         Debug("FIRM0 and FIRM1 are corrupt");
+        FileClose();
         return 1;
     } else if (firm_corruption != 0x0) {
         Debug("FIRM%i is corrupt (non critical)", (firm_corruption == 0x2) ? 1 : 0);
