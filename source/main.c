@@ -102,14 +102,13 @@ MenuInfo menu[] =
         }
     },
     {
-        "EmuNAND Backup/Restore Options", 6, // ID 1
+        "EmuNAND Backup/Restore Options", 5, // ID 1
         {
             { "NAND Backup",                  &DumpNand,              N_EMUNAND },
             { "NAND Backup (min size)",       &DumpNand,              N_EMUNAND | NB_MINSIZE },
             { "NAND Restore",                 &RestoreNand,           N_NANDWRITE | N_EMUNAND | N_FORCEEMU },
             { "NAND Restore (forced)",        &RestoreNand,           N_NANDWRITE | N_EMUNAND | N_FORCEEMU | NR_NOCHECKS },
-            { "NAND Restore (keep a9lh)",     &RestoreNand,           N_NANDWRITE | N_EMUNAND | N_FORCEEMU | NR_KEEPA9LH },
-            { "Validate NAND Dump",           &ValidateNandDump,      0 } // same as the one in SysNAND backup & restore, but so what?
+            { "Validate NAND Dump",           &ValidateNandDump,      0 } // same as the one in SysNAND backup & restore
         }
     },
     {
