@@ -13,9 +13,8 @@
 #define NAND_HDR_O3DS 1 
 #define NAND_HDR_N3DS 2
 
-// these offsets are used by Multi EmuNAND Creator
-#define EMUNAND_MULTI_OFFSET_O3DS 0x00200000
-#define EMUNAND_MULTI_OFFSET_N3DS 0x00400000
+// these offsets are used by Multi EmuNAND Creator / CakesFW
+#define EMUNAND_MULTI_SECTORS ((getMMCDevice(0)->total_size >= 0x200000) ? 0x200000 : 0x400000)
 
 // minimum sizes for O3DS / N3DS NAND
 // see: http://3dbrew.org/wiki/Flash_Filesystem
@@ -66,7 +65,7 @@ u32 CheckEmuNand(void)
     u8* buffer = BUFFER_ADDRESS;
     u32 nand_size_sectors = getMMCDevice(0)->total_size;
     u32 nand_size_sectors_min = NAND_MIN_SIZE / NAND_SECTOR_SIZE;
-    u32 multi_sectors = (GetUnitPlatform() == PLATFORM_3DS) ? EMUNAND_MULTI_OFFSET_O3DS : EMUNAND_MULTI_OFFSET_N3DS;
+    u32 multi_sectors = EMUNAND_MULTI_SECTORS;
     u32 ret = EMUNAND_NOT_READY;
 
     // check the MBR for presence of a hidden partition
@@ -103,12 +102,11 @@ u32 SetNand(bool set_emunand, bool force_emunand)
         
         for (emunand_count = 0; (emunand_state >> (2 * emunand_count)) & 0x3; emunand_count++);
         if (emunand_count > 1) { // multiple EmuNANDs -> use selector
-            u32 multi_sectors = (GetUnitPlatform() == PLATFORM_3DS) ? EMUNAND_MULTI_OFFSET_O3DS : EMUNAND_MULTI_OFFSET_N3DS;
             u32 emunand_no = 0;
             Debug("Use arrow keys and <A> to choose EmuNAND");
             while (true) {
                 u32 emunandn_state = (emunand_state >> (2 * emunand_no)) & 0x3;
-                offset_sector = emunand_no * multi_sectors;
+                offset_sector = emunand_no * EMUNAND_MULTI_SECTORS;
                 Debug("\rEmuNAND #%u: %s", emunand_no, (emunandn_state == EMUNAND_READY) ? "EmuNAND ready" : (emunandn_state == EMUNAND_GATEWAY) ? "GW EmuNAND" : "RedNAND");
                 // user input routine
                 u32 pad_state = InputWait();
@@ -320,7 +318,7 @@ u32 OutputFileNameSelector(char* filename, const char* basename, char* extension
     snprintf(bases[2], 63, "%s%s" , (emunand_header) ? "emu" : "sys", bases[0]);
     
     u32 fn_id = (emunand_header) ? 1 : 0;
-    u32 fn_num = (emunand_header) ? (emunand_offset / ((GetUnitPlatform() == PLATFORM_3DS) ? EMUNAND_MULTI_OFFSET_O3DS : EMUNAND_MULTI_OFFSET_N3DS)) : 0;
+    u32 fn_num = (emunand_header) ? (emunand_offset / EMUNAND_MULTI_SECTORS) : 0;
     bool exists = false;
     char extstr[16] = { 0 };
     if (extension)
