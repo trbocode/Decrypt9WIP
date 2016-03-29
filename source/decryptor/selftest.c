@@ -1,30 +1,16 @@
 #include "fs.h"
 #include "draw.h"
+#include "platform.h"
 #include "decryptor/aes.h"
 #include "decryptor/sha.h"
 #include "decryptor/selftest.h"
 #include "decryptor/decryptor.h"
 #include "decryptor/keys.h"
+#include "decryptor/nandfat.h"
 #include "decryptor/titlekey.h"
 #include "fatfs/sdmmc.h"
 
-// keys to test (requirements in comments)
-// 0x11 -> test key (needs various normalKeys)
-// 0x2C -> standard NCCH crypto
-// 0x25 -> 7x NCCH crypto
-// 0x18 -> Secure3 crypto (needs N3DS)
-// 0x34 -> 'SD' key (needs movable keyY)
-// 0x03 -> TWL key (console unique)
-// 0x04 -> CTRNAND O3DS key (console unique, O3DS only)
-// 0x05 -> CTRNAND N3DS key (console unique, N3DS only)
-// 0x06 -> FIRM key (console unique)
-// 0x07 -> AGBSAVE key (console unique)
-
-// other stuff to test
-// Getting the NAND CID -> from memory / Normatts function
-// TitleKey decryption -> all 6 * 16 commonKey indices
-// various AES modes
-
+// Selftest subtest defines
 #define ST_NAND_CID_HARD    1
 #define ST_NAND_CID_MEM     2
 #define ST_SHA              3
@@ -180,6 +166,86 @@ u32 SelfTest(u32 param)
         return 1;
     }
     FileClose();
+    
+    return 0;
+}
+
+
+u32 SystemInfo(u32 param)
+{
+    // this is not intended to be run from EmuNAND, uses various info from 3dbrew
+    // see: https://3dbrew.org/wiki/Nandrw/sys/SecureInfo_A
+    // see: https://3dbrew.org/wiki/Nand/private/movable.sed
+    // see: https://www.3dbrew.org/wiki/Memory_layout#ARM9_ITCM 
+    const char* emunandstr[] = { "not ready", "not set up", "GW EmuNAND", "RedNAND" };
+    const char* regionstr[] = { "JPN", "USA", "EUR", "AUS", "CHN", "KOR", "TWN", "UNK" };
+    PartitionInfo* ctrnand_info = GetPartitionInfo(P_CTRNAND);
+    bool isN3ds = (GetUnitPlatform() == PLATFORM_N3DS);
+    bool isA9lh = ((*(u32*) 0x101401C0) == 0);
+    char sd_base_path[64]; // fill this later
+    u32 key_state = (!CheckKeySlot(0x05, 'Y') << 3) | (!CheckKeySlot(0x25, 'X') << 2) |
+        (!CheckKeySlot(0x18, 'X') << 1) | (!CheckKeySlot(0x1B, 'X') << 0);
+    u64 nand_size = (u64) getMMCDevice(0)->total_size * 0x200;
+    u64 sd_size_total = (u64) getMMCDevice(1)->total_size * 0x200;
+    u64 sd_size_fat = TotalStorageSpace();
+    u64 sd_size_fat_free = RemainingStorageSpace();
+    u64 sd_size_hidden = NumHiddenSectors() * 0x200;
+    u32 emunand_state = CheckEmuNand();
+    u8* secureInfo = (u8*) 0x20316000;
+    u8* serial = secureInfo + 0x102;
+    u8* region = secureInfo + 0x100;
+    u8* movable = (u8*) 0x20316000 + 0x200;
+    u8* slot0x34keyY = movable + 0x110;
+    u8* nandcid = (u8*) 0x20316000 + 0x400;
+    u8* sdcid = (u8*) 0x20316000 + 0x410;
+    u8* twlcustid = (u8*) 0x01FFB808;
+    
+    // Get NAND / SD CID
+    sdmmc_get_cid(1, (uint32_t*) nandcid);
+    sdmmc_get_cid(0, (uint32_t*) sdcid);
+    
+    // get data from secureInfo_A & movable_sed
+    u32 offset, size;
+    if ((SeekFileInNand(&offset, &size, "RW         SYS        SECURE~?   ", ctrnand_info) != 0) ||
+        (DecryptNandToMem(secureInfo, offset, size, ctrnand_info) != 0)) {
+        Debug("SecureInfo_A not found!");
+        return 1; // this should never happen
+    }
+    if ((SeekFileInNand(&offset, &size, "PRIVATE    MOVABLE SED", ctrnand_info) != 0) ||
+        (DecryptNandToMem(movable, offset, size, ctrnand_info) != 0)) {
+        Debug("movable.sed not found!");
+        return 1; // this should never happen
+    }
+    
+    // build base path
+    unsigned int sha256sum[8];
+    sha_quick(sha256sum, slot0x34keyY, 16, SHA256_MODE);
+    snprintf(sd_base_path, 63, "/.../%08X%08X%08X%08X", sha256sum[0], sha256sum[1], sha256sum[2], sha256sum[3]);
+    
+    // NAND stuff output here
+    Debug("NAND type / size: %s / %lluMB", (isN3ds) ? "N3DS" : "O3DS", nand_size / 0x100000);
+    Debug("Serial / region: %.15s / %s", (char*) serial, (*region < 7) ? regionstr[*region] : regionstr[7]);
+    Debug("Running from arm9loaderhax: %s", (isA9lh) ? "yes" : "no");
+    Debug("Keys set:%s%s%s%s", (!key_state) ? " none" : (key_state & 0x8) ? " 0x05Y" : "",
+        (key_state & 0x4) ? " 0x25X" : "", (key_state & 0x2) ? " 0x18X" : "", (key_state & 0x1) ? " 0x1BX" : "");
+    Debug("NAND CID: %08X%08X%08X%08X", getbe32(nandcid+0), getbe32(nandcid+4), getbe32(nandcid+8), getbe32(nandcid+12));
+    Debug("TWL customer ID: %08X%08X", getbe32(twlcustid+0), getbe32(twlcustid+4));
+    Debug("SysNAND SD base base path:");
+    Debug(sd_base_path);
+    Debug("");
+    
+    // SD stuff output here
+    Debug("SD size total / hidden: %lluMB / %lluMB", sd_size_total / 0x100000, sd_size_hidden / 0x100000);
+    Debug("SD FAT free / total: %lluMB / %lluMB", sd_size_fat_free / 0x100000, sd_size_fat / 0x100000);
+    Debug("SD CID: %08X%08X%08X%08X", getbe32(sdcid+0), getbe32(sdcid+4), getbe32(sdcid+8), getbe32(sdcid+12));
+    if ((emunand_state > 0) && (emunand_state <= 3)) {
+        Debug("Installed EmuNAND: %s", emunandstr[emunand_state]);
+    } else if (emunand_state > 3) {
+        Debug("# of installed EmuNANDs: %u", (emunand_state + 2) / 3);
+        for (u32 i = 0; emunand_state; i++, emunand_state >>= 2)
+            Debug("EmuNAND #%u: %s", i, emunandstr[emunand_state&0x3]);
+    }
+    Debug("");
     
     return 0;
 }

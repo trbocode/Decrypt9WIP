@@ -6,3 +6,4 @@
 
 // --> FEATURE FUNCTIONS <--
 u32 SelfTest(u32 param);
+u32 SystemInfo(u32 param);

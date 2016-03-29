@@ -80,12 +80,13 @@ MenuInfo menu[] =
         }
     },
     {
-        "Maintenance Options", 4,
+        "Maintenance Options", 5,
         {
+            { "System Info",                  &SystemInfo,            0 },
             { "Create Selftest Reference",    &SelfTest,              ST_REFERENCE },
             { "Run Selftest",                 &SelfTest,              0 },
-            { "Build Keys File",              &BuildKeyDb,            KEY_ENCRYPT },
-            { "Decrypt/Encrypt Keys File",    &CryptKeyDb,            0 }
+            { "Build Key Database",           &BuildKeyDb,            KEY_ENCRYPT },
+            { "De/Encrypt Key Database",      &CryptKeyDb,            0 }
         }
     },
     // everything below is not contained in the main menu
