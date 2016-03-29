@@ -90,8 +90,6 @@ typedef struct {
 
 
 u32 GetSdCtr(u8* ctr, const char* path);
-u32 GetSd0x34KeyY(u8* movable_keyY, bool from_nand);
-u32 LoadKeyXFromFile(u32 keyslot);
 u32 SdFolderSelector(char* path, u8* keyY);
 u32 SdInfoGen(SdInfo* info, const char* base_path);
 u32 CryptSdToSd(const char* filename, u32 offset, u32 size, CryptBufferInfo* info, bool handle_offset16);

@@ -231,7 +231,7 @@ static u32 CheckNandDumpIntegrity(const char* path) {
         if ((p_num == 5) && (GetUnitPlatform() == PLATFORM_N3DS)) // special N3DS partition types
             partition = (nand_hdr_type == NAND_HDR_N3DS) ? partitions + 6 : partitions + 7;
         CryptBufferInfo info = {.keyslot = partition->keyslot, .setKeyY = 0, .size = 16, .buffer = header, .mode = partition->mode};
-        if (SetupNandCrypto(info.ctr, partition->offset) != 0) {
+        if (GetNandCtr(info.ctr, partition->offset) != 0) {
             FileClose();
             return 1;
         }
@@ -254,7 +254,7 @@ static u32 CheckNandDumpIntegrity(const char* path) {
     for (u32 f_num = 0; f_num < 2; f_num++) { 
         PartitionInfo* partition = partitions + 3 + f_num;
         CryptBufferInfo info = {.keyslot = partition->keyslot, .setKeyY = 0, .size = 0x200, .buffer = header, .mode = partition->mode};
-        if (SetupNandCrypto(info.ctr, partition->offset) != 0) {
+        if (GetNandCtr(info.ctr, partition->offset) != 0) {
             FileClose();
             return 1;
         }
@@ -276,7 +276,7 @@ static u32 CheckNandDumpIntegrity(const char* path) {
                 u32 read_bytes = min(BUFFER_MAX_SIZE, (size - i));
                 info.size = read_bytes;
                 info.buffer = buffer;
-                SetupNandCrypto(info.ctr, offset + i);
+                GetNandCtr(info.ctr, offset + i);
                 FileRead(buffer, read_bytes, offset + i);
                 CryptBuffer(&info);
                 sha_update(buffer, read_bytes);
@@ -505,7 +505,7 @@ u32 CtrNandPadgen(u32 param)
         .filename = "nand.fat16.xorpad",
         .mode = AES_CNT_CTRNAND_MODE
     };
-    if(SetupNandCrypto(padInfo.ctr, 0xB930000) != 0)
+    if(GetNandCtr(padInfo.ctr, 0xB930000) != 0)
         return 1;
 
     return CreatePad(&padInfo);
@@ -524,7 +524,7 @@ u32 TwlNandPadgen(u32 param)
         .filename = "twlnand.fat16.xorpad",
         .mode = AES_CNT_TWLNAND_MODE
     };
-    if(SetupNandCrypto(padInfo.ctr, partitions[0].offset) != 0)
+    if(GetNandCtr(padInfo.ctr, partitions[0].offset) != 0)
         return 1;
 
     return CreatePad(&padInfo);
@@ -543,20 +543,20 @@ u32 Firm0Firm1Padgen(u32 param)
         .filename = "firm0firm1.xorpad",
         .mode = AES_CNT_CTRNAND_MODE
     };
-    if(SetupNandCrypto(padInfo.ctr, partitions[3].offset) != 0)
+    if(GetNandCtr(padInfo.ctr, partitions[3].offset) != 0)
         return 1;
 
     return CreatePad(&padInfo);
 }
 
-u32 SetupNandCrypto(u8* ctr, u32 offset)
+u32 GetNandCtr(u8* ctr, u32 offset)
 {
     static bool initial_setup_done = false;
     static u8 CtrNandCtr[16];
     static u8 TwlNandCtr[16];
     
     if (!initial_setup_done) {
-        // part #1: CTRNAND/TWL CTR
+        // calculate CTRNAND/TWL ctr from NAND CID
         u8 NandCid[16];
         u8 shasum[32];
         
@@ -567,50 +567,6 @@ u32 SetupNandCrypto(u8* ctr, u32 offset)
         sha_quick(shasum, NandCid, 16, SHA1_MODE);
         for(u32 i = 0; i < 16; i++) // little endian and reversed order
             TwlNandCtr[i] = shasum[15-i];
-        
-        Debug("NAND CID: %08X%08X%08X%08X", getbe32(NandCid), getbe32(NandCid+4), getbe32(NandCid+8), getbe32(NandCid+12));
-        
-        // part #2: TWL KEY
-        // see: https://www.3dbrew.org/wiki/Memory_layout#ARM9_ITCM
-        u32* TwlCustId = (u32*) (0x01FFB808);
-        u8 TwlKeyX[16];
-        u8 TwlKeyY[16];
-        
-        // thanks b1l1s & Normmatt
-        Debug("TWL Customer ID: %08X%08X", TwlCustId[0], TwlCustId[1]);
-        
-        // see source from https://gbatemp.net/threads/release-twltool-dsi-downgrading-save-injection-etc-multitool.393488/
-        const char* nintendo = "NINTENDO";
-        u32* TwlKeyXW = (u32*) TwlKeyX;
-        TwlKeyXW[0] = (TwlCustId[0] ^ 0xB358A6AF) | 0x80000000;
-        TwlKeyXW[3] = TwlCustId[1] ^ 0x08C267B7;
-        memcpy(TwlKeyX + 4, nintendo, 8);
-        
-        // see: https://www.3dbrew.org/wiki/Memory_layout#ARM9_ITCM
-        u32 TwlKeyYW3 = 0xE1A00005;
-        memcpy(TwlKeyY, (u8*) 0x01FFD3C8, 12);
-        memcpy(TwlKeyY + 12, &TwlKeyYW3, 4);
-        
-        setup_aeskeyX(0x03, TwlKeyX);
-        setup_aeskeyY(0x03, TwlKeyY);
-        use_aeskey(0x03);
-        Debug("0x03 KeyX: %08X%08X%08X%08X", getbe32(TwlKeyX), getbe32(TwlKeyX+4), getbe32(TwlKeyX+8), getbe32(TwlKeyX+12));
-        Debug("0x03 KeyY: %08X%08X%08X%08X", getbe32(TwlKeyY), getbe32(TwlKeyY+4), getbe32(TwlKeyY+8), getbe32(TwlKeyY+12));
-        
-        // part #3: CTRNAND N3DS KEY
-        while (GetUnitPlatform() == PLATFORM_N3DS) {
-            u8 CtrNandKeyY[16];
-            
-            if (FileGetData("slot0x05KeyY.bin", CtrNandKeyY, 16, 0) != 16) {
-                Debug("0x05 KeyY: not set, slot0x05KeyY.bin not found");
-                break;
-            }
-            
-            setup_aeskeyY(0x05, CtrNandKeyY);
-            use_aeskey(0x05);
-            Debug("0x05 KeyY: %08X%08X%08X%08X", getbe32(CtrNandKeyY), getbe32(CtrNandKeyY+4), getbe32(CtrNandKeyY+8), getbe32(CtrNandKeyY+12));
-            break;
-        }
         
         initial_setup_done = true;
     }
@@ -625,7 +581,7 @@ u32 SetupNandCrypto(u8* ctr, u32 offset)
 u32 DecryptNandToMem(u8* buffer, u32 offset, u32 size, PartitionInfo* partition)
 {
     CryptBufferInfo info = {.keyslot = partition->keyslot, .setKeyY = 0, .size = size, .buffer = buffer, .mode = partition->mode};
-    if(SetupNandCrypto(info.ctr, offset) != 0)
+    if(GetNandCtr(info.ctr, offset) != 0)
         return 1;
 
     u32 n_sectors = (size + NAND_SECTOR_SIZE - 1) / NAND_SECTOR_SIZE;
@@ -742,7 +698,7 @@ u32 DecryptNandPartition(u32 param)
 u32 EncryptMemToNand(u8* buffer, u32 offset, u32 size, PartitionInfo* partition)
 {
     CryptBufferInfo info = {.keyslot = partition->keyslot, .setKeyY = 0, .size = size, .buffer = buffer, .mode = partition->mode};
-    if(SetupNandCrypto(info.ctr, offset) != 0)
+    if(GetNandCtr(info.ctr, offset) != 0)
         return 1;
 
     u32 n_sectors = (size + NAND_SECTOR_SIZE - 1) / NAND_SECTOR_SIZE;

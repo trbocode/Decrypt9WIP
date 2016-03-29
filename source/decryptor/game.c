@@ -5,6 +5,7 @@
 #include "decryptor/aes.h"
 #include "decryptor/sha.h"
 #include "decryptor/decryptor.h"
+#include "decryptor/keys.h"
 #include "decryptor/nand.h"
 #include "decryptor/nandfat.h"
 #include "decryptor/titlekey.h"
@@ -30,51 +31,6 @@ u32 GetSdCtr(u8* ctr, const char* path)
     sha_quick(sha256sum, hashstr, (plen + 1) * 2, SHA256_MODE);
     for (u32 i = 0; i < 16; i++)
         ctr[i] = sha256sum[i] ^ sha256sum[i+16];
-    
-    return 0;
-}
-
-u32 GetSd0x34KeyY(u8* movable_keyY, bool from_nand)
-{
-    u8 movable_sed[0x200];
-    
-    if (from_nand) { // load console 0x34 keyY from movable.sed from NAND
-        PartitionInfo* p_info = GetPartitionInfo(P_CTRNAND);
-        u32 offset;
-        u32 size;
-        if (DebugSeekFileInNand(&offset, &size, "movable.sed", "PRIVATE    MOVABLE SED", p_info) != 0)
-            return 1;
-        if (size < 0x120) {
-            Debug("movable.sed has bad size!");
-            return 1;
-        }
-        if (DecryptNandToMem(movable_sed, offset, 0x120, p_info) != 0)
-            return 1;
-    } else if (FileGetData("movable.sed", movable_sed, 0x120, 0) != 0x120) {
-        Debug("movable.sed not found on SD or invalid");
-        return 1;
-    }
-    if (memcmp(movable_sed, "SEED", 4) != 0) {
-        Debug("movable.sed is corrupt!");
-        return 1;
-    }
-    memcpy(movable_keyY, movable_sed + 0x110, 0x10);
-    
-    return 0;
-}
-
-u32 LoadKeyXFromFile(u32 keyslot)
-{
-    char filename[32];
-    u8 keyX[16] = {0};
-    
-    snprintf(filename, 31, "slot0x%02XKeyX.bin", (unsigned int) keyslot);
-    if (FileGetData(filename, keyX, 16, 0) != 16) {
-        Debug("Loading %s: not found", filename); // or bad file
-        return 1;
-    }
-    setup_aeskeyX(keyslot, keyX);
-    Debug("Loading %s: ok", filename);
     
     return 0;
 }
@@ -205,13 +161,19 @@ u32 NcchPadgen(u32 param)
     NcchInfo *info = (NcchInfo*)0x20316000;
     SeedInfo *seedinfo = (SeedInfo*)0x20400000;
 
-    if (LoadKeyXFromFile(0x25) != 0)
+    if (CheckKeySlot(0x25, 'X') != 0) {
+        Debug("slot0x25KeyX not set up");
         Debug("7.x crypto will fail on O3DS < 7.x or A9LH");
-    if ((GetUnitPlatform() == PLATFORM_3DS) && (LoadKeyXFromFile(0x18) != 0))
+    }
+    if ((GetUnitPlatform() == PLATFORM_3DS) && (CheckKeySlot(0x18, 'X') != 0)) {
+        Debug("slot0x18KeyX not set up");
         Debug("Secure3 crypto will fail");
-    if (LoadKeyXFromFile(0x1B) != 0)
+    }
+    if (CheckKeySlot(0x1B, 'X') != 0) {
+        Debug("slot0x1BKeyX not set up");
         Debug("Secure4 crypto will fail");
-        
+    }
+       
     if (DebugFileOpen("seeddb.bin")) {
         if (!DebugFileRead(seedinfo, 16, 0)) {
             FileClose();
@@ -339,13 +301,9 @@ u32 NcchPadgen(u32 param)
 u32 SdPadgen(u32 param)
 {
     SdInfo *info = (SdInfo*) 0x20316000;
-    u8 movable_keyY[16];
 
-    if (GetSd0x34KeyY(movable_keyY, false) == 0) {
-        Debug("Setting console 0x34 keyY");
-        setup_aeskeyY(0x34, movable_keyY);
-        use_aeskey(0x34);
-    }
+    // setup AES key from SD
+    SetupSd0x34KeyY(false, NULL);
     
     if (!DebugFileOpen("SDinfo.bin"))
         return 1;
@@ -383,13 +341,8 @@ u32 SdPadgenDirect(u32 param)
     char basepath[256];
     u8 movable_keyY[16];
     
-    if (GetSd0x34KeyY(movable_keyY, true) == 0) {
-        Debug("Setting console 0x34 keyY");
-        setup_aeskeyY(0x34, movable_keyY);
-        use_aeskey(0x34);
-    } else {
+    if (SetupSd0x34KeyY(true, movable_keyY) != 0)
         return 1; // movable.sed has to be present in NAND
-    }
     
     Debug("");
     if (SdFolderSelector(basepath, movable_keyY) != 0)
@@ -665,19 +618,26 @@ u32 CryptNcch(const char* filename, u32 offset, u32 size, u64 seedId, u8* encryp
         setup_aeskey(0x11, (ncch->programId & ((u64) 0x10 << 32)) ? sysKey : zeroKey);
     }
     
-    if (uses7xCrypto && (LoadKeyXFromFile(0x25) != 0)) {
-        Debug("Warning: Won't work on O3DS < 7.x or A9LH");
-    }
-    
-    // setup Secure3 crypto on O3DS
-    if (usesSec3Crypto && (GetUnitPlatform() == PLATFORM_3DS)) {
-        if (LoadKeyXFromFile(0x18) != 0)
-            return 1;
-    }
-    
-    // setup Secure4 crypto
-    if (usesSec4Crypto && (LoadKeyXFromFile(0x1B) != 0))
+    // check 7x crypto
+    if (uses7xCrypto && (CheckKeySlot(0x25, 'X') != 0)) {
+        Debug("slot0x25KeyX not set up");
+        Debug("This won't work on O3DS < 7.x or A9LH");
         return 1;
+    }
+    
+    // check Secure3 crypto on O3DS
+    if (usesSec3Crypto && (GetUnitPlatform() == PLATFORM_3DS) && (CheckKeySlot(0x18, 'X') != 0)) {
+        Debug("slot0x18KeyX not set up");
+        Debug("Secure3 crypto is not available");
+        return 1;
+    }
+    
+    // check Secure4 crypto
+    if (usesSec4Crypto && (CheckKeySlot(0x1B, 'X') != 0)) {
+        Debug("slot0x1BKeyX not set up");
+        Debug("Secure4 crypto is not available");
+        return 1;
+    }
     
     // check / setup seed crypto
     if (usesSeedCrypto) {
@@ -1240,7 +1200,6 @@ u32 CryptGameFiles(u32 param)
 
 u32 CryptSdFiles(u32 param) {
     const char* subpaths[] = {"dbs", "extdata", "title", NULL};
-    u8 movable_keyY[16] = { 0 };
     char* batch_dir = GAME_DIR;
     u32 n_processed = 0;
     u32 n_failed = 0;
@@ -1256,11 +1215,8 @@ u32 CryptSdFiles(u32 param) {
     DirClose();
     plen = strnlen(batch_dir, 128);
     
-    if (GetSd0x34KeyY(movable_keyY, false) == 0) {
-        Debug("Setting console 0x34 keyY");
-        setup_aeskeyY(0x34, movable_keyY);
-        use_aeskey(0x34);
-    }
+    // setup AES key from SD
+    SetupSd0x34KeyY(false, NULL);
     
     // main processing loop
     for (u32 s = 0; subpaths[s] != NULL; s++) {
@@ -1317,13 +1273,8 @@ u32 DecryptSdFilesDirect(u32 param) {
     }
     DirClose();
     
-    if (GetSd0x34KeyY(movable_keyY, true) == 0) {
-        Debug("Setting console 0x34 keyY");
-        setup_aeskeyY(0x34, movable_keyY);
-        use_aeskey(0x34);
-    } else {
+    if (SetupSd0x34KeyY(true, movable_keyY) != 0)
         return 1; // movable.sed has to be present in NAND
-    }
     
     Debug("");
     if (SdFolderSelector(basepath, movable_keyY) != 0)
