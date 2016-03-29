@@ -4,7 +4,7 @@
 #include "decryptor/sha.h"
 #include "decryptor/selftest.h"
 #include "decryptor/decryptor.h"
-#include "decryptor/game.h"
+#include "decryptor/keys.h"
 #include "decryptor/titlekey.h"
 #include "fatfs/sdmmc.h"
 
@@ -58,6 +58,8 @@ SubTestInfo TestList[] = {
     { "nand_ctrn_key", 16, ST_AES_KEYSLOT, 0x05 },
     { "nand_agb_key", 16, ST_AES_KEYSLOT, 0x06 },
     { "nand_frm_key", 16, ST_AES_KEYSLOT, 0x07 },
+    { "boss_key", 16, ST_AES_KEYSLOT, 0x38 },
+    { "sd_key", 16, ST_AES_KEYSLOT_Y, 0x34 },
     { "titlekey", 6*16, ST_TITLEKEYS, 0 },
 };
 
@@ -67,7 +69,15 @@ u32 SelfTest(u32 param)
     const u8 teststr[16] = { 'D', '9', ' ', 'S', 'E', 'L', 'F', 'T', 'E', 'S', 'T', ' ', ' ', ' ', ' ' };
     const u8 zeroes[16] = { 0x00 };
     bool selftest = !(param & ST_REFERENCE);
-       
+    
+    // check keyslots
+    Debug("Checking keyslots...");
+    Debug("0x05 KeyY: %s", (CheckKeySlot(0x05, 'Y') == 0) ? "set up" : "not set up");
+    Debug("0x25 KeyX: %s", (CheckKeySlot(0x25, 'X') == 0) ? "set up" : "not set up");
+    Debug("0x18 KeyX: %s", (CheckKeySlot(0x18, 'X') == 0) ? "set up" : "not set up");
+    Debug("0x1B KeyX: %s", (CheckKeySlot(0x1B, 'X') == 0) ? "set up" : "not set up");
+    Debug("");
+    
     Debug((selftest) ? "Running selftest..." : "Creating selftest reference data...");
     
     // process all subtests
