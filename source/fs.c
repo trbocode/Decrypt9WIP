@@ -68,6 +68,10 @@ bool DebugFileOpen(const char* path)
 
 bool FileCreate(const char* path, bool truncate)
 {
+    #ifdef WORK_DIR
+    if (!truncate && FileOpen(path))
+        return true;
+    #endif
     unsigned flags = FA_READ | FA_WRITE;
     flags |= truncate ? FA_CREATE_ALWAYS : FA_OPEN_ALWAYS;
     if (*path == '/')
@@ -79,7 +83,7 @@ bool FileCreate(const char* path, bool truncate)
 }
 
 bool DebugFileCreate(const char* path, bool truncate) {
-    Debug("Creating %s ...", path);
+    Debug("%s %s ...", truncate ? "Creating" : "Opening", path);
     if (!FileCreate(path, truncate)) {
         Debug("Could not create %s", path);
         return false;

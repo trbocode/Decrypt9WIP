@@ -266,19 +266,18 @@ u32 BuildKeyDb(u32 param)
     u32 n_keys = 0;
     
     // load the full keydb file into memory
-    if (DebugFileOpen(KEYDB_NAME)) {
+    if (DebugFileCreate(KEYDB_NAME, false)) {
         n_keys = FileGetSize() / sizeof(AesKeyInfo);
         if (n_keys > 1024) { // fishy key file size
             Debug("%s is too large", KEYDB_NAME);
             FileClose();
             return 1;
         }
-        if (!DebugFileRead(keydb, n_keys * sizeof(AesKeyInfo), 0)) {
+        if (n_keys && !DebugFileRead(keydb, n_keys * sizeof(AesKeyInfo), 0)) {
             FileClose();
             return 1;
         }
-        FileClose();
-    }
+    } else return 1;
     
     // search for legacy keyfiles on SD card
     Debug("Searching for unknown keys...");
@@ -325,6 +324,7 @@ u32 BuildKeyDb(u32 param)
             Debug("Added 0x%02X %s to Database (#%u)", (unsigned int) keyslot, keyname, n_keys);
         }
     }
+    Debug("Found %u new keys", keys_found);
     
     if (keys_found) {
         if (param & KEY_ENCRYPT) {
@@ -336,18 +336,14 @@ u32 BuildKeyDb(u32 param)
             }
         }
         // write back to file
-        Debug("Writing key database...");
-        if (!DebugFileCreate(KEYDB_NAME, true)) {
-            return 1;
-        }
+        Debug("Writing new keys to database...");
         if (!DebugFileWrite(keydb, n_keys * sizeof(AesKeyInfo), 0)) {
             FileClose();
             return 1;
         }
-        FileClose();
     }
     
-    Debug("Found %u new keys", keys_found);
+    FileClose();
     
     return 0;
 }
@@ -371,7 +367,6 @@ u32 CryptKeyDb(u32 param)
         FileClose();
         return 1;
     }
-    FileClose();
     
     // auto mode: decrypt if encrypted, encrypt if decrypted
     if (encrypt > 1) encrypt = (keydb->isEncrypted) ? 0 : 1;
@@ -385,14 +380,12 @@ u32 CryptKeyDb(u32 param)
     
     // write back to file
     Debug("Writing key database...");
-    if (!DebugFileCreate(KEYDB_NAME, true)) {
-        return 1;
-    }
     if (!DebugFileWrite(keydb, n_keys * sizeof(AesKeyInfo), 0)) {
         FileClose();
         return 1;
     }
     FileClose();
+    Debug("Key database is now %sCRYPTED", (encrypt) ? "EN" : "DE");
     
     return 0;
 }

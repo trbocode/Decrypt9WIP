@@ -230,7 +230,7 @@ u32 SystemInfo(u32 param)
         (key_state & 0x4) ? " 0x25X" : "", (key_state & 0x2) ? " 0x18X" : "", (key_state & 0x1) ? " 0x1BX" : "");
     Debug("NAND CID: %08X%08X%08X%08X", getbe32(nandcid+0), getbe32(nandcid+4), getbe32(nandcid+8), getbe32(nandcid+12));
     Debug("TWL customer ID: %08X%08X", getbe32(twlcustid+0), getbe32(twlcustid+4));
-    Debug("SysNAND SD base base path:");
+    Debug("SysNAND SD base path:");
     Debug(sd_base_path);
     Debug("");
     
