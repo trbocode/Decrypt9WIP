@@ -14,8 +14,8 @@ u32 ScrollOutput()
     u32 log_start = LogWrite(NULL);
     
     // careful, these areas are used by other functions in Decrypt9
-    char** logptr = (char**) 0x20316000;
-    char* logtext = (char*)  0x20400000;
+    char** logptr = (char**) 0x21100000;
+    char* logtext = (char*)  0x21200000;
     u32 log_size = FileGetData(LOG_FILE, logtext, 1024 * 1024, log_start); // log size
     u32 l_total = 0; // total lines
     u32 l_curr = 0; // current line
@@ -33,10 +33,9 @@ u32 ScrollOutput()
     }
     if (l_total >= 4000) // allow 4000 lines of text max
         return 0;
-    for (; l_total < DBG_N_CHARS_Y; logptr[l_total++] = logtext + log_size - 1);
-    
+    for (; l_total < DBG_N_CHARS_Y; logptr[l_total++] = logtext + log_size - 1); // fill up with empty lines
     // here, the actual output starts
-    l_curr = l_total - DBG_N_CHARS_Y ;
+    l_curr = l_total - DBG_N_CHARS_Y;
     if (l_curr > 0) l_curr--; // start at the line before the last
     while (true) {
         DebugSet((const char**) logptr + l_curr);
