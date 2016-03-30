@@ -182,7 +182,8 @@ u32 SystemInfo(u32 param)
     PartitionInfo* ctrnand_info = GetPartitionInfo(P_CTRNAND);
     bool isN3ds = (GetUnitPlatform() == PLATFORM_N3DS);
     bool isA9lh = ((*(u32*) 0x101401C0) == 0);
-    char sd_base_path[64]; // fill this later
+    char sd_base_id0[64]; // fill this later
+    char sd_base_id1[64]; // fill this later
     u32 key_state = (!CheckKeySlot(0x05, 'Y') << 3) | (!CheckKeySlot(0x25, 'X') << 2) |
         (!CheckKeySlot(0x18, 'X') << 1) | (!CheckKeySlot(0x1B, 'X') << 0);
     u64 nand_size = (u64) getMMCDevice(0)->total_size * 0x200;
@@ -217,25 +218,31 @@ u32 SystemInfo(u32 param)
         return 1; // this should never happen
     }
     
-    // build base path
+    // build base path <id0> / <id1>
     unsigned int sha256sum[8];
     sha_quick(sha256sum, slot0x34keyY, 16, SHA256_MODE);
-    snprintf(sd_base_path, 63, "/.../%08X%08X%08X%08X", sha256sum[0], sha256sum[1], sha256sum[2], sha256sum[3]);
+    snprintf(sd_base_id0, 63, "%08X%08X%08X%08X", sha256sum[0], sha256sum[1], sha256sum[2], sha256sum[3]);
+    snprintf(sd_base_id1, 63, "%08X%08X%08X%08X", (unsigned int) getle32(sdcid+0), (unsigned int) getle32(sdcid+4),
+        (unsigned int) getle32(sdcid+8), (unsigned int) getle32(sdcid+12));
     
     // NAND stuff output here
     Debug("NAND type / size: %s / %lluMB", (isN3ds) ? "N3DS" : "O3DS", nand_size / 0x100000);
     Debug("Serial / region: %.15s / %s", (char*) serial, (*region < 7) ? regionstr[*region] : regionstr[7]);
+    Debug("NAND CID: %08X%08X%08X%08X", getbe32(nandcid+0), getbe32(nandcid+4), getbe32(nandcid+8), getbe32(nandcid+12));
+    Debug("TWL customer ID: %08X%08X", getbe32(twlcustid+0), getbe32(twlcustid+4));
+    Debug("SysNAND SD path <id0> / <id1>:");
+    Debug(sd_base_id0);
+    Debug(sd_base_id1);
+    Debug("");
+    
+    // current setup stuff here
     Debug("Running from arm9loaderhax: %s", (isA9lh) ? "yes" : "no");
     Debug("Keys set:%s%s%s%s", (!key_state) ? " none" : (key_state & 0x8) ? " 0x05Y" : "",
         (key_state & 0x4) ? " 0x25X" : "", (key_state & 0x2) ? " 0x18X" : "", (key_state & 0x1) ? " 0x1BX" : "");
-    Debug("NAND CID: %08X%08X%08X%08X", getbe32(nandcid+0), getbe32(nandcid+4), getbe32(nandcid+8), getbe32(nandcid+12));
-    Debug("TWL customer ID: %08X%08X", getbe32(twlcustid+0), getbe32(twlcustid+4));
-    Debug("SysNAND SD base path:");
-    Debug(sd_base_path);
     Debug("");
     
     // SD stuff output here
-    Debug("SD size total / hidden: %lluMB / %lluMB", sd_size_total / 0x100000, sd_size_hidden / 0x100000);
+    Debug("SD size hidden / total: %lluMB / %lluMB", sd_size_hidden / 0x100000, sd_size_total / 0x100000);
     Debug("SD FAT free / total: %lluMB / %lluMB", sd_size_fat_free / 0x100000, sd_size_fat / 0x100000);
     Debug("SD CID: %08X%08X%08X%08X", getbe32(sdcid+0), getbe32(sdcid+4), getbe32(sdcid+8), getbe32(sdcid+12));
     if ((emunand_state > 0) && (emunand_state <= 3)) {
