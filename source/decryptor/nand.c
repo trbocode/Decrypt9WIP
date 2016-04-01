@@ -14,7 +14,7 @@
 #define NAND_HDR_N3DS 2
 
 // these offsets are used by Multi EmuNAND Creator / CakesFW
-#define EMUNAND_MULTI_SECTORS ((getMMCDevice(0)->total_size >= 0x200000) ? 0x200000 : 0x400000)
+#define EMUNAND_MULTI_SECTORS ((getMMCDevice(0)->total_size > 0x200000) ?  0x400000 : 0x200000)
 
 // minimum sizes for O3DS / N3DS NAND
 // see: http://3dbrew.org/wiki/Flash_Filesystem
