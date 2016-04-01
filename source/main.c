@@ -14,6 +14,7 @@
 
 #define SUBMENU_START 6
 
+#define APRIL_FOOLS
 
 MenuInfo menu[] =
 {
@@ -239,11 +240,33 @@ void PowerOff()
 }
 
 
+u32 SecretSurprise()
+{
+    srand(0);
+    DebugClear();
+    Debug("BOOTROM 0401");
+    Debug("ERRCODE: %08X", rand() % ((u32) -1));
+    for (u32 i = 0; i < 16; i++)
+        Debug("         %08X %08X %08X %08X", rand() % ((u32) -1), rand() % ((u32) -1), rand() % ((u32) -1), rand() % ((u32) -1));
+    Debug("         APRIL1ST LRA+LEFT MIGHTSAV EYOU");
+    while (true) {
+        u32 pad_state = InputWait();
+        if ((pad_state & BUTTON_LEFT) && (pad_state & BUTTON_A) && (pad_state & BUTTON_R1) && (pad_state & BUTTON_L1))
+            break;
+    }
+    
+    return 0;
+}
+
+
 u32 InitializeD9()
 {
     u32 errorlevel = 0; // 0 -> none, 1 -> autopause, 2 -> critical
     
     ClearScreenFull(true, true);
+    #ifdef APRIL_FOOLS
+    SecretSurprise();
+    #endif
     DebugClear();
     #ifndef BUILD_NAME
     Debug("-- Decrypt9 --");
@@ -264,7 +287,7 @@ u32 InitializeD9()
     }
     
     Debug("Initializing, hold L+R to pause");
-    Debug("");
+    Debug("");    
     
     if (InitFS()) {
         Debug("Initializing SD card... success");
