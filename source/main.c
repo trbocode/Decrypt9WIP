@@ -268,6 +268,8 @@ u32 InitializeD9()
     
     if (InitFS()) {
         Debug("Initializing SD card... success");
+        FileGetData("d9logo.bin", BOT_SCREEN0, 320 * 240 * 3, 0);
+        memcpy(BOT_SCREEN1, BOT_SCREEN0, 320 * 240 * 3);
         if (SetupTwlKey0x03() != 0) // TWL KeyX / KeyY
             errorlevel = 2;
         if ((GetUnitPlatform() == PLATFORM_N3DS) && (LoadKeyFromFile(0x05, 'Y', NULL) != 0))
