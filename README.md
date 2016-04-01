@@ -43,10 +43,10 @@ If you are a developer and you are building this, you may also just run `make re
 ## Working folders
 
 Basically every input file for Decrypt9 can be placed into the SD card root and output files can be written there, too. Working folders are mostly optional. However, using them is recommended and even required for some of the Decrypt9 features to work. These two folders (on the root of your SD card) are used:
-* __`/D9Game/`__: NCCH (.3DS), CIA and SD card files (from the '/Nintendo 3DS/' folder) go here and are decrypted in place by the respective features.
-* __`/Decrypt9/`__: Everything that doesn't go into `/D9Game/` goes here, and this is also the standard output folder. If `/D9Game/` does not exist, NCCH, CIA and SD card files are also processed in this folder.
+* __`/D9Game/`__: NCCH (.3DS), CIA, BOSS, SD card files (from the '/Nintendo 3DS/' folder) go here and are decrypted in place by the respective features.
+* __`/Decrypt9/`__: Everything that doesn't go into `/D9Game/` goes here, and this is also the standard output folder. If `/D9Game/` does not exist, NCCH, CIA, BOSS and SD card files are also processed in this folder.
 
-Decryption of game files (NCCH, CIA, SD) needs at least one of these two folders to exist. Input files are first searched in `/Decrypt9/` and (if not found) then in the SD card root.
+Decryption of game files (NCCH, CIA, BOSS, SD) needs at least one of these two folders to exist. Input files are first searched in `/Decrypt9/` and (if not found) then in the SD card root.
 
 ## Support files
 
@@ -55,6 +55,7 @@ Depending on the environment, Decrypt9 is ran from, you may need support files t
 * __`slot0x25keyX.bin`__: This file is needed to decrypt 7x crypto NCCHs and CIAs on O3DS < 7.0 and on A9LH.
 * __`slot0x18keyX.bin`__: This file is needed to decrypt Secure 3 crypto NCCHs and CIAs on O3DS and on A9LH.
 * __`slot0x1BkeyX.bin`__: This file is needed to decrypt Secure 4 crypto NCCHs and CIAs in every environment.
+* __`aeskeydb.bin`__: This is an alternative to the four `slot0x??key?.bin` files mentioned above. It can be created in Decrypt9 and can contain multiple key files.
 * __`seeddb.bin`__: This file is needed to decrypt seed crypto NCCHs and CIAs. Note that your seeddb.bin must also contain the seed for the specific game you need to decrypt.
 * __`movable.sed`__: This is dumpable by Decrypt9. It is needed to decrypt SD files from another 3DS, or from another installation on your own 3DS. It is not needed when decrypting your own SysNAND / EmuNAND SD files.
 
@@ -80,8 +81,13 @@ This category includes all titlekey decryption features. Decrypted titlekeys (`d
 
 ### SysNAND / EmuNAND Options
 This is actually two categories in the main menu, but the functionality provided the same (for SysNAND / EmuNAND respectively). These categories include all features that dump, inject, modify or extract information from/to the SysNAND/EmuNAND. For functions that output files to the SD card, the user can choose a filename from a predefined list. For functions that use files from the SD card for input, the user can choose among all candidates existing on the SD card. For an extra layer of safety, critical(!) features - meaning all features that actually introduce change to the NAND - are protected by a warning message and an unlock sequence that the user has to enter. Caution is adviced with these protected features. They should only be used by the informed user.
-* __(Emu)NAND Backup__: Dumps the `NAND.bin` file from your SysNAND or the `ÈmuNAND.bin` file from your EmuNAND. This is a full backup of your 3DS System NAND and can be used to restore your 3DS SysNAND / EmuNAND to a previous state or for modifications.
-* __(Emu)NAND Restore(!)__: This fully restores your SysNAND or EmuNAND from the provided `NAND.bin` file (needs to be in the `/Decrypt9/` work folder). Be careful not to restore a corrupted NAND.bin file. Also note that you won't have access to this feature if your SysNAND is too messed up or on a too high FW version to even start Decrypt9 (should be self explanatory).
+* __(Sys/Emu)NAND Backup & Restore__: This contains multiple options to backup or restore your SysNAND or EmuNAND. The submenu contains the following entries:
+  * __NAND Backup__: Dumps the `NAND.bin` file from your SysNAND or the `ÈmuNAND.bin` file from your EmuNAND. This is a full backup of your 3DS System NAND and can be used to restore your 3DS SysNAND / EmuNAND to a previous state or for modifications. 
+  * __NAND Backup (minsize)__: Same as the above option, but only dumps the actually used size of the NAND (the remainder is only unused data). Use this instead of the above to save some space on your SD card.
+  * __NAND Restore(!)__: This fully restores your SysNAND or EmuNAND from the provided `NAND.bin` file (needs to be in the `/Decrypt9/` work folder or in the SD card root). Although backups will be checked before restoring, be careful not to restore a corrupted NAND.bin file. Also note that you won't have access to this feature if your SysNAND is too messed up or on a too high FW version to even start Decrypt9 (should be self explanatory).
+  * __NAND Restore (forced)(!)__: Same as the above option, but skips most safety checks. This is not recommended to be used without being properly informed. Keep in mind that, if the above option stops you from restoring a NAND backup, it is normally with good reason and means a prevented brick.
+  * __NAND Restore (keep a9lh)(!)__: Only available on SysNAND, this is the same as the standard (unforced) restore option, but keeps all your arm9loaderhax files intact. Only use if you actually have arm9loaderhax installed.
+  * __Validate NAND Dump__: Use this to check and verify NAND dumps on your SD card. If this check passes on a NAND dump, you will also be able to restore it via the standard restore option.
 * __Partition Dump...__: This allows you to dump & decrypt any of the partitions inside your NANDs (TWLN / TWLP / AGBSAVE / FIRM0 / FIRM1 / CTRNAND). Partitions with a file system (TWLN / TWLP / CTRNAND) can easily be mounted, viewed and edited on Windows via [OSFMount](http://www.osforensics.com/tools/mount-disk-images.html). These partitions are included in your NAND and can be dumped by this feature:
   * __TWLN__: _TWL-NAND FAT16 File System_ - this is the same as on a Nintendo DSi console. Installed DSiWare titles reside in this partition. This partition can be used, f.e. to set up [SudokuHax](https://gbatemp.net/threads/tutorial-new-installing-sudokuhax-on-3ds-4-x-9-2.388621/).
   * __TWLP__: _TWL-NAND PHOTO FAT12 File System_ - this is a Nintendo DSi specific partition for storing photos.
@@ -100,30 +106,34 @@ This is actually two categories in the main menu, but the functionality provided
   * __rand_seed__: _Most likely containing some random data_ - any practical use for this is unknown at the moment.
   * __movable.sed__: _This contains the keyY for decryption of data on the SD card_ - Decrypt9 itself uses this in the SD Decryptor / Encryptor and in SD padgen. 
   * __seedsave.bin__: _Contains the seeds for decryption of 9.6x seed encrypted titles_ - only the seeds for installed (legit, purchased) titles are included in this. Use [SEEDconv](https://gbatemp.net/threads/download-seedconv-seeddb-bin-generator-for-use-with-decrypt9.392856/) (recommended) or the included Python script `seeddb_gen.py` to extract the seeds from this into the Decrypt9 readable `seeddb.bin`.
-  * __updtsave.bin__: _Contains some data relating to system updates_ - it is possible to block automatic system updates (ie. the 'update nag') with this file. Research is still in progress. [Read this](https://gbatemp.net/threads/poc-removing-update-nag-on-emunand.399460/page-5#post-5863332) and the posts after it for more information.
+  * __nagsave.bin__: _Contains some data relating to system updates_ - it is possible to block automatic system updates (ie. the 'update nag') with this file. Research is still in progress. [Read this](https://gbatemp.net/threads/poc-removing-update-nag-on-emunand.399460/page-5#post-5863332) and the posts after it for more information.
   * __nnidsave.bin__: _Contains your NNID data_ - this can be used to reset / remove the NNID from your system, without removing any other data. See [here](https://gbatemp.net/threads/download-decrypt9-open-source-decryption-tools-wip.388831/page-89#post-6000951) for instructions.
 * __File Inject...(!)__: This allows you to directly encrypt & inject various files of interest into the SysNAND and EmuNAND. For more information check out the list above.
 * __Health&Safety Dump__: This allows you to to dump the decrypted Health and Safety system app to your SD card. The dumped H&S app can be used to [create injectable files for any homebrew software](https://gbatemp.net/threads/release-inject-any-app-into-health-safety-o3ds-n3ds-cfw-only.402236/).
 * __Health&Safety Inject(!)__: This is used to inject any app into your Health & Safety system app (as long as it is smaller than the original H&S app). Multiple safety clamps are in place, and this is a pretty safe feature. Users are still adviced to be cautious using this and only use eiter the original hs.app or inject apps created with the [Universal Inject Generator](https://gbatemp.net/threads/release-inject-any-app-into-health-safety-o3ds-n3ds-cfw-only.402236/). This feature will detect all injectable apps on the SD card and let the user choose which one to inject.
-* __Update SeedDB__: Use this to create or update the ´seeddb.bin´ file on your SD card with the seeds currently installed in your EmuNAND. Only new seeds will get added to `seeddb.bin` and all ones are untouched.
+* __Update SeedDB__: Use this to create or update the ´seeddb.bin´ file on your SD card with the seeds currently installed in your Sys/EmuNAND. Only new seeds will get added to `seeddb.bin`, seeds already in the database stay untouched.
 
 ### Game Decryptor Options
 This category includes all features that allow the decryption (and encryption) of external and internal game files. Game files are any files that contain games and other software. Typical game file extensions are .CIA, .3DS and .APP. Game files are directly processed - the encrypted versions are overwritten with the decrypted ones and vice versa, so keep backups. The standard work folder for game files is `/D9Game/`, but if that does not exist, game files are processed inside the `/Decrypt9/` work folder.
-* __NCCH/NCSD Decryptor__: Use this to fully decrypt all NCCH / NCSD files in the folder. Files with .3DS and .APP extension are typically NCCH / NCSD files. A full decryption of a .3DS file is otherwise also known as _cryptofixing_. Important Note: Depending on you 3DS console type / FW version and the encryption in your NCCH/NCSD files you may need additional files `slot0x25KeyX.bin` and / or `seeddb.bin`. You're on your own for `slot0x25KeyX.bin`, but for `seeddb.bin` [this](http://tinivi.net/seeddb/) will help you.
+* __NCCH/NCSD Decryptor__: Use this to fully decrypt all NCCH / NCSD files in the folder. Files with .3DS and .APP extension are typically NCCH / NCSD files. A full decryption of a .3DS file is otherwise also known as _cryptofixing_. Important Note: Depending on you 3DS console type / FW version and the encryption in your NCCH/NCSD files you may need additional files key files (see 'Support files' above) and / or `seeddb.bin`.
 * __NCCH/NCSD Encryptor__: Use this to (re-)encrypt all NCCH / NCSD files in the folder using standard encryption (f.e. after decrypting them). Standard encryption can be processed on any 3DS, starting from the lowest firmware versions. On some hardware, .3DS files might need to be encrypted for compatibility.
 * __CIA Decryptor (shallow)__: Use this to decrypt, for all CIA files in the folder, the first layer of CIA decryption. The internal NCCH encryption is left untouched.
-* __CIA Decryptor (deep)__:  Use this to fully decrypt all CIA files in the folder. This also processes the internal NCCH encryption. Deep decryption of a CIA file is otherwise known as _cryptofixing_. This also may need additional files `slot0x25KeyX.bin` and / or `seeddb.bin`, see above.
+* __CIA Decryptor (deep)__:  Use this to fully decrypt all CIA files in the folder. This also processes the internal NCCH encryption. Deep decryption of a CIA file is otherwise known as _cryptofixing_. This also may need additional key files and / or `seeddb.bin`, see 'Support files' above.
 * __CIA Decryptor (CXI only)__: This is the same as CIA Decryptor (deep), but it does not process the 'deep' NCCH encryption for anything but the first CXI content. On some hardware, fully deep decrypted CIA files might not be installable, but CIA files processed with feature will work.
 * __CIA Encryptor (NCCH)__: Use this to encrypt the NCCH containers inside of the CIA files in the folder. NCCH encryption is required, for example, for system CIA files to be installable.
-* __CIA Encryptor (CXI only)__: This is the same as CIA Decryptor (NCCH), but it does not process anything but the first CXI content.
+* __BOSS Decryptor__: Use this to decrypt [BOSS files](http://3dbrew.org/wiki/SpotPass#Content_Container), which are typically received via Spotpass. This feature will decrypt all encrypted BOSS files (with a valid BOSS header) found in the folder.
+* __BOSS Encryptor__: Use this to encrypt [BOSS files](http://3dbrew.org/wiki/SpotPass#Content_Container). This feature will encrypt all unencrypted BOSS files (with a valid BOSS header) found in the folder.
 * __SD Decryptor/Encryptor__: Use this to decrypt or encrypt 'SD files'. SD files are titles, extdata and databases found inside the `/Nintendo 3DS/<id0>/<id1>/` folder. For this feature to work, you need to manually copy the file(s) you want to process. Copy them with their full folder structure (that's everything _after_ `/Nintendo 3DS/<id0>/<id1>/`) to the work / game folder. This feature should by now only be useful to encrypt content, decryption is much easier handled by the two features below.
 * __SD Decryptor (SysNAND dir)__: An improved version of the feature above. This allows you to select content from '/Nintendo 3DS/' (more specifically from the subfolder belonging to SysNAND) to be directly copied to your work / game folder and then decrypted from there.
 * __SD Decryptor (EmuNAND dir)__: This has the same functionality as the feature above, but handles the content of the '/Nintendo 3DS/' subfolder belonging to the EmuNAND instead.
 
-### Selftest Options
-This category includes two special features which allow you to test Decrypt9 internal functionality. The selftest is used, for example, to assure that everything works as intended on a new entrypoint.
+### Maintenance Options
+This category includes special features which allow you to test and manage Decrypt9 internal functionality. 
+* __System Info__: Displays various information about your 3DS and SD card on screen. Used for informational purposes and to test if information is available.
 * __Create Selftest Reference__: Run this first on a known working entrypoint to generate the selftest reference data. This will create a file called `d9_selftest.ref` inside your SD card root or work folder.
-* __Run Selftest__: Run the actual selftest (must have created the reference data before). This will create or update a file called `d9_selftest.lst` on your SD card root or work folder. Note: on O3DS failed `ncch_sec3_key`, `ncch_sec4_key` and `nand_ctrn_key` tests are normal and expected. On O3DS <= FW 7.0, `ncch_7x_key` may fail. On N3DS, failed `ncch_sec4_key` may fail.
+* __Run Selftest__: Run the actual selftest (must have created the reference data before). This will create or update a file called `d9_selftest.lst` on your SD card root or work folder. Note: on O3DS failed `ncch_sec3_key`, `ncch_sec4_key` and `nand_ctrn_key` tests are normal and expected. On O3DS <= FW 7.0, `ncch_7x_key` may fail. On N3DS and O3DS `ncch_sec4_key` may fail. With all key files (see 'Support files' available, no test should fail. This is used, for example, to assure that everything works as intended on a new entrypoint.
+* __Build Key Database__: This is used to build the `aeskeydb.bin`file from all available `slot0x??key?.bin` files. It will also process files that are not used by Decrypt9. With the `aeskeydb.bin`available, Decrypt9 can load keys from it and doesn't need the `slot0x??key?.bin` files anymore.
+* __De/Encrypt Key Database__: By default, the `aeskeydb.bin` created in Decrypt9 is encrypted, and the keys in it are not readable via a Hex Editor. Use this to either decrypt an encrypted database, or to encrypt a decrypted one. Note that Decrypt9 can load keys from both. 
 
 ## Credits by Archshift
 * Roxas75 for the method of ARM9 code injection
@@ -134,9 +144,10 @@ This category includes two special features which allow you to test Decrypt9 int
 ## Credits by d0k3
 * Everyone mentioned by Archshift above
 * Archshift for starting this project and being a great project maintainer
+* b1l1s, Normmatt for their 'behind-the-scenes' work and for making arm9loaderhax support possible
 * patois, delebile, SteveIce10 for Brahma and it's updates
-* mid-kid for CakeHax
-* Shadowtrance, dark_samus3, Syphurith for being of great help developing this
+* mid-kid for CakeHax and for hosting freenode #Cakey
+* Shadowtrance, dark_samus3, Syphurith, AuroraWright for being of great help developing this
 * profi200 for helpful hints that first made developing some features possible
-* Datalogger, zoogie, atkfromabove, mixups, key1340, k8099 and countless others from the GBAtemp forums for testing, feedback and helpful hints
+* Datalogger, zoogie, atkfromabove, mixups, key1340, k8099, Al3x_10m, Supster131, stbinan, Wolfvak, Gelex and countless others from freenode #Cakey and the GBAtemp forums for testing, feedback and helpful hints
 * Everyone I forgot about - if you think you deserve to be mentioned, just contact me
