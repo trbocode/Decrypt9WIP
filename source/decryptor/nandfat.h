@@ -40,3 +40,4 @@ u32 DumpFile(u32 param);
 u32 InjectFile(u32 param);
 u32 DumpHealthAndSafety(u32 param);
 u32 InjectHealthAndSafety(u32 param);
+u32 UpdateSeedDb(u32 param);

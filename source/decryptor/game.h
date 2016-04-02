@@ -103,7 +103,6 @@ u32 CryptBoss(const char* filename, bool encrypt);
 u32 NcchPadgen(u32 param);
 u32 SdPadgen(u32 param);
 u32 SdPadgenDirect(u32 param);
-u32 UpdateSeedDb(u32 param);
 u32 CryptGameFiles(u32 param);
 u32 CryptSdFiles(u32 param);
 u32 DecryptSdFilesDirect(u32 param);
