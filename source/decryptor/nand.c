@@ -762,12 +762,14 @@ u32 RestoreNand(u32 param)
     }
     
     // check EmuNAND partition size
-    if (emunand_header && ((NumHiddenSectors() - emunand_offset) * NAND_SECTOR_SIZE < NAND_MIN_SIZE)) {
-        Debug("Error: Not enough space in EmuNAND partition");
-        return 1; // this really should not happen
-    } else if (emunand_header && (emunand_offset + getMMCDevice(0)->total_size > NumHiddenSectors())) {
-        Debug("Small EmuNAND, using minimum size...");
-        nand_size = NAND_MIN_SIZE;
+    if (emunand_header) {
+        if (((NumHiddenSectors() - emunand_offset) * NAND_SECTOR_SIZE < NAND_MIN_SIZE) || (NumHiddenSectors() < emunand_header)) {
+            Debug("Error: Not enough space in EmuNAND partition");
+            return 1; // this really should not happen
+        } else if (emunand_offset + getMMCDevice(0)->total_size > NumHiddenSectors()) {
+            Debug("Small EmuNAND, using minimum size...");
+            nand_size = NAND_MIN_SIZE;
+        }
     }
     
     // open file, adjust size if required
