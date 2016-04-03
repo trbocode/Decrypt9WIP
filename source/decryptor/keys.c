@@ -74,6 +74,12 @@ u32 SetupSd0x34KeyY(bool from_nand, u8* movable_key) // setup the SD keyY 0x34
 
 u32 SetupTwlKey0x03(void) // setup the TWLNAND key 0x03
 {
+    // check if already loaded
+    if (CheckKeySlot(0x03, 'N') == 0) {
+        Debug("0x03 KeyX & KeyY: already set up");
+        return 0;
+    }
+    
     // see: https://www.3dbrew.org/wiki/Memory_layout#ARM9_ITCM
     u32* TwlCustId = (u32*) (0x01FFB808);
     u8 TwlKeyX[16];
@@ -231,7 +237,7 @@ u32 CheckKeySlot(u32 keyslot, char type)
     if ((*state >> keyslot) & 1)
         return 0;
     
-    // if is not, we may still be able to verify the currently set one (only for NCCH keys)
+    // if is not, we may still be able to verify the currently set one (for NCCH keys)
     for (u32 p = 0; (type == 'X') && (p < sizeof(keyNcchSamples) / sizeof(AesNcchSampleInfo)); p++) {
         if (keyNcchSamples[p].slot == keyslot) { // only for keyslots in the keyNcchSamples table!
             u8 sample[16] = { 0 };
@@ -242,6 +248,20 @@ u32 CheckKeySlot(u32 keyslot, char type)
             CryptBuffer(&info);
             if (memcmp(keyNcchSamples[p].sample, sample, 16) == 0) {
                 keyXState |= (u64) 1 << keyslot;
+                return 0;
+            }
+        }
+    }
+    
+    // we can also verify keyslots 0x03 to 0x06 via magic number checking
+    if ((keyslot >= 0x03) && (keyslot <= 0x06)) {
+        u8 magic[0x200];
+        PartitionInfo* p_info = GetPartitionInfo((keyslot == 0x03) ? P_TWLN : (keyslot == 0x06) ? P_FIRM0 : P_CTRNAND);
+        if (p_info && (p_info->keyslot == keyslot) && (DecryptNandToMem(magic, p_info->offset, 16, p_info) == 0)) {
+            if (memcmp(p_info->magic, magic, 8) == 0) {
+                keyState  |= (u64) 1 << keyslot;
+                keyXState |= (u64) 1 << keyslot;
+                keyYState |= (u64) 1 << keyslot;
                 return 0;
             }
         }
