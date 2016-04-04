@@ -629,7 +629,7 @@ u32 DumpNand(u32 param)
     
     
     // check actual EmuNAND size
-    if (emunand_offset + getMMCDevice(0)->total_size > NumHiddenSectors())
+    if (emunand_header && (emunand_offset + getMMCDevice(0)->total_size > NumHiddenSectors()))
         nand_size = NAND_MIN_SIZE;
     
     Debug("Dumping %sNAND. Size (MB): %u", (param & N_EMUNAND) ? "Emu" : "Sys", nand_size / (1024 * 1024));
