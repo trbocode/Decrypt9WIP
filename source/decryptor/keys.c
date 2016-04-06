@@ -336,6 +336,8 @@ u32 BuildKeyDb(u32 param)
             info->slot = keyslot;
             info->type = type;
             memset(info->id, 0x00, 10);
+            if (id)
+                strncpy(info->id, id, 10);
             memset(info->reserved, 0x00, 3);
             info->isEncrypted = 0;
             keys_found++;
