@@ -703,7 +703,7 @@ u32 EncryptMemToNand(u8* buffer, u32 offset, u32 size, PartitionInfo* partition)
     u32 start_sector = offset / NAND_SECTOR_SIZE;
     CryptBuffer(&info);
     if (WriteNandSectors(start_sector, n_sectors, buffer) != 0) {
-        Debug("%NAND write error", (emunand_header) ? "Emu" : "Sys");
+        Debug("%sNAND write error", (emunand_header) ? "Emu" : "Sys");
         return 1;
     }
 
@@ -793,7 +793,7 @@ u32 RestoreNand(u32 param)
                 break;
             }
             if (WriteNandSectors(i, read_sectors, buffer) != 0) {
-                Debug("%NAND write error", (emunand_header) ? "Emu" : "Sys");
+                Debug("%sNAND write error", (emunand_header) ? "Emu" : "Sys");
                 result = 1;
                 break;
             }
@@ -819,7 +819,7 @@ u32 RestoreNand(u32 param)
                     break;
                 }
                 if (WriteNandSectors(i, read_sectors, buffer) != 0) {
-                    Debug("%NAND write error", (emunand_header) ? "Emu" : "Sys");
+                    Debug("%sNAND write error", (emunand_header) ? "Emu" : "Sys");
                     result = 1;
                     break;
                 }
