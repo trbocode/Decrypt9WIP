@@ -487,7 +487,7 @@ u32 CryptNcch(const char* filename, u32 offset, u32 size, u64 seedId, u8* encryp
     }
     
     // select correct title ID for seed crypto
-    if (seedId == 0) seedId = ncch->partitionId;
+    if (seedId == 0) seedId = ncch->programId;
     
     // copy over encryption parameters (if applicable)
     if (encrypt_flags) {
