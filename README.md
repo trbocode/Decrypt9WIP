@@ -63,16 +63,16 @@ Depending on the environment, Decrypt9 is ran from, you may need support files t
 ## Decrypt9 controls
 
 The most important controls are displayed on screen, here is a list of all:
-* __<DOWN>__/__<UP>__ - Navigate menus, scroll output, select between options.
-* __<A>__ - Enter submenu or confirm action.
-* __<B>__ - Depending on location, leave submenu or cancel.
-* __<L>/<R>__ - Switch between submenus (first level submenu only).
-* __<X>__ - Make a screenshot. Works in menu and on console output, after a feature finishes.
-* __<X> + <LEFT>/<RIGHT>__ - Batch screenshot all submenus / entries (only on menu)
-* __<SELECT>__ - Unmount SD card (only on menu).
-* __<START> (+ <LEFT>)__ - Reboot (<START> only) / Poweroff (with <LEFT>).
+* __DOWN__/__UP__ - Navigate menus, scroll output, select between options.
+* __A__ - Enter submenu or confirm action.
+* __B__ - Depending on location, leave submenu or cancel.
+* __L/R__ - Switch between submenus (first level submenu only).
+* __X__ - Make a screenshot. Works in menu and on console output, after a feature finishes.
+* __X + LEFT/RIGHT__ - Batch screenshot all submenus / entries (only on menu)
+* __SELECT__ - Unmount SD card (only on menu).
+* __START (+ LEFT)__ - Reboot (START only) / Poweroff (with LEFT).
 
-There are some features (NAND backup and restore, f.e.), that require the user to choose a file or a directory. In these cases, use the arrow keys to select and <A> / <B> to confirm and cancel.
+There are some features (NAND backup and restore, f.e.), that require the user to choose a file or a directory. In these cases, use the arrow keys to select and A / B to confirm and cancel.
 
 ## Decrypt9 features description
 
