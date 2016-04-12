@@ -55,9 +55,24 @@ Depending on the environment, Decrypt9 is ran from, you may need support files t
 * __`slot0x25keyX.bin`__: This file is needed to decrypt 7x crypto NCCHs and CIAs on O3DS < 7.0 and on A9LH.
 * __`slot0x18keyX.bin`__: This file is needed to decrypt Secure 3 crypto NCCHs and CIAs on O3DS and on A9LH.
 * __`slot0x1BkeyX.bin`__: This file is needed to decrypt Secure 4 crypto NCCHs and CIAs in every environment.
-* __`aeskeydb.bin`__: This is an alternative to the four `slot0x??key?.bin` files mentioned above. It can be created in Decrypt9 and can contain multiple key files.
-* __`seeddb.bin`__: This file is needed to decrypt seed crypto NCCHs and CIAs. Note that your seeddb.bin must also contain the seed for the specific game you need to decrypt.
+* __`aeskeydb.bin`__: This is an alternative to the four `slot0x??key?.bin` files mentioned above. It can contain multiple keys. It can be created from your existing `slot0x??key?.bin`files in Decrypt9 via the 'Build Key Database' feature.
+* __`seeddb.bin`__: Decrypt9 can create and update this file from the seeds installed in your system. This file is needed to decrypt seed crypto NCCHs and CIAs. Note that your seeddb.bin must also contain the seed for the specific game you need to decrypt.
 * __`movable.sed`__: This is dumpable by Decrypt9. It is needed to decrypt SD files from another 3DS, or from another installation on your own 3DS. It is not needed when decrypting your own SysNAND / EmuNAND SD files.
+* __`d9logo.bin`__: Contains a logo (or, in fact, anything) to be displayed on the bottom screen. A 'd9logo.bin' file is included in the release archive. If you want to create one yourself, install [ImageMagick](http://www.imagemagick.org/) and run `convert [your image] -rotate 90 bgr:d9logo.bin`, where [your image] is any image of 320x240px resolution.
+
+## Decrypt9 controls
+
+The most important controls are displayed on screen, here is a list of all:
+* __<DOWN>__/__<UP>__ - Navigate menus, scroll output, select between options.
+* __<A>__ - Enter submenu or confirm action.
+* __<B>__ - Depending on location, leave submenu or cancel.
+* __<L>/<R>__ - Switch between submenus (first level submenu only).
+* __<X>__ - Make a screenshot. Works in menu and on console output, after a feature finishes.
+* __<X> + <LEFT>/<RIGHT>__ - Batch screenshot all submenus / entries (only on menu)
+* __<SELECT>__ - Unmount SD card (only on menu).
+* __<START> (+ <LEFT>)__ - Reboot (<START> only) / Poweroff (with <LEFT>).
+
+There are some features (NAND backup and restore, f.e.), that require the user to choose a file or a directory. In these cases, use the arrow keys to select and <A> / <B> to confirm and cancel.
 
 ## Decrypt9 features description
 
@@ -65,7 +80,7 @@ Features in Decrypt9 are categorized into 5 main categories, see the description
 
 ### XORpad Generator Options
 This category includes all features that generate XORpads. XORpads are not useful on their own, but they can be used (with additional tools) to decrypt things on your PC. Most, if not all, of the functionality provided by these features can now be achieved in Decrypt9 in a more comfortable way by newer dump/decrypt features, but these are still useful for following older tutorials and to work with other tools.
-* __NCCH Padgen__: This generates XORpads for NCCH/NCSD files ('.3DS' f.e.) from `ncchinfo.bin` files. Generate the `ncchinfo.bin` via the included Python script `ncchinfo_gen.py` (or `ncchinfo_tgen.py` for theme packs) and place it into the `/Decrypt9/` work folder. Use [Archshift's XORer](https://github.com/archshift/xorer) to apply XORpads to .3DS files. NCCH Padgen is also used in conjunction with [Riku's 3DS Simple CIA Converter](https://gbatemp.net/threads/release-3ds-simple-cia-converter.384559/). Important Note: Depending on you 3DS console type / FW version and the encryption in your NCCH/NCSD files you may need additional files `slot0x??KeyX.bin` and / or `seeddb.bin`. You're on your own for `slot0x25KeyX.bin`, but for `seeddb.bin` [this](http://tinivi.net/seeddb/) will help you.
+* __NCCH Padgen__: This generates XORpads for NCCH/NCSD files ('.3DS' f.e.) from `ncchinfo.bin` files. Generate the `ncchinfo.bin` via the included Python script `ncchinfo_gen.py` (or `ncchinfo_tgen.py` for theme packs) and place it into the `/Decrypt9/` work folder. Use [Archshift's XORer](https://github.com/archshift/xorer) to apply XORpads to .3DS files. NCCH Padgen is also used in conjunction with [Riku's 3DS Simple CIA Converter](https://gbatemp.net/threads/release-3ds-simple-cia-converter.384559/). Important Note: Depending on you 3DS console type / FW version and the encryption in your NCCH/NCSD files you may need additional files (see 'Support files' above) and / or `seeddb.bin`.
 * __SD Padgen (SDinfo.bin)__: This generates XORpads for files installed into the '/Nintendo 3DS/' folder of your SD card. Use the included Python script `sdinfo_gen.py` and place the the resulting `sdinfo.bin` into your `/Decrypt9/` work folder. If the SD files to generate XORpads for are from a different NAND (different console, f.e.), you also need the respective `movable.sed` file (dumpable via Dercrypt9) to generate valid XORpads. By now, this feature should only make sense when decrypting stuff from another 3DS - use one of the two features below or the SD Decryptor instead. Use [padXORer by xerpi](https://github.com/polaris-/3ds_extract) to apply XORpads.
 * __SD Padgen (SysNAND dir)__: This is basically an improved version of the above feature. For typical users, there are two folders in '/Nintendo 3DS/' on the SD card, one belonging to the SysNAND, the other to EmuNAND. This feature will generate XORpads for encrypted content inside the folder belonging to the SysNAND. It won't touch your SysNAND, thus it is not a dangerous feature. A folder selection prompt will allow you to specify exactly the XORpads you want to be generated (use the arrow keys to select). Generating all of them at once is not recommended, because this can lead to several GBs of data and very long processing time.
 * __SD Padgen (EmuNAND dir)__: This is the same as the above feature, but utilizing the EmuNAND folder below '/Nintendo 3DS/' on the SD card. The EmuNAND folder is typically a lot larger than the SysNAND folder, so be careful when selecting the content for which to generate XORpads for.
