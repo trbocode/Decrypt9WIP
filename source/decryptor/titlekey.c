@@ -18,8 +18,9 @@ static const u8 common_keyy[6][16] = {
 };
 
 
-u32 DecryptTitlekey(TitleKeyEntry* entry)
+u32 CryptTitlekey(TitleKeyEntry* entry)
 {
+    // because a titlekey is only 16 byte, AES_CNT_TITLEKEY_DECRYPT_MODE will also work for encrypting
     CryptBufferInfo info = {.keyslot = 0x3D, .setKeyY = 1, .size = 16, .buffer = entry->titleKey, .mode = AES_CNT_TITLEKEY_DECRYPT_MODE};
     memset(info.ctr, 0, 16);
     memcpy(info.ctr, entry->titleId, 8);
@@ -30,11 +31,11 @@ u32 DecryptTitlekey(TitleKeyEntry* entry)
     return 0;
 }
 
-u32 DecryptTitlekeysFile(u32 param)
+u32 CryptTitlekeysFile(u32 param)
 {
     EncKeysInfo *info = (EncKeysInfo*)0x20316000;
 
-    if (!DebugFileOpen("encTitleKeys.bin"))
+    if (!DebugFileOpen((param & TK_ENCRYPTED) ? "decTitleKeys.bin" : "encTitleKeys.bin"))
         return 1;
     
     if (!DebugFileRead(info, 16, 0)) {
@@ -58,9 +59,9 @@ u32 DecryptTitlekeysFile(u32 param)
 
     Debug("Decrypting Title Keys...");
     for (u32 i = 0; i < info->n_entries; i++)
-        DecryptTitlekey(&(info->entries[i]));
+        CryptTitlekey(&(info->entries[i]));
 
-    if (!DebugFileCreate("decTitleKeys.bin", true))
+    if (!DebugFileCreate((param & TK_ENCRYPTED) ? "encTitleKeys.bin" : "decTitleKeys.bin", true))
         return 1;
     if (!DebugFileWrite(info, info->n_entries * sizeof(TitleKeyEntry) + 16, 0)) {
         FileClose();
@@ -71,7 +72,7 @@ u32 DecryptTitlekeysFile(u32 param)
     return 0;
 }
 
-u32 DecryptTitlekeysNand(u32 param)
+u32 DumpTitlekeysNand(u32 param)
 {
     PartitionInfo* ctrnand_info = GetPartitionInfo(P_CTRNAND);;
     u8* buffer = BUFFER_ADDRESS;
@@ -111,7 +112,8 @@ u32 DecryptTitlekeysNand(u32 param)
                 memcpy(info->entries[nKeys].titleId, titleId, 8);
                 memcpy(info->entries[nKeys].titleKey, titlekey, 16);
                 info->entries[nKeys].commonKeyIndex = commonKeyIndex;
-                DecryptTitlekey(&(info->entries[nKeys]));
+                if (!(param & TK_ENCRYPTED))
+                    CryptTitlekey(&(info->entries[nKeys]));
                 nKeys++;
             }
         }
@@ -125,7 +127,7 @@ u32 DecryptTitlekeysNand(u32 param)
     
     Debug("Decrypted %u unique Title Keys", nKeys);
     
-    if (OutputFileNameSelector(filename, "decTitleKeys.bin", NULL) != 0)
+    if (OutputFileNameSelector(filename, (param & TK_ENCRYPTED) ? "encTitleKeys.bin" : "decTitleKeys.bin", NULL) != 0)
         return 1;
     
     if(nKeys > 0) {

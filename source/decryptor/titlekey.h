@@ -4,6 +4,8 @@
 
 #define MAX_ENTRIES 1024
 
+#define TK_ENCRYPTED (1<<0)
+
 typedef struct {
     u32 commonKeyIndex;
     u8  reserved[4];
@@ -18,8 +20,8 @@ typedef struct {
 } __attribute__((packed, aligned(16))) EncKeysInfo;
 
 
-u32 DecryptTitlekey(TitleKeyEntry* entry);
+u32 CryptTitlekey(TitleKeyEntry* entry);
 
 // --> FEATURE FUNCTIONS <--
-u32 DecryptTitlekeysFile(u32 param);
-u32 DecryptTitlekeysNand(u32 param);
+u32 CryptTitlekeysFile(u32 param);
+u32 DumpTitlekeysNand(u32 param);

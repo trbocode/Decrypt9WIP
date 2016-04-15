@@ -799,7 +799,7 @@ u32 CryptCia(const char* filename, u8* ncch_crypt, bool cia_encrypt, bool cxi_on
     memcpy(titlekeyEntry.titleId, ticket_data + 0x9C, 8);
     memcpy(titlekeyEntry.titleKey, ticket_data + 0x7F, 16);
     titlekeyEntry.commonKeyIndex = *(ticket_data + 0xB1);
-    DecryptTitlekey(&titlekeyEntry);
+    CryptTitlekey(&titlekeyEntry);
     memcpy(titlekey, titlekeyEntry.titleKey, 16);
     
     // get content data from TMD

@@ -29,11 +29,14 @@ MenuInfo menu[] =
         }
     },
     {
-        "Titlekey Decrypt Options", 3,
+        "Titlekey Options", 6,
         {
-            { "Titlekey Decrypt (file)",      &DecryptTitlekeysFile,  0 },
-            { "Titlekey Decrypt (SysNAND)",   &DecryptTitlekeysNand,  0 },
-            { "Titlekey Decrypt (EmuNAND)",   &DecryptTitlekeysNand,  N_EMUNAND }
+            { "Titlekey Decrypt (file)",      &CryptTitlekeysFile,    0 },
+            { "Titlekey Decrypt (SysNAND)",   &DumpTitlekeysNand,     0 },
+            { "Titlekey Decrypt (EmuNAND)",   &DumpTitlekeysNand,     N_EMUNAND },
+            { "Titlekey Encrypt (file)",      &CryptTitlekeysFile,    TK_ENCRYPTED },
+            { "Titlekey Dump (SysNAND)",      &DumpTitlekeysNand,     TK_ENCRYPTED },
+            { "Titlekey Dump (EmuNAND)",      &DumpTitlekeysNand,     N_EMUNAND | TK_ENCRYPTED }
         }
     },
     {
