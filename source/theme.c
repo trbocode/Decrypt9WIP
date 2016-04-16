@@ -3,6 +3,8 @@
 #include "fs.h"
 #include "decryptor/nand.h"
 
+// #define GFX_ERRORS
+
 bool ImportFrameBuffer(const char* path, u32 use_top) {
     u32 bufsize = BYTES_PER_PIXEL * SCREEN_HEIGHT * ((use_top) ? SCREEN_WIDTH_TOP : SCREEN_WIDTH_BOT);
     u8* buffer0 = (use_top) ? TOP_SCREEN0 : BOT_SCREEN0;
@@ -24,8 +26,12 @@ void LoadThemeGfx(const char* filename, bool use_top) {
     if (ImportFrameBuffer(path, use_top)) return;
     #endif
     snprintf(path, 256, "//%s/%s", USE_THEME, filename);
+    #ifdef GFX_ERRORS
     if (!ImportFrameBuffer(path, use_top))
         DrawStringF(10, 230, true, "Not found: %s", filename);
+    #else
+    ImportFrameBuffer(path, use_top);
+    #endif
 }
 
 void LoadThemeGfxMenu(u32 index) {
