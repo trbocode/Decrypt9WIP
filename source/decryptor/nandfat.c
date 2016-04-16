@@ -431,6 +431,7 @@ u32 UpdateSeedDb(u32 param)
         if (!DebugFileCreate("seeddb.bin", true))
             return 1;
         memset(seedinfo, 0x00, 16);
+        DebugFileWrite(seedinfo, 16, 0);
     }
     
     // search and extract seeds
