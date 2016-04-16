@@ -109,7 +109,7 @@ u32 SelfTest(u32 param)
             for (titlekey.commonKeyIndex = 0; titlekey.commonKeyIndex < 6; titlekey.commonKeyIndex++) {
                 memset(titlekey.titleId, 0x00, 8);
                 memset(titlekey.titleKey, 0x00, 16);
-                CryptTitlekey(&titlekey);
+                CryptTitlekey(&titlekey, false);
                 memcpy(test_ptr + (titlekey.commonKeyIndex * 16), titlekey.titleKey, 16);
             }     
         }

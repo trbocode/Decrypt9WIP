@@ -18,10 +18,10 @@ static const u8 common_keyy[6][16] = {
 };
 
 
-u32 CryptTitlekey(TitleKeyEntry* entry)
+u32 CryptTitlekey(TitleKeyEntry* entry, bool encrypt)
 {
-    // because a titlekey is only 16 byte, AES_CNT_TITLEKEY_DECRYPT_MODE will also work for encrypting
-    CryptBufferInfo info = {.keyslot = 0x3D, .setKeyY = 1, .size = 16, .buffer = entry->titleKey, .mode = AES_CNT_TITLEKEY_DECRYPT_MODE};
+    CryptBufferInfo info = {.keyslot = 0x3D, .setKeyY = 1, .size = 16, .buffer = entry->titleKey,
+        .mode = encrypt ? AES_CNT_TITLEKEY_ENCRYPT_MODE : AES_CNT_TITLEKEY_DECRYPT_MODE};
     memset(info.ctr, 0, 16);
     memcpy(info.ctr, entry->titleId, 8);
     memcpy(info.keyY, (void *)common_keyy[entry->commonKeyIndex], 16);
@@ -57,9 +57,9 @@ u32 CryptTitlekeysFile(u32 param)
     
     FileClose();
 
-    Debug("Decrypting Title Keys...");
+    Debug("%scrypting Title Keys...", (param & TK_ENCRYPTED) ? "En" : "De");
     for (u32 i = 0; i < info->n_entries; i++)
-        CryptTitlekey(&(info->entries[i]));
+        CryptTitlekey(&(info->entries[i]), (param & TK_ENCRYPTED));
 
     if (!DebugFileCreate((param & TK_ENCRYPTED) ? "encTitleKeys.bin" : "decTitleKeys.bin", true))
         return 1;
@@ -90,7 +90,7 @@ u32 DumpTitlekeysNand(u32 param)
     }
     Debug("Found at %08X, size %uMB", offset, size / (1024 * 1024));
     
-    Debug("Decrypting Title Keys...");
+    Debug("%s Title Keys...", (param & TK_ENCRYPTED) ? "Dumping" : "Decrypting");
     memset(info, 0, 0x10);
     for (u32 t_offset = 0; t_offset < size; t_offset += BUFFER_MAX_SIZE - NAND_SECTOR_SIZE) {
         u32 read_bytes = min(BUFFER_MAX_SIZE, (size - t_offset));
@@ -113,7 +113,7 @@ u32 DumpTitlekeysNand(u32 param)
                 memcpy(info->entries[nKeys].titleKey, titlekey, 16);
                 info->entries[nKeys].commonKeyIndex = commonKeyIndex;
                 if (!(param & TK_ENCRYPTED))
-                    CryptTitlekey(&(info->entries[nKeys]));
+                    CryptTitlekey(&(info->entries[nKeys]), false);
                 nKeys++;
             }
         }

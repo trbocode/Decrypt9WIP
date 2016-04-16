@@ -20,7 +20,7 @@ typedef struct {
 } __attribute__((packed, aligned(16))) EncKeysInfo;
 
 
-u32 CryptTitlekey(TitleKeyEntry* entry);
+u32 CryptTitlekey(TitleKeyEntry* entry, bool encrypt);
 
 // --> FEATURE FUNCTIONS <--
 u32 CryptTitlekeysFile(u32 param);
