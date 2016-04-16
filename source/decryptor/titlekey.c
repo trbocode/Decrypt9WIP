@@ -80,6 +80,7 @@ u32 DumpTitlekeysNand(u32 param)
     char filename[64];
     
     u32 nKeys = 0;
+    u32 nSkipped = 0;
     u32 offset = 0;
     u32 size = 0;
     
@@ -100,14 +101,17 @@ u32 DumpTitlekeysNand(u32 param)
         for (u32 i = 0; i < read_bytes - NAND_SECTOR_SIZE; i++) {
             if(memcmp(buffer + i, (u8*) "Root-CA00000003-XS0000000c", 26) == 0) {
                 u32 exid;
+                u32 consoleId = getle32(buffer + i + 0x98);
                 u8* titleId = buffer + i + 0x9C;
                 u32 commonKeyIndex = *(buffer + i + 0xB1);
                 u8* titlekey = buffer + i + 0x7F;
                 for (exid = 0; exid < nKeys; exid++)
                     if (memcmp(titleId, info->entries[exid].titleId, 8) == 0)
                         break;
-                if (exid < nKeys)
-                    continue; // continue if already dumped
+                if (!consoleId || (exid < nKeys)) {
+                    nSkipped++;
+                    continue; // skip useless / duplicates
+                }
                 memset(&(info->entries[nKeys]), 0, sizeof(TitleKeyEntry));
                 memcpy(info->entries[nKeys].titleId, titleId, 8);
                 memcpy(info->entries[nKeys].titleKey, titlekey, 16);
@@ -125,7 +129,8 @@ u32 DumpTitlekeysNand(u32 param)
     info->n_entries = nKeys;
     ShowProgress(0, 0);
     
-    Debug("Decrypted %u unique Title Keys", nKeys);
+    Debug("Decrypted %u unique Titlekeys", nKeys);
+    Debug("Skipped %u useless Titlekeys", nSkipped);
     
     if (OutputFileNameSelector(filename, (param & TK_ENCRYPTED) ? "encTitleKeys.bin" : "decTitleKeys.bin", NULL) != 0)
         return 1;
