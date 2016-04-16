@@ -78,16 +78,14 @@ u32 CheckEmuNand(void)
             ret |= EMUNAND_REDNAND << (2 * (offset_sector / multi_sectors)); 
             continue;
         }
-        if (hidden_sectors < offset_sector + nand_size_sectors)
-            break;
         // check for Gateway type EmuNAND
         sdmmc_sdcard_readsectors(offset_sector + nand_size_sectors, 1, buffer);
-        if (IS_NAND_HEADER(buffer)) {
+        if ((hidden_sectors > offset_sector + nand_size_sectors) && IS_NAND_HEADER(buffer)) {
             ret |= EMUNAND_GATEWAY << (2 * (offset_sector / multi_sectors)); 
             continue;
         }
         // EmuNAND ready but not set up
-       ret |= EMUNAND_READY << (2 * (offset_sector / multi_sectors));
+        ret |= EMUNAND_READY << (2 * (offset_sector / multi_sectors));
     }
     
     return ret;
@@ -126,7 +124,7 @@ u32 SetNand(bool set_emunand, bool force_emunand)
         }
         
         if ((emunand_state == EMUNAND_READY) && force_emunand)
-            emunand_state = EMUNAND_GATEWAY;
+            emunand_state = EMUNAND_REDNAND;
         switch (emunand_state) {
             case EMUNAND_NOT_READY:
                 Debug("SD is not formatted for EmuNAND");
@@ -252,11 +250,7 @@ static u32 CheckNandDumpIntegrity(const char* path) {
     for (u32 f_num = 0; f_num < 2; f_num++) { 
         PartitionInfo* partition = partitions + 3 + f_num;
         CryptBufferInfo info = {.keyslot = partition->keyslot, .setKeyY = 0, .size = 0x200, .buffer = header, .mode = partition->mode};
-        if (GetNandCtr(info.ctr, partition->offset) != 0) {
-            FileClose();
-            return 1;
-        }
-        if (!DebugFileRead(header, 0x200, partition->offset)) {
+        if ((GetNandCtr(info.ctr, partition->offset) != 0) || (!DebugFileRead(header, 0x200, partition->offset))) {
             FileClose();
             return 1;
         }
