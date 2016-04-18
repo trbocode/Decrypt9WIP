@@ -280,12 +280,16 @@ static u32 CheckNandDumpIntegrity(const char* path) {
             }
         }
     }
-    if (firm_corruption == 0x3) {
-        Debug("FIRM0 and FIRM1 are corrupt");
+    if ((firm_corruption == 0x1) && ((*(vu32*) 0x101401C0) == 0)) {
+        Debug("FIRM0 is corrupt (non critical)");
+        Debug("(this is expected with a9lh)");
+    } else if (firm_corruption) {
+        if (firm_corruption == 0x3)
+            Debug("FIRM0 and FIRM1 are corrupt");
+        else
+            Debug("FIRM%i is corrupt", (firm_corruption == 0x2) ? 1 : 0);
         FileClose();
         return 1;
-    } else if (firm_corruption != 0x0) {
-        Debug("FIRM%i is corrupt (non critical)", (firm_corruption == 0x2) ? 1 : 0);
     }
     
     FileClose();
