@@ -33,6 +33,26 @@ u32 GetSdCtr(u8* ctr, const char* path)
     return 0;
 }
 
+u32 GetNcchCtr(u8* ctr, NcchHeader* ncch, u8 sub_id) {
+    memset(ctr, 0x00, 16);
+    if (ncch->version == 1) {
+        memcpy(ctr, &(ncch->partitionId), 8);
+        if (sub_id == 1) { // exHeader ctr
+            add_ctr(ctr, 0x200); 
+        } else if (sub_id == 2) { // exeFS ctr
+            add_ctr(ctr, ncch->offset_exefs * 0x200);
+        } else if (sub_id == 3) { // romFS ctr
+            add_ctr(ctr, ncch->offset_romfs * 0x200);
+        }
+    } else {
+        for (u32 i = 0; i < 8; i++)
+            ctr[i] = ((u8*) &(ncch->partitionId))[7-i];
+        ctr[8] = sub_id;
+    }
+    
+    return 0;
+}
+
 u32 SdFolderSelector(char* path, u8* keyY)
 {
     char** dirptr = (char**) 0x20400000; // allow using 0x8000 byte
@@ -527,7 +547,7 @@ u32 CryptNcch(const char* filename, u32 offset, u32 size, u64 seedId, u8* encryp
     }
     
     // check Secure3 crypto on O3DS
-    if (usesSec3Crypto && (GetUnitPlatform() == PLATFORM_3DS) && (CheckKeySlot(0x18, 'X') != 0)) {
+    if (usesSec3Crypto && (CheckKeySlot(0x18, 'X') != 0)) {
         Debug("slot0x18KeyX not set up");
         Debug("Secure3 crypto is not available");
         return 1;
@@ -571,14 +591,6 @@ u32 CryptNcch(const char* filename, u32 offset, u32 size, u64 seedId, u8* encryp
     }
     
     // basic setup of CryptBufferInfo structs
-    memset(info0.ctr, 0x00, 16);
-    if (ncch->version == 1) {
-        memcpy(info0.ctr, &(ncch->partitionId), 8);
-    } else {
-        for (u32 i = 0; i < 8; i++)
-            info0.ctr[i] = ((u8*) &(ncch->partitionId))[7-i];
-    }
-    memcpy(info1.ctr, info0.ctr, 16);
     memcpy(info0.keyY, ncch->signature, 16);
     memcpy(info1.keyY, (usesSeedCrypto) ? seedKeyY : ncch->signature, 16);
     info1.keyslot = (usesSec4Crypto) ? 0x1B : ((usesSec3Crypto) ? 0x18 : ((uses7xCrypto) ? 0x25 : info0.keyslot));
@@ -591,11 +603,7 @@ u32 CryptNcch(const char* filename, u32 offset, u32 size, u64 seedId, u8* encryp
         
     // process ExHeader
     if (ncch->size_exthdr > 0) {
-        memset(info0.ctr + 8, 0x00, 8);
-        if (ncch->version == 1)
-            add_ctr(info0.ctr, 0x200); // exHeader offset
-        else
-            info0.ctr[8] = 1;
+        GetNcchCtr(info0.ctr, ncch, 1);
         result |= CryptSdToSd(filename, offset + 0x200, 0x800, &info0, true);
     }
     
@@ -603,58 +611,46 @@ u32 CryptNcch(const char* filename, u32 offset, u32 size, u64 seedId, u8* encryp
     if (ncch->size_exefs > 0) {
         u32 offset_byte = ncch->offset_exefs * 0x200;
         u32 size_byte = ncch->size_exefs * 0x200;
-        memset(info0.ctr + 8, 0x00, 8);
-        if (ncch->version == 1)
-            add_ctr(info0.ctr, offset_byte);
-        else
-            info0.ctr[8] = 2;
         if (uses7xCrypto || usesSeedCrypto) {
-            u32 offset_code = 0;
-            u32 size_code = 0;
-            // find .code offset and size
+            GetNcchCtr(info0.ctr, ncch, 2);
             if (!encrypt_flags) // decrypt this first (when decrypting)
                 result |= CryptSdToSd(filename, offset + offset_byte, 0x200, &info0, true);
-            if (FileGetData(filename, buffer, 0x200, offset + offset_byte) != 0x200)
+            if (FileGetData(filename, buffer, 0x200, offset + offset_byte) != 0x200) // get exeFS header
                 return 1;
-            for (u32 i = 0; i < 10; i++) {
-                if(memcmp(buffer + (i*0x10), ".code", 5) == 0) {
-                    offset_code = getle32(buffer + (i*0x10) + 0x8) + 0x200;
-                    size_code = getle32(buffer + (i*0x10) + 0xC);
-                    break;
-                }
-            }
             if (encrypt_flags) // encrypt this last (when encrypting)
                 result |= CryptSdToSd(filename, offset + offset_byte, 0x200, &info0, true);
-            // special ExeFS decryption routine (only .code has new encryption)
-            if (size_code > 0) {
-                result |= CryptSdToSd(filename, offset + offset_byte + 0x200, offset_code - 0x200, &info0, true);
-                memcpy(info1.ctr, info0.ctr, 16); // this depends on the exeFS file offsets being aligned (which they are)
-                add_ctr(info0.ctr, size_code / 0x10);
-                info0.setKeyY = info1.setKeyY = 1;
-                result |= CryptSdToSd(filename, offset + offset_byte + offset_code, size_code, &info1, true);
-                result |= CryptSdToSd(filename,
-                    offset + offset_byte + offset_code + size_code,
-                    size_byte - (offset_code + size_code), &info0, true);
-            } else {
-                result |= CryptSdToSd(filename, offset + offset_byte + 0x200, size_byte - 0x200, &info0, true);
+            // special ExeFS decryption routine ("banner" and "icon" use standard crypto)
+            for (u32 i = 0; i < 10; i++) {
+                char* name_exefs_file = (char*) buffer + (i*0x10);
+                u32 offset_exefs_file = getle32(buffer + (i*0x10) + 0x8) + 0x200;
+                u32 size_exefs_file = getle32(buffer + (i*0x10) + 0xC);
+                CryptBufferInfo* infoExeFs = ((strncmp(name_exefs_file, "banner", 8) == 0) ||
+                    (strncmp(name_exefs_file, "icon", 8) == 0)) ? &info0 : &info1;
+                if (size_exefs_file == 0)
+                    continue;
+                if (offset_exefs_file % 16) {
+                    Debug("ExeFS file offset not aligned!");
+                    result |= 1;
+                    break; // this should not happen
+                }
+                GetNcchCtr(infoExeFs->ctr, ncch, 2);
+                add_ctr(infoExeFs->ctr, offset_exefs_file / 0x10);
+                infoExeFs->setKeyY = 1;
+                result |= CryptSdToSd(filename, offset + offset_byte + offset_exefs_file,
+                    align(size_exefs_file, 16), infoExeFs, true);
             }
         } else {
+            GetNcchCtr(info0.ctr, ncch, 2);
             result |= CryptSdToSd(filename, offset + offset_byte, size_byte, &info0, true);
         }
     }
     
     // process RomFS
     if (ncch->size_romfs > 0) {
-        u32 offset_byte = ncch->offset_romfs * 0x200;
-        u32 size_byte = ncch->size_romfs * 0x200;
-        memset(info1.ctr + 8, 0x00, 8);
-        if (ncch->version == 1)
-            add_ctr(info1.ctr, offset_byte);
-        else
-            info1.ctr[8] = 3;
+        GetNcchCtr(info1.ctr, ncch, 3);
         if (!usesFixedKey)
             info1.setKeyY = 1;
-        result |= CryptSdToSd(filename, offset + offset_byte, size_byte, &info1, true);
+        result |= CryptSdToSd(filename, offset + (ncch->offset_romfs * 0x200), ncch->size_romfs * 0x200, &info1, true);
     }
     
     // set NCCH header flags
