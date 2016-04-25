@@ -16,6 +16,7 @@ typedef struct {
 
 u32 SetupSd0x34KeyY(bool from_nand, u8* movable_key);
 u32 SetupTwlKey0x03(void);
+u32 SetupCtrNandKeyY0x05(void);
 u32 LoadKeyFromFile(u32 keyslot, char type, char* id);
 u32 CheckKeySlot(u32 keyslot, char type);
 

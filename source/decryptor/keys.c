@@ -109,6 +109,54 @@ u32 SetupTwlKey0x03(void) // setup the TWLNAND key 0x03
     return 0;
 }
 
+u32 SetupCtrNandKeyY0x05(void) // setup the CTRNAND keyY 0x05
+{
+    static const u8 keyY0x05Sha256[32] = {
+        0x98, 0x24, 0x27, 0x14, 0x22, 0xB0, 0x6B, 0xF2, 0x10, 0x96, 0x9C, 0x36, 0x42, 0x53, 0x7C, 0x86,
+        0x62, 0x22, 0x5C, 0xFD, 0x6F, 0xAE, 0x9B, 0x0A, 0x85, 0xA5, 0xCE, 0x21, 0xAA, 0xB6, 0xC8, 0x4D
+    };
+    
+    static const u32 offset_section2 = 0x066A00;
+    static const u32 offset_keyy0x05 = 0x0EB014;
+    static const u32 offset_keyy0x05a = offset_keyy0x05 - (offset_keyy0x05 % 0x200);
+    
+    // check if already loaded
+    if (CheckKeySlot(0x05, 'Y') == 0) {
+        Debug("0x05 KeyY: already set up");
+        return 0;
+    }
+    
+    u8 buffer[0x200];
+    u8* CtrKeyY = buffer + (offset_keyy0x05 % 0x200);
+    CryptBufferInfo info = {.keyslot = 0x15, .setKeyY = 1, .buffer = buffer, .size = 0x200, .mode = AES_CNT_CTRNAND_MODE};
+    PartitionInfo* p_firm = GetPartitionInfo(P_FIRM0);
+    
+    // this uses fixed offsets and works ONLY for FIRM90 (= on A9LH SysNAND, too)
+    // see: https://github.com/AuroraWright/Luma3DS/blob/master/source/crypto.c#L347
+    // thanks AuroraWright & Gelex
+    DecryptNandToMem(buffer, p_firm->offset + offset_section2, 0x200, p_firm);
+    memcpy(info.keyY, buffer + 0x10, 0x10);
+    memcpy(info.ctr, buffer + 0x20, 0x10);
+    add_ctr(info.ctr, (offset_keyy0x05a - (offset_section2 + 0x800)) / 16);
+    DecryptNandToMem(buffer, p_firm->offset + offset_keyy0x05a, 0x200, p_firm);
+    CryptBuffer(&info);
+    
+    // set it, check it
+    u8 keySha256[32];
+    sha_quick(keySha256, CtrKeyY, 16, SHA256_MODE);
+    if (memcmp(keySha256, keyY0x05Sha256, 32) == 0) {
+        setup_aeskeyY(0x05, CtrKeyY);
+        use_aeskey(0x05);
+        keyYState |= (u64) 1 << 0x05;
+        Debug("0x05 KeyY: automatically set up");
+        return 0;
+    }
+    
+    // if we arrive here, try loading from file
+    // this will not happen with regular entrypoints
+    return LoadKeyFromFile(0x05, 'Y', NULL);
+}
+
 u32 LoadKeyFromFile(u32 keyslot, char type, char* id)
 {
     static const AesKeyHashInfo keyHashes[] = {

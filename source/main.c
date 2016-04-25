@@ -274,8 +274,8 @@ u32 InitializeD9()
         memcpy(BOT_SCREEN1, BOT_SCREEN0, 320 * 240 * 3);
         if (SetupTwlKey0x03() != 0) // TWL KeyX / KeyY
             errorlevel = 2;
-        if ((GetUnitPlatform() == PLATFORM_N3DS) && (LoadKeyFromFile(0x05, 'Y', NULL) != 0))
-            errorlevel = (((*(vu32*) 0x101401C0) == 0) || (errorlevel > 1)) ? 2 : 1; // N3DS CTRNAND KeyY
+        if ((GetUnitPlatform() == PLATFORM_N3DS) && (SetupCtrNandKeyY0x05() != 0))
+            errorlevel = 2; // N3DS CTRNAND KeyY
         if (LoadKeyFromFile(0x25, 'X', NULL)) // NCCH 7x KeyX
             errorlevel = (errorlevel < 1) ? 1 : errorlevel;
         if (LoadKeyFromFile(0x18, 'X', NULL)) // NCCH Secure3 KeyX
