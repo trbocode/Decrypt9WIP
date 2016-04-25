@@ -240,7 +240,7 @@ static u32 CheckNandDumpIntegrity(const char* path) {
             FileClose();
             Debug("Not a proper NAND backup for this 3DS");
             if (partition->keyslot == 0x05)
-                Debug("(or slot0x05keyY not set up");
+                Debug("(or slot0x05keyY not set up)");
             return 1;
         }
     }
@@ -682,7 +682,7 @@ u32 DecryptNandPartition(u32 param)
     if ((p_info->magic[0] != 0xFF) && (memcmp(p_info->magic, magic, 8) != 0)) {
         Debug("Corrupt partition or decryption error");
         if (p_info->keyslot == 0x05)
-            Debug("(or slot0x05keyY not set up");
+            Debug("(or slot0x05keyY not set up)");
         return 1;
     }
     if (OutputFileNameSelector(filename, p_info->name, "bin") != 0)
@@ -861,7 +861,7 @@ u32 InjectNandPartition(u32 param)
     if ((p_info->magic[0] != 0xFF) && (memcmp(p_info->magic, magic, 8) != 0)) {
         Debug("Corrupt partition or decryption error");
         if (p_info->keyslot == 0x05)
-            Debug("(or slot0x05keyY not set up");
+            Debug("(or slot0x05keyY not set up)");
         return 1;
     }
     
