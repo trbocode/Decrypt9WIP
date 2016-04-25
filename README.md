@@ -32,11 +32,11 @@ See this incomplete list, more detailed descriptions are found further below.
 ## How to run this / entry points
 
 Decrypt9 can be built to run from a number of entry points, descriptions are below. Note that you need to be on or below 3DS firmware version v9.2 for any of these to work. 
-* __Gateway Browser Exploit__: Copy Launcher.dat to your SD card root and run this via http://go.gateway-3ds.com/ from your 3DS browser. Build this with `make gateway`.
 * __A9LH, Brahma & Bootstrap__: Copy Decrypt9.bin to somewhere on your SD card and run it via either [Brahma](https://github.com/delebile/Brahma2) or [Bootstrap](https://github.com/shinyquagsire23/bootstrap). Brahma derivatives / loaders such as [BrahmaLoader](https://gbatemp.net/threads/release-easily-load-payloads-in-hb-launcher-via-brahma-2-mod.402857/), [BootCTR](https://gbatemp.net/threads/re-release-bootctr-a-simple-boot-manager-for-3ds.401630/) and [CTR Boot Manager](https://gbatemp.net/threads/ctrbootmanager-3ds-boot-manager-loader-homemenuhax.398383/) will also work with this. Build this with `make bootstrap`.
 * __Homebrew Launcher__: Copy Decrypt9.3dsx & Decrypt9.smdh into /3DS/Decrypt9 on your SD card. Run this via [Smealums Homebrew Launcher](http://smealum.github.io/3ds/), [Mashers Grid Launcher](https://gbatemp.net/threads/release-homebrew-launcher-with-grid-layout.397527/) or any other compatible software. Build this with `make brahma`.
 * __CakeHax Browser__: Copy Decrypt9.dat to the root of your SD card. For MSET also copy Decrypt9.nds to your SD card. You can then run it via http://dukesrg.github.io/?Decrypt9.dat from your 3DS browser. Build this via `make cakehax`.
 * __CakeHax MSET__: Copy Decrypt9.dat to the root of your SD card and Decrypt9.nds to anywhere on the SD card. You can then run it either via MSET and Decrypt9.nds. Build this via `make cakerop`.
+* __Gateway Browser Exploit__: Copy Launcher.dat to your SD card root and run this via http://go.gateway-3ds.com/ from your 3DS browser. Build this with `make gateway`. Please note: __this entrypoint is deprecated__. While it may still work at the present time with little to no problems, bugs will no more be fixed and it may be completely removed at a later time. Use CakeHax instead.
 
 If you are a developer and you are building this, you may also just run `make release` to build all files at once. If you are a user, all files are already included in the release archive.
 
