@@ -32,7 +32,7 @@ See this incomplete list, more detailed descriptions are found further below.
 ## How to run this / entry points
 
 Decrypt9 can be built to run from a number of entry points, descriptions are below. Note that you need to be on or below 3DS firmware version v9.2 for any of these to work. 
-* __A9LH, Brahma & Bootstrap__: Copy Decrypt9.bin to somewhere on your SD card and run it via either [Brahma](https://github.com/delebile/Brahma2) or [Bootstrap](https://github.com/shinyquagsire23/bootstrap). Brahma derivatives / loaders such as [BrahmaLoader](https://gbatemp.net/threads/release-easily-load-payloads-in-hb-launcher-via-brahma-2-mod.402857/), [BootCTR](https://gbatemp.net/threads/re-release-bootctr-a-simple-boot-manager-for-3ds.401630/) and [CTR Boot Manager](https://gbatemp.net/threads/ctrbootmanager-3ds-boot-manager-loader-homemenuhax.398383/) will also work with this. Build this with `make bootstrap`.
+* __A9LH & Brahma__: Copy `Decrypt9.bin` to somewhere on your SD card and run it via either [Brahma](https://github.com/delebile/Brahma2) or [arm9loaderhax](https://github.com/Plailect/Guide/wiki). Brahma derivatives / loaders (such as [BrahmaLoader](https://gbatemp.net/threads/release-easily-load-payloads-in-hb-launcher-via-brahma-2-mod.402857/), [BootCTR](https://gbatemp.net/threads/re-release-bootctr-a-simple-boot-manager-for-3ds.401630/) and [CTR Boot Manager](https://gbatemp.net/threads/ctrbootmanager-3ds-boot-manager-loader-homemenuhax.398383/)) and A9LH chainloaders (such as [Luma3DS](https://github.com/AuroraWright/Luma3DS) and [BootCTR9](https://github.com/hartmannaf/BootCtr9)) will work with this as well. Build this with `make a9lh`.
 * __Homebrew Launcher__: Copy Decrypt9.3dsx & Decrypt9.smdh into /3DS/Decrypt9 on your SD card. Run this via [Smealums Homebrew Launcher](http://smealum.github.io/3ds/), [Mashers Grid Launcher](https://gbatemp.net/threads/release-homebrew-launcher-with-grid-layout.397527/) or any other compatible software. Build this with `make brahma`.
 * __CakeHax Browser__: Copy Decrypt9.dat to the root of your SD card. For MSET also copy Decrypt9.nds to your SD card. You can then run it via http://dukesrg.github.io/?Decrypt9.dat from your 3DS browser. Build this via `make cakehax`.
 * __CakeHax MSET__: Copy Decrypt9.dat to the root of your SD card and Decrypt9.nds to anywhere on the SD card. You can then run it either via MSET and Decrypt9.nds. Build this via `make cakerop`.
@@ -51,7 +51,7 @@ Decryption of game files (NCCH, CIA, BOSS, SD) needs at least one of these two f
 ## Support files
 
 Depending on the environment, Decrypt9 is ran from, you may need support files to have full functionality. Support files are placed into either the root folder, or the work folder (`/Decrypt9/`). Here's a list of support files used in Decrypt9, when you need them and what they are used for:
-* __`slot0x05keyY.bin`__: This file is needed for access to CTRNAND features (which is basically everything) on N3DS. At the moment not needed on any entrypoint.
+* __`slot0x05keyY.bin`__: This file was previously needed for access to CTRNAND features (which is basically everything) on N3DS. At the moment it is not needed on any entrypoint.
 * __`slot0x25keyX.bin`__: This file is needed to decrypt 7x crypto NCCHs and CIAs on O3DS < 7.0 and on A9LH.
 * __`slot0x18keyX.bin`__: This file is needed to decrypt Secure 3 crypto NCCHs and CIAs on O3DS and on A9LH.
 * __`slot0x1BkeyX.bin`__: This file is needed to decrypt Secure 4 crypto NCCHs and CIAs in every environment.
