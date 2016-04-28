@@ -74,7 +74,7 @@ u32 SelfTest(u32 param)
         u32 size = TestList[i].size;
         u32 size_a = align(size, 16);
         u32 type = TestList[i].type;
-        u32 param = TestList[i].param;
+        u32 tparam = TestList[i].param;
         
         memset(test_ptr, 0x00, 16 + size_a);
         strncpy((char*) test_ptr, TestList[i].name, 16);
@@ -85,11 +85,11 @@ u32 SelfTest(u32 param)
         } else if (type == ST_NAND_CID_MEM) {
             memcpy(test_ptr, (void*) 0x01FFCD84, 16);
         } else if (type == ST_SHA) {
-            sha_quick(test_ptr, teststr, 16, param);
+            sha_quick(test_ptr, teststr, 16, tparam);
         } else if ((type == ST_AES_MODE) || (type == ST_AES_KEYSLOT) || (type == ST_AES_KEYSLOT_Y)) {
             CryptBufferInfo info = {.setKeyY = 0, .size = 16, .buffer = test_ptr};
             if (type == ST_AES_MODE) {
-                info.mode = param;
+                info.mode = tparam;
                 info.keyslot = 0x11;
                 setup_aeskey(0x11, (void*) zeroes);
             } else {
@@ -98,7 +98,7 @@ u32 SelfTest(u32 param)
                     memcpy(info.keyY, zeroes, 16);
                 }
                 info.mode = AES_CNT_CTRNAND_MODE;
-                info.keyslot = param;
+                info.keyslot = tparam;
             }
             memset(info.ctr, 0x00, 16);
             memcpy(test_ptr, teststr, 16);
@@ -177,6 +177,7 @@ u32 SystemInfo(u32 param)
     // see: https://3dbrew.org/wiki/Nandrw/sys/SecureInfo_A
     // see: https://3dbrew.org/wiki/Nand/private/movable.sed
     // see: https://www.3dbrew.org/wiki/Memory_layout#ARM9_ITCM 
+    (void) (param); // param is unused here
     const char* emunandstr[] = { "not ready", "not set up", "GW EmuNAND", "RedNAND" };
     const char* regionstr[] = { "JPN", "USA", "EUR", "AUS", "CHN", "KOR", "TWN", "UNK" };
     PartitionInfo* ctrnand_info = GetPartitionInfo(P_CTRNAND);

@@ -118,7 +118,7 @@ u32 SetupCtrNandKeyY0x05(void) // setup the CTRNAND keyY 0x05
     
     static const u32 offset_section2 = 0x066A00;
     static const u32 offset_keyy0x05 = 0x0EB014;
-    static const u32 offset_keyy0x05a = offset_keyy0x05 - (offset_keyy0x05 % 0x200);
+    static const u32 offset_keyy0x05a = 0x0EB014 - (0x0EB014 % 0x200);
     
     // check if already loaded
     if (CheckKeySlot(0x05, 'Y') == 0) {
@@ -365,11 +365,11 @@ u32 BuildKeyDb(u32 param)
                 id = special->id;
             }
             
-            for (info = keydb; info - keydb < n_keys; info++) {
+            for (info = keydb; info < keydb + n_keys; info++) {
                 if ((info->slot == keyslot) && (info->type == type) && (info->id[0] == '\0'))
                     break;
             }
-            if (info - keydb < n_keys) // key already in database
+            if (info < keydb + n_keys) // key already in database
                 continue;
                 
             char keyname[16];
@@ -400,7 +400,7 @@ u32 BuildKeyDb(u32 param)
         if (param & KEY_ENCRYPT) {
             // encrypt the full database
             Debug("Encrypting key database...");
-            for (AesKeyInfo* info = keydb; info - keydb < n_keys; info++) {
+            for (AesKeyInfo* info = keydb; info < keydb + n_keys; info++) {
                 if (!info->isEncrypted)
                     CryptAesKeyInfo(info);
             }
@@ -443,7 +443,7 @@ u32 CryptKeyDb(u32 param)
     
     // de/encrypt the full database
     Debug("%scrypting key database...", (encrypt) ? "En" : "De");
-    for (AesKeyInfo* info = keydb; info - keydb < n_keys; info++) {
+    for (AesKeyInfo* info = keydb; info < keydb + n_keys; info++) {
         if (((bool) info->isEncrypted) != ((bool) encrypt))
             CryptAesKeyInfo(info);
     }

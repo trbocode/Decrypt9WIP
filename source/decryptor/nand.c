@@ -479,6 +479,7 @@ PartitionInfo* GetPartitionInfo(u32 partition_id)
 
 u32 CtrNandPadgen(u32 param)
 {
+    (void) (param); // param is unused here
     u32 keyslot;
     u32 nand_size;
 
@@ -509,6 +510,7 @@ u32 CtrNandPadgen(u32 param)
 
 u32 TwlNandPadgen(u32 param)
 {
+    (void) (param); // param is unused here
     u32 size_mb = (partitions[0].size + (1024 * 1024) - 1) / (1024 * 1024);
     Debug("Creating TWLN FAT16 xorpad. Size (MB): %u", size_mb);
     Debug("Filename: twlnand.fat16.xorpad");
@@ -528,6 +530,7 @@ u32 TwlNandPadgen(u32 param)
 
 u32 Firm0Firm1Padgen(u32 param)
 {
+    (void) (param); // param is unused here
     u32 size_mb = (partitions[3].size + partitions[4].size + (1024 * 1024) - 1) / (1024 * 1024);
     Debug("Creating FIRM0FIRM1 xorpad. Size (MB): %u", size_mb);
     Debug("Filename: firm0firm1.xorpad");
@@ -881,6 +884,7 @@ u32 InjectNandPartition(u32 param)
 
 u32 ValidateNandDump(u32 param)
 {
+    (void) (param); // param is unused here
     char filename[64];
         
     // user file select

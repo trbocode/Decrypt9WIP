@@ -222,7 +222,7 @@ MenuInfo menu[] =
         }
     },
     {
-        NULL, 0, {}, // empty menu to signal end
+        NULL, 0, { { 0 } } // empty menu to signal end
     }
 };
 

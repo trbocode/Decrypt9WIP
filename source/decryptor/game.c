@@ -176,6 +176,7 @@ u32 SdInfoGen(SdInfo* info, const char* base_path)
 
 u32 NcchPadgen(u32 param)
 {
+    (void) (param); // param is unused here
     NcchInfo *info = (NcchInfo*)0x20316000;
     SeedInfo *seedinfo = (SeedInfo*)0x20400000;
 
@@ -318,6 +319,7 @@ u32 NcchPadgen(u32 param)
 
 u32 SdPadgen(u32 param)
 {
+    (void) (param); // param is unused here
     SdInfo *info = (SdInfo*) 0x20316000;
 
     // setup AES key from SD
@@ -355,6 +357,7 @@ u32 SdPadgen(u32 param)
 
 u32 SdPadgenDirect(u32 param)
 {
+    (void) (param); // param is unused here
     SdInfo *info = (SdInfo*) 0x20316000;
     char basepath[256];
     u8 movable_keyY[16];
@@ -1095,7 +1098,9 @@ u32 CryptGameFiles(u32 param)
     return !n_processed;
 }
 
-u32 CryptSdFiles(u32 param) {
+u32 CryptSdFiles(u32 param)
+{
+    (void) (param); // param is unused here
     const char* subpaths[] = {"dbs", "extdata", "title", NULL};
     char* batch_dir = GAME_DIR;
     u32 n_processed = 0;
@@ -1152,7 +1157,9 @@ u32 CryptSdFiles(u32 param) {
     return (n_processed) ? 0 : 1;
 }
 
-u32 DecryptSdFilesDirect(u32 param) {
+u32 DecryptSdFilesDirect(u32 param)
+{
+    (void) (param); // param is unused here
     char* filelist = (char*) 0x20400000;
     u8 movable_keyY[16] = { 0 };
     char basepath[256];

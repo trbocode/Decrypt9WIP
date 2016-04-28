@@ -297,8 +297,8 @@ size_t FileGetData(const char* path, void* buf, size_t size, size_t foffset)
     if (exists) {
         UINT bytes_read = 0;
         bool res = false;
-        f_sync(&tmp_file);
         f_lseek(&tmp_file, foffset);
+        f_sync(&tmp_file);
         res = (f_read(&tmp_file, buf, size, &bytes_read) == FR_OK);
         f_close(&tmp_file);
         return (res) ? bytes_read : 0;
@@ -315,7 +315,6 @@ size_t LogWrite(const char* text)
     static size_t lstart = 0;
     
     if ((text == NULL) && lready) {
-        f_sync(&lfile);
         f_close(&lfile);
         lready = false;
         return lstart; // return the current log start

@@ -80,7 +80,7 @@ u32 SeekFileInNand(u32* offset, u32* size, const char* path, PartitionInfo* part
         if (DecryptNandToMem(buffer, *offset, cluster_size, partition) != 0)
             return 1;
         for (u32 i = 0x00; i < cluster_size; i += 0x20) {
-            const static char zeroes[8+3] = { 0x00 };
+            static const char zeroes[8+3] = { 0x00 };
             // skip invisible, deleted and lfn entries
             if ((buffer[i] == '.') || (buffer[i] == 0xE5) || (buffer[i+0x0B] == 0x0F))
                 continue;
@@ -283,6 +283,7 @@ u32 InjectFile(u32 param)
 
 u32 DumpHealthAndSafety(u32 param)
 {
+    (void) (param); // param is unused here
     PartitionInfo* ctrnand_info = GetPartitionInfo(P_CTRNAND);
     TitleListInfo* health = titleList + ((GetUnitPlatform() == PLATFORM_3DS) ? 3 : 4);
     char filename[64];
@@ -390,6 +391,7 @@ u32 InjectHealthAndSafety(u32 param)
 
 u32 UpdateSeedDb(u32 param)
 {
+    (void) (param); // param is unused here
     PartitionInfo* ctrnand_info = GetPartitionInfo(P_CTRNAND);
     u8* buffer = BUFFER_ADDRESS;
     SeedInfo *seedinfo = (SeedInfo*) 0x20400000;
