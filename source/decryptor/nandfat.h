@@ -16,6 +16,7 @@
 #define F_SEEDSAVE    (1<<8)
 #define F_NAGSAVE     (1<<9)
 #define F_NNIDSAVE    (1<<10)
+#define F_FRIENDSAVE  (1<<11)
 
 typedef struct {
     char name[32];

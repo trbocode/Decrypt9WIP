@@ -166,11 +166,11 @@ MenuInfo menu[] =
             { "Dump certs.db",                &DumpFile,             F_CERTS },
             { "Dump SecureInfo_A",            &DumpFile,             F_SECUREINFO },
             { "Dump LocalFriendCodeSeed_B",   &DumpFile,             F_LOCALFRIEND },
-            { "Dump rand_seed",               &DumpFile,             F_RANDSEED },
             { "Dump movable.sed",             &DumpFile,             F_MOVABLE },
             { "Dump seedsave.bin",            &DumpFile,             F_SEEDSAVE },
             { "Dump nagsave.bin",             &DumpFile,             F_NAGSAVE },
-            { "Dump nnidsave.bin",            &DumpFile,             F_NNIDSAVE }
+            { "Dump nnidsave.bin",            &DumpFile,             F_NNIDSAVE },
+            { "Dump friendsave.bin",          &DumpFile,             F_FRIENDSAVE }
         }
     },
     {
@@ -182,11 +182,11 @@ MenuInfo menu[] =
             { "Dump certs.db",                &DumpFile,             N_EMUNAND | F_CERTS },
             { "Dump SecureInfo_A",            &DumpFile,             N_EMUNAND | F_SECUREINFO },
             { "Dump LocalFriendCodeSeed_B",   &DumpFile,             N_EMUNAND | F_LOCALFRIEND },
-            { "Dump rand_seed",               &DumpFile,             N_EMUNAND | F_RANDSEED },
             { "Dump movable.sed",             &DumpFile,             N_EMUNAND | F_MOVABLE },
             { "Dump seedsave.bin",            &DumpFile,             N_EMUNAND | F_SEEDSAVE },
             { "Dump nagsave.bin",             &DumpFile,             N_EMUNAND | F_NAGSAVE },
-            { "Dump nnidsave.bin",            &DumpFile,             N_EMUNAND | F_NNIDSAVE }
+            { "Dump nnidsave.bin",            &DumpFile,             N_EMUNAND | F_NNIDSAVE },
+            { "Dump friendsave.bin",          &DumpFile,             N_EMUNAND | F_FRIENDSAVE }
         }
     },
     {
@@ -198,11 +198,11 @@ MenuInfo menu[] =
             { "Inject certs.db",              &InjectFile,           N_NANDWRITE | F_CERTS },
             { "Inject SecureInfo_A",          &InjectFile,           N_NANDWRITE | F_SECUREINFO },
             { "Inject LocalFriendCodeSeed_B", &InjectFile,           N_NANDWRITE | F_LOCALFRIEND },
-            { "Inject rand_seed",             &InjectFile,           N_NANDWRITE | F_RANDSEED },
             { "Inject movable.sed",           &InjectFile,           N_NANDWRITE | F_MOVABLE },
             { "Inject seedsave.bin",          &InjectFile,           N_NANDWRITE | F_SEEDSAVE },
             { "Inject nagsave.bin",           &InjectFile,           N_NANDWRITE | F_NAGSAVE },
-            { "Inject nnidsave.bin",          &InjectFile,           N_NANDWRITE | F_NNIDSAVE }
+            { "Inject nnidsave.bin",          &InjectFile,           N_NANDWRITE | F_NNIDSAVE },
+            { "Inject friendsave.bin",        &InjectFile,           N_NANDWRITE | F_FRIENDSAVE }
         }
     },
     {
@@ -218,7 +218,8 @@ MenuInfo menu[] =
             { "Inject movable.sed",           &InjectFile,           N_NANDWRITE | N_EMUNAND | F_MOVABLE },
             { "Inject seedsave.bin",          &InjectFile,           N_NANDWRITE | N_EMUNAND | F_SEEDSAVE },
             { "Inject nagsave.bin",           &InjectFile,           N_NANDWRITE | N_EMUNAND | F_NAGSAVE },
-            { "Inject nnidsave.bin",          &InjectFile,           N_NANDWRITE | N_EMUNAND | F_NNIDSAVE }
+            { "Inject nnidsave.bin",          &InjectFile,           N_NANDWRITE | N_EMUNAND | F_NNIDSAVE },
+            { "Inject friendsave.bin",        &InjectFile,           N_NANDWRITE | N_EMUNAND | F_FRIENDSAVE }
         }
     },
     {

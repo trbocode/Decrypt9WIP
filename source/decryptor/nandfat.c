@@ -33,7 +33,8 @@ NandFileInfo fileList[] = {
     { "movable.sed",           "movable.sed",           "PRIVATE    MOVABLE SED",                P_CTRNAND },
     { "seedsave.bin", "seedsave.bin", "DATA       ???????????SYSDATA    0001000F   00000000   ", P_CTRNAND },
     { "nagsave.bin",  "nagsave.bin",  "DATA       ???????????SYSDATA    0001002C   00000000   ", P_CTRNAND },
-    { "nnidsave.bin", "nnidsave.bin", "DATA       ???????????SYSDATA    00010038   00000000   ", P_CTRNAND }
+    { "nnidsave.bin", "nnidsave.bin", "DATA       ???????????SYSDATA    00010038   00000000   ", P_CTRNAND },
+    { "friendsave.bin", "friendsave.bin", "DATA       ???????????SYSDATA    00010032   00000000   ", P_CTRNAND }
 };
 
 
