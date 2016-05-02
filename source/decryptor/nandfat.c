@@ -8,7 +8,7 @@
 #include "decryptor/nandfat.h"
 
 // only a subset, see http://3dbrew.org/wiki/Title_list
-// regions: JPN, USA,EUR, CHN, KOR, TWN
+// regions: JPN, USA, EUR, CHN, KOR, TWN
 TitleListInfo titleList[] = {
     { "System Settings"       , 0x00040010, { 0x00020000, 0x00021000, 0x00022000, 0x00026000, 0x00027000, 0x00028000 } },
     { "Download Play"         , 0x00040010, { 0x00020100, 0x00021100, 0x00022100, 0x00026100, 0x00027100, 0x00028100 } },
@@ -287,6 +287,7 @@ u32 DumpHealthAndSafety(u32 param)
     (void) (param); // param is unused here
     PartitionInfo* ctrnand_info = GetPartitionInfo(P_CTRNAND);
     TitleListInfo* health = titleList + ((GetUnitPlatform() == PLATFORM_3DS) ? 3 : 4);
+    TitleListInfo* health_alt = (GetUnitPlatform() == PLATFORM_N3DS) ? titleList + 3 : NULL;
     char filename[64];
     u32 offset_app[4];
     u32 size_app[4];
@@ -294,7 +295,8 @@ u32 DumpHealthAndSafety(u32 param)
     u32 size_tmd;
     
     
-    if (DebugSeekTitleInNand(&offset_tmd, &size_tmd, offset_app, size_app, health, 4) != 0)
+    if ((DebugSeekTitleInNand(&offset_tmd, &size_tmd, offset_app, size_app, health, 4) != 0) && (!health_alt || 
+        (DebugSeekTitleInNand(&offset_tmd, &size_tmd, offset_app, size_app, health_alt, 4) != 0)))
         return 1;
     if (OutputFileNameSelector(filename, "hs.app", NULL) != 0)
         return 1;
@@ -313,6 +315,7 @@ u32 InjectHealthAndSafety(u32 param)
     u8* buffer = BUFFER_ADDRESS;
     PartitionInfo* ctrnand_info = GetPartitionInfo(P_CTRNAND);
     TitleListInfo* health = titleList + ((GetUnitPlatform() == PLATFORM_3DS) ? 3 : 4);
+    TitleListInfo* health_alt = (GetUnitPlatform() == PLATFORM_N3DS) ? titleList + 3 : NULL;
     NcchHeader* ncch = (NcchHeader*) 0x20316000;
     char filename[64];
     u32 offset_app[4];
@@ -325,7 +328,8 @@ u32 InjectHealthAndSafety(u32 param)
     if (!(param & N_NANDWRITE)) // developer screwup protection
         return 1;
     
-    if (DebugSeekTitleInNand(&offset_tmd, &size_tmd, offset_app, size_app, health, 4) != 0)
+    if ((DebugSeekTitleInNand(&offset_tmd, &size_tmd, offset_app, size_app, health, 4) != 0) && (!health_alt || 
+        (DebugSeekTitleInNand(&offset_tmd, &size_tmd, offset_app, size_app, health_alt, 4) != 0)))
         return 1;
     if (size_app[0] > 0x400000) {
         Debug("H&S system app is too big!");
