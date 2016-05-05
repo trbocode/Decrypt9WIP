@@ -39,6 +39,9 @@
 #define WORK_DIR "/Decrypt9"
 #define LOG_FILE "Decrypt9.log"
 
+// if defined, assume a panda unit
+// #define PANDA_WORKAROUND
+
 static inline u32 strchrcount(const char* str, char symbol) {
     u32 count = 0;
     for (u32 i = 0; str[i] != '\0'; i++) {

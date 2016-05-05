@@ -288,6 +288,10 @@ u32 CheckKeySlot(u32 keyslot, char type)
     // if is not, we may still be able to verify the currently set one (for NCCH keys)
     for (u32 p = 0; (type == 'X') && (p < sizeof(keyNcchSamples) / sizeof(AesNcchSampleInfo)); p++) {
         if (keyNcchSamples[p].slot == keyslot) { // only for keyslots in the keyNcchSamples table!
+            #ifdef PANDA_WORKAROUND
+            keyXState |= (u64) 1 << keyslot;
+            return 0;
+            #else
             u8 sample[16] = { 0 };
             CryptBufferInfo info = {.keyslot = keyslot, .setKeyY = 1, .buffer = sample, .size = 16, .mode = AES_CNT_CTRNAND_MODE};
             memset(info.ctr, 0x00, 16);
@@ -298,6 +302,7 @@ u32 CheckKeySlot(u32 keyslot, char type)
                 keyXState |= (u64) 1 << keyslot;
                 return 0;
             }
+            #endif
         }
     }
     
