@@ -366,7 +366,9 @@ u32 BuildKeyDb(u32 param)
             }
             
             for (info = keydb; info < keydb + n_keys; info++) {
-                if ((info->slot == keyslot) && (info->type == type) && (info->id[0] == '\0'))
+                if ((info->slot != keyslot) || (info->type != type))
+                    continue;
+                if ((!id && (info->id[0] == '\0')) || (id && (strncmp(id, info->id, 10) == 0)))
                     break;
             }
             if (info < keydb + n_keys) // key already in database
