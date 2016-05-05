@@ -249,9 +249,8 @@ u32 SystemInfo(u32 param)
     if ((emunand_state > 0) && (emunand_state <= 3)) {
         Debug("Installed EmuNAND: %s", emunandstr[emunand_state]);
     } else if (emunand_state > 3) {
-        Debug("# of installed EmuNANDs: %u", (emunand_state + 2) / 3);
         for (u32 i = 0; emunand_state; i++, emunand_state >>= 2)
-            Debug("EmuNAND #%u: %s", i, emunandstr[emunand_state&0x3]);
+            Debug("Installed EmuNAND #%u: %s", i, emunandstr[emunand_state&0x3]);
     }
     Debug("");
     
