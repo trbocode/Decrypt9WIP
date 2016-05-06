@@ -53,7 +53,7 @@ Decryption of game files (NCCH, CIA, BOSS, SD) needs at least one of these two f
 Depending on the environment, Decrypt9 is ran from, you may need support files to have full functionality. Support files are placed into either the root folder, or the work folder (`/Decrypt9/`). Here's a list of support files used in Decrypt9, when you need them and what they are used for:
 * __`slot0x05keyY.bin`__: This file was previously needed for access to CTRNAND features (which is basically everything) on N3DS. At the moment it is not needed on any entrypoint.
 * __`slot0x25keyX.bin`__: This file is needed to decrypt 7x crypto NCCHs and CIAs on O3DS < 7.0 and on A9LH.
-* __`slot0x18keyX.bin`__: This file is needed to decrypt Secure 3 crypto NCCHs and CIAs on O3DS and on A9LH.
+* __`slot0x18keyX.bin`__: This file is needed to decrypt Secure 3 crypto NCCHs and CIAs on O3DS without A9LH.
 * __`slot0x1BkeyX.bin`__: This file is needed to decrypt Secure 4 crypto NCCHs and CIAs in every environment.
 * __`aeskeydb.bin`__: This is an alternative to the four `slot0x??key?.bin` files mentioned above. It can contain multiple keys. It can be created from your existing `slot0x??key?.bin`files in Decrypt9 via the 'Build Key Database' feature.
 * __`seeddb.bin`__: Decrypt9 can create and update this file from the seeds installed in your system. This file is needed to decrypt seed crypto NCCHs and CIAs. Note that your seeddb.bin must also contain the seed for the specific game you need to decrypt.
