@@ -34,8 +34,13 @@ u32 CryptTitlekey(TitleKeyEntry* entry, bool encrypt)
 u32 CryptTitlekeysFile(u32 param)
 {
     EncKeysInfo *info = (EncKeysInfo*)0x20316000;
+    char filename[64];
 
-    if (!DebugFileOpen((param & TK_ENCRYPTED) ? "decTitleKeys.bin" : "encTitleKeys.bin"))
+    if (InputFileNameSelector(filename, (param & TK_ENCRYPTED) ? "decTitleKeys.bin" : "encTitleKeys.bin",
+        NULL, NULL, 0, 16, true) != 0)
+        return 1;
+    
+    if (!DebugFileOpen(filename))
         return 1;
     
     if (!DebugFileRead(info, 16, 0)) {
@@ -61,7 +66,9 @@ u32 CryptTitlekeysFile(u32 param)
     for (u32 i = 0; i < info->n_entries; i++)
         CryptTitlekey(&(info->entries[i]), (param & TK_ENCRYPTED));
 
-    if (!DebugFileCreate((param & TK_ENCRYPTED) ? "encTitleKeys.bin" : "decTitleKeys.bin", true))
+    if (OutputFileNameSelector(filename, (param & TK_ENCRYPTED) ? "encTitleKeys.bin" : "decTitleKeys.bin", NULL) != 0)
+        return 1;
+    if (!DebugFileCreate(filename, true))
         return 1;
     if (!DebugFileWrite(info, info->n_entries * sizeof(TitleKeyEntry) + 16, 0)) {
         FileClose();
