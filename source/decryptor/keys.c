@@ -17,11 +17,13 @@ typedef struct {
 
 typedef struct {
     AesKeyDesc desc;     // slot, type, id
+    u8   isPandaKey;     // 1 if for Panda unit, 0 otherwise
     u8   keySha256[32];  // SHA-256 of the key
 } __attribute__((packed)) AesKeyHashInfo;
 
 typedef struct {
-    u8   slot;           // keyslot, 0x00...0x39 
+    u8   slot;           // keyslot, 0x00...0x39
+    u8   isPandaKey;     // 1 if for Panda unit, 0 otherwise
     u8   sample[16];     // sample data, encoded with src = keyY = ctr = { 0 }
 } __attribute__((packed)) AesNcchSampleInfo;
 
@@ -157,22 +159,44 @@ u32 SetupCtrNandKeyY0x05(void) // setup the CTRNAND keyY 0x05
     return LoadKeyFromFile(0x05, 'Y', NULL);
 }
 
+u32 GetUnitKeysType(void)
+{
+    static const u8 slot0x2CSampleRetail[16] = {
+        0xBC, 0xC4, 0x16, 0x2C, 0x2A, 0x06, 0x91, 0xEE, 0x47, 0x18, 0x86, 0xB8, 0xEB, 0x2F, 0xB5, 0x48 };
+    static const u8 slot0x2CSamplePanda[16] = {
+        0x29, 0xB5, 0x5D, 0x9F, 0x61, 0xAC, 0xD2, 0x28, 0x22, 0x23, 0xFB, 0x57, 0xDD, 0x50, 0x8A, 0xF5 };
+    u8 sample[16] = { 0 };
+    CryptBufferInfo info = {.keyslot = 0x2C, .setKeyY = 1, .buffer = sample, .size = 16, .mode = AES_CNT_CTRNAND_MODE};
+    memset(info.ctr, 0x00, 16);
+    memset(info.keyY, 0x00, 16);
+    memset(info.buffer, 0x00, 16);
+    CryptBuffer(&info);
+    
+    if (memcmp(sample, slot0x2CSampleRetail, 16) == 0) {
+        return KEYS_RETAIL;
+    } else if (memcmp(sample, slot0x2CSamplePanda, 16) == 0) {
+        return KEYS_PANDA;
+    }
+        
+    return KEYS_UNKNOWN;
+}
+
 u32 LoadKeyFromFile(u32 keyslot, char type, char* id)
 {
     static const AesKeyHashInfo keyHashes[] = {
-        { { 0x05, 'Y', "" }, // N3DS CTRNAND key SHA256
+        { { 0x05, 'Y', "" }, 0, // Retail N3DS CTRNAND key SHA256
          { 0x98, 0x24, 0x27, 0x14, 0x22, 0xB0, 0x6B, 0xF2, 0x10, 0x96, 0x9C, 0x36, 0x42, 0x53, 0x7C, 0x86,
          0x62, 0x22, 0x5C, 0xFD, 0x6F, 0xAE, 0x9B, 0x0A, 0x85, 0xA5, 0xCE, 0x21, 0xAA, 0xB6, 0xC8, 0x4D }
         },
-        { { 0x18, 'X', "" }, // NCCH Secure3 key SHA256
+        { { 0x18, 'X', "" }, 0, // Retail NCCH Secure3 key SHA256
          { 0x76, 0xC7, 0x6B, 0x65, 0x5D, 0xB8, 0x52, 0x19, 0xC5, 0xD3, 0x5D, 0x51, 0x7F, 0xFA, 0xF7, 0xA4,
          0x3E, 0xBA, 0xD6, 0x6E, 0x31, 0xFB, 0xDD, 0x57, 0x43, 0x92, 0x59, 0x37, 0xA8, 0x93, 0xCC, 0xFC }
         },
-        { { 0x1B, 'X', "" }, // NCCH Secure4 key SHA256
+        { { 0x1B, 'X', "" }, 0, // Retail NCCH Secure4 key SHA256
          { 0x9A, 0x20, 0x1E, 0x7C, 0x37, 0x37, 0xF3, 0x72, 0x2E, 0x5B, 0x57, 0x8D, 0x11, 0x83, 0x7F, 0x19,
          0x7C, 0xA6, 0x5B, 0xF5, 0x26, 0x25, 0xB2, 0x69, 0x06, 0x93, 0xE4, 0x16, 0x53, 0x52, 0xC6, 0xBB }
         },
-        { { 0x25, 'X', "" }, // NCCH 7x key SHA256
+        { { 0x25, 'X', "" }, 0, // Retail NCCH 7x key SHA256
          { 0x7E, 0x87, 0x8D, 0xDE, 0x92, 0x93, 0x8E, 0x4C, 0x71, 0x7D, 0xD5, 0x3D, 0x1E, 0xA3, 0x5A, 0x75,
          0x63, 0x3F, 0x51, 0x30, 0xD8, 0xCF, 0xD7, 0xC7, 0x6C, 0x8F, 0x4A, 0x8F, 0xB8, 0x70, 0x50, 0xCD }
         }
@@ -235,15 +259,18 @@ u32 LoadKeyFromFile(u32 keyslot, char type, char* id)
     u8 keySha256[32];
     sha_quick(keySha256, key, 16, SHA256_MODE);
     for (u32 p = 0; p < sizeof(keyHashes) / sizeof(AesKeyHashInfo); p++) {
-        if ((keyHashes[p].desc.slot == keyslot) && (keyHashes[p].desc.type == type) &&
-            ((!id && !keyHashes[p].desc.id[0]) || (id && strncmp(id, keyHashes[p].desc.id, 10) == 0))) {
-            if (memcmp(keySha256, keyHashes[p].keySha256, 32) == 0) {
-                verified = true;
-                break;
-            } else {
-                Debug("0x%02X %s: corrupt key", (unsigned int) keyslot, keyname);
-                return 1;
-            }
+        if ((keyHashes[p].desc.slot != keyslot) || (keyHashes[p].desc.type != type))
+            continue;
+        if ((!id && keyHashes[p].desc.id[0]) || (id && strncmp(id, keyHashes[p].desc.id, 10) != 0))
+            continue;
+        if ((bool) keyHashes[p].isPandaKey != (GetUnitKeysType() == KEYS_PANDA))
+            continue;
+        if (memcmp(keySha256, keyHashes[p].keySha256, 32) == 0) {
+            verified = true;
+            break;
+        } else {
+            Debug("0x%02X %s: corrupt key", (unsigned int) keyslot, keyname);
+            return 1;
         }
     }
     
@@ -271,9 +298,14 @@ u32 LoadKeyFromFile(u32 keyslot, char type, char* id)
 u32 CheckKeySlot(u32 keyslot, char type)
 {
     static const AesNcchSampleInfo keyNcchSamples[] = {
-        { 0x18, { 0x78, 0xBB, 0x84, 0xFA, 0xB3, 0xA2, 0x49, 0x83, 0x9E, 0x4F, 0x50, 0x7B, 0x17, 0xA0, 0xDA, 0x23 } }, // NCCH Secure3
-        { 0x1B, { 0xF3, 0x6F, 0x84, 0x7E, 0x59, 0x43, 0x6E, 0xD5, 0xA0, 0x40, 0x4C, 0x71, 0x19, 0xED, 0xF7, 0x0A } }, // NCCH Secure4
-        { 0x25, { 0x34, 0x7D, 0x07, 0x48, 0xAE, 0x5D, 0xFB, 0xB0, 0xF5, 0x86, 0xD6, 0xB5, 0x14, 0x65, 0xF1, 0xFF } }  // NCCH 7x
+        { 0x18, 0, // Retail NCCH Secure3
+         { 0x78, 0xBB, 0x84, 0xFA, 0xB3, 0xA2, 0x49, 0x83, 0x9E, 0x4F, 0x50, 0x7B, 0x17, 0xA0, 0xDA, 0x23 } },
+        { 0x1B, 0, // Retail NCCH Secure4
+         { 0xF3, 0x6F, 0x84, 0x7E, 0x59, 0x43, 0x6E, 0xD5, 0xA0, 0x40, 0x4C, 0x71, 0x19, 0xED, 0xF7, 0x0A } },
+        { 0x25, 0, // Retail NCCH 7x
+         { 0x34, 0x7D, 0x07, 0x48, 0xAE, 0x5D, 0xFB, 0xB0, 0xF5, 0x86, 0xD6, 0xB5, 0x14, 0x65, 0xF1, 0xFF } },
+        { 0x25, 1, // Panda NCCH 7x
+         { 0xBC, 0x83, 0x7C, 0xC9, 0x99, 0xC8, 0x80, 0x9E, 0x8A, 0xDE, 0x4A, 0xFA, 0xAA, 0x72, 0x08, 0x28 } }
     };
     u64* state = (type == 'X') ? &keyXState : (type == 'Y') ? &keyYState : &keyState;
     
@@ -287,22 +319,19 @@ u32 CheckKeySlot(u32 keyslot, char type)
     
     // if is not, we may still be able to verify the currently set one (for NCCH keys)
     for (u32 p = 0; (type == 'X') && (p < sizeof(keyNcchSamples) / sizeof(AesNcchSampleInfo)); p++) {
-        if (keyNcchSamples[p].slot == keyslot) { // only for keyslots in the keyNcchSamples table!
-            #ifdef PANDA_WORKAROUND
+        if (keyNcchSamples[p].slot != keyslot) // only for keyslots in the keyNcchSamples table!
+            continue;
+        if ((bool) keyNcchSamples[p].isPandaKey != (GetUnitKeysType() == KEYS_PANDA))
+            continue;
+        u8 sample[16] = { 0 };
+        CryptBufferInfo info = {.keyslot = keyslot, .setKeyY = 1, .buffer = sample, .size = 16, .mode = AES_CNT_CTRNAND_MODE};
+        memset(info.ctr, 0x00, 16);
+        memset(info.keyY, 0x00, 16);
+        memset(info.buffer, 0x00, 16);
+        CryptBuffer(&info);
+        if (memcmp(keyNcchSamples[p].sample, sample, 16) == 0) {
             keyXState |= (u64) 1 << keyslot;
             return 0;
-            #else
-            u8 sample[16] = { 0 };
-            CryptBufferInfo info = {.keyslot = keyslot, .setKeyY = 1, .buffer = sample, .size = 16, .mode = AES_CNT_CTRNAND_MODE};
-            memset(info.ctr, 0x00, 16);
-            memset(info.keyY, 0x00, 16);
-            memset(info.buffer, 0x00, 16);
-            CryptBuffer(&info);
-            if (memcmp(keyNcchSamples[p].sample, sample, 16) == 0) {
-                keyXState |= (u64) 1 << keyslot;
-                return 0;
-            }
-            #endif
         }
     }
     
@@ -393,7 +422,8 @@ u32 BuildKeyDb(u32 param)
             memset(info->id, 0x00, 10);
             if (id)
                 strncpy(info->id, id, 10);
-            memset(info->reserved, 0x00, 3);
+            memset(info->reserved, 0x00, 2);
+            info->isPandaKey = 0; // <- see about this later
             info->isEncrypted = 0;
             keys_found++;
             n_keys++;
