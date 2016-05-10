@@ -479,29 +479,33 @@ PartitionInfo* GetPartitionInfo(u32 partition_id)
 
 u32 CtrNandPadgen(u32 param)
 {
-    (void) (param); // param is unused here
+    char* filename = (param & PG_FORCESLOT4) ? "nand.fat16.slot0x04.xorpad" : "nand.fat16.xorpad";
     u32 keyslot;
     u32 nand_size;
 
-    // legacy sizes & offset, to work with 3DSFAT16Tool
+    // legacy sizes & offset, to work with Python 3DSFAT16Tool
     if (GetUnitPlatform() == PLATFORM_3DS) {
+        if (param & PG_FORCESLOT4) {
+            Debug("This is a N3DS only feature");
+            return 1;
+        }
         keyslot = 0x4;
         nand_size = 758;
     } else {
-        keyslot = 0x5;
+        keyslot = (param & PG_FORCESLOT4) ? 0x4 : 0x5;
         nand_size = 1055;
     }
 
     Debug("Creating NAND FAT16 xorpad. Size (MB): %u", nand_size);
-    Debug("Filename: nand.fat16.xorpad");
+    Debug("Filename: %s", filename);
 
     PadInfo padInfo = {
         .keyslot = keyslot,
         .setKeyY = 0,
         .size_mb = nand_size,
-        .filename = "nand.fat16.xorpad",
         .mode = AES_CNT_CTRNAND_MODE
     };
+    strncpy(padInfo.filename, filename, 64);
     if(GetNandCtr(padInfo.ctr, 0xB930000) != 0)
         return 1;
 

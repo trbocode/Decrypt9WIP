@@ -13,6 +13,9 @@
 #define P_FIRM1     (1<<4)
 #define P_CTRNAND   (1<<5)
 
+// force slot 0x04 for CTRNAND padgen
+#define PG_FORCESLOT4 (1<<0)
+
 // options for NAND backup & restore
 #define NB_MINSIZE  (1<<10)
 #define NR_NOCHECKS (1<<11)
