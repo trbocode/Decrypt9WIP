@@ -20,7 +20,7 @@ typedef struct {
 } __attribute__((packed)) AesKeyInfo;
 
 u32 SetupCommonKeyY0x3D(u32 commonKeyIndex);
-u32 SetupSd0x34KeyY(bool from_nand, u8* movable_key);
+u32 SetupSdKeyY0x34(bool from_nand, u8* movable_key);
 u32 SetupSector0x96Key0x11(void);
 u32 SetupTwlKey0x03(void);
 u32 SetupCtrNandKeyY0x05(void);

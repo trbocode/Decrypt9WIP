@@ -286,8 +286,7 @@ u32 NcchPadgen(u32 param)
             u8 sha256sum[32];
             sha_quick(sha256sum, keydata, 32, SHA256_MODE);
             memcpy(padInfo.keyY, sha256sum, 16);
-        }
-        else {
+        } else {
             memcpy(padInfo.keyY, info->entries[i].keyY, 16);
         }
         
@@ -323,7 +322,7 @@ u32 SdPadgen(u32 param)
     SdInfo *info = (SdInfo*) 0x20316000;
 
     // setup AES key from SD
-    SetupSd0x34KeyY(false, NULL);
+    SetupSdKeyY0x34(false, NULL);
     
     if (!DebugFileOpen("SDinfo.bin"))
         return 1;
@@ -362,7 +361,7 @@ u32 SdPadgenDirect(u32 param)
     char basepath[256];
     u8 movable_keyY[16];
     
-    if (SetupSd0x34KeyY(true, movable_keyY) != 0)
+    if (SetupSdKeyY0x34(true, movable_keyY) != 0)
         return 1; // movable.sed has to be present in NAND
     
     Debug("");
@@ -1118,7 +1117,7 @@ u32 CryptSdFiles(u32 param)
     plen = strnlen(batch_dir, 128);
     
     // setup AES key from SD
-    SetupSd0x34KeyY(false, NULL);
+    SetupSdKeyY0x34(false, NULL);
     
     // main processing loop
     for (u32 s = 0; subpaths[s] != NULL; s++) {
@@ -1177,7 +1176,7 @@ u32 DecryptSdFilesDirect(u32 param)
     }
     DirClose();
     
-    if (SetupSd0x34KeyY(true, movable_keyY) != 0)
+    if (SetupSdKeyY0x34(true, movable_keyY) != 0)
         return 1; // movable.sed has to be present in NAND
     
     Debug("");

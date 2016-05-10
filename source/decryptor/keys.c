@@ -70,7 +70,7 @@ u32 SetupCommonKeyY0x3D(u32 commonKeyIndex)
     return 0;
 }
 
-u32 SetupSd0x34KeyY(bool from_nand, u8* movable_key) // setup the SD keyY 0x34
+u32 SetupSdKeyY0x34(bool from_nand, u8* movable_key) // setup the SD keyY 0x34
 {
     u8 movable_sed[0x200];
     

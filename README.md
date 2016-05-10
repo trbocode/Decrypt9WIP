@@ -1,5 +1,5 @@
 # Decrypt9
-_Open source decryption tools for the Nintendo 3DS console_
+_Multipurpose content dumper and decryptor for the Nintendo 3DS_
 
 ## Decrypt9 WIP (work-in-progress) by d0k3 
 
