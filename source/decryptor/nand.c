@@ -5,6 +5,7 @@
 #include "decryptor/aes.h"
 #include "decryptor/sha.h"
 #include "decryptor/decryptor.h"
+#include "decryptor/keys.h"
 #include "decryptor/nand.h"
 #include "fatfs/sdmmc.h"
 
@@ -698,6 +699,36 @@ u32 DecryptNandPartition(u32 param)
     return DecryptNandToFile(filename, p_info->offset, p_info->size, p_info);
 }
 
+u32 DecryptSector0x96(u32 param)
+{
+    (void) (param); // param is unused here
+    u8* sector0x96 = BUFFER_ADDRESS;
+    CryptBufferInfo info = {.keyslot = 0x11, .setKeyY = 0, .size = 0x200, .buffer = sector0x96, .mode = AES_CNT_EBC_DECRYPT_MODE};
+    char filename[64];
+    
+    // setup key 0x11
+    if (SetupSector0x96Key0x11() != 0)
+        return 1;
+    
+    // read & decrypt encrypted sector0x96
+    if (ReadNandSectors(0x96, 1, sector0x96) != 0) {
+        Debug("%sNAND read error", (emunand_header) ? "Emu" : "Sys");
+        return 1;
+    }
+    CryptBuffer(&info);
+    
+    // write to file
+    if (OutputFileNameSelector(filename, "sector0x96.bin", NULL) != 0)
+        return 1;
+    if (!DebugFileCreate(filename, true))
+        return 1;
+    if (!DebugFileWrite(sector0x96, 0x200, 0))
+        return 1;
+    FileClose();
+    
+    return 0;
+}
+
 u32 EncryptMemToNand(u8* buffer, u32 offset, u32 size, PartitionInfo* partition)
 {
     CryptBufferInfo info = {.keyslot = partition->keyslot, .setKeyY = 0, .size = size, .buffer = buffer, .mode = partition->mode};
@@ -884,6 +915,35 @@ u32 InjectNandPartition(u32 param)
     }
     
     return EncryptFileToNand(filename, p_info->offset, p_info->size, p_info);
+}
+
+u32 InjectSector0x96(u32 param)
+{
+    u8* sector0x96 = BUFFER_ADDRESS;
+    CryptBufferInfo info = {.keyslot = 0x11, .setKeyY = 0, .size = 0x200, .buffer = sector0x96, .mode = AES_CNT_EBC_ENCRYPT_MODE};
+    char filename[64];
+    
+    if (!(param & N_NANDWRITE)) // developer screwup protection
+        return 1;
+    
+    // read from file
+    if (InputFileNameSelector(filename, "sector0x96.bin", NULL, NULL, 0, 0x200, false) != 0)
+        return 1;
+    if (FileGetData(filename, sector0x96, 0x200, 0) != 0x200)
+        return 1;
+        
+    // setup key 0x11
+    if (SetupSector0x96Key0x11() != 0)
+        return 1;
+    
+    // encrypt & write encrypted sector0x96
+    CryptBuffer(&info);
+    if (WriteNandSectors(0x96, 1, sector0x96) != 0) {
+        Debug("%sNAND write error", (emunand_header) ? "Emu" : "Sys");
+        return 1;
+    }
+    
+    return 0;
 }
 
 u32 ValidateNandDump(u32 param)

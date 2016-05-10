@@ -74,6 +74,26 @@ u32 SetupSd0x34KeyY(bool from_nand, u8* movable_key) // setup the SD keyY 0x34
     return 0;
 }
 
+u32 SetupSector0x96Key0x11(void) // setup the sector0x96 key from OTP
+{
+    u8 otp[0x108];
+    u8 sha256sum[32];
+    
+    // read otp.bin
+    if ((FileGetData("otp.bin", otp, 0x100, 0) != 0x100) && (FileGetData("otp0x108.bin", otp, 0x100, 0) != 0x100)) {
+        Debug("otp.bin: not found or corrupted");
+        return 1;
+    }
+    
+    // set keyX / keyY from OTP SHA-256
+    sha_quick(sha256sum, otp, 0x90, SHA256_MODE);
+    setup_aeskeyX(0x11, sha256sum);
+    setup_aeskeyY(0x11, sha256sum + 16);
+    use_aeskey(0x11);
+    
+    return 0;
+}
+
 u32 SetupTwlKey0x03(void) // setup the TWLNAND key 0x03
 {
     // check if already loaded
