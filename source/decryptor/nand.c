@@ -919,9 +919,20 @@ u32 InjectNandPartition(u32 param)
 
 u32 InjectSector0x96(u32 param)
 {
+    // from: https://github.com/AuroraWright/SafeA9LHInstaller/blob/master/source/installer.c#L9-L17
+    static const u8 sectorHash[0x20] = {
+        0x82, 0xF2, 0x73, 0x0D, 0x2C, 0x2D, 0xA3, 0xF3, 0x01, 0x65, 0xF9, 0x87, 0xFD, 0xCC, 0xAC, 0x5C,
+        0xBA, 0xB2, 0x4B, 0x4E, 0x5F, 0x65, 0xC9, 0x81, 0xCD, 0x7B, 0xE6, 0xF4, 0x38, 0xE6, 0xD9, 0xD3
+    };
+    static const u8 sectorA9lhHash[0x20] = {
+        0x89, 0x72, 0xAD, 0x96, 0x42, 0x6F, 0x8A, 0x9B, 0x3E, 0xEB, 0x4C, 0xC9, 0xCC, 0xEF, 0x0E, 0xF4,
+        0x5B, 0x91, 0x91, 0xFB, 0xEE, 0xFC, 0x7E, 0x30, 0xB4, 0x8E, 0xE3, 0x1A, 0x3E, 0xD0, 0x42, 0x3A
+    };
+
     u8* sector0x96 = BUFFER_ADDRESS;
     CryptBufferInfo info = {.keyslot = 0x11, .setKeyY = 0, .size = 0x200, .buffer = sector0x96, .mode = AES_CNT_EBC_ENCRYPT_MODE};
     char filename[64];
+    u8 sha256sum[32];
     
     if (!(param & N_NANDWRITE)) // developer screwup protection
         return 1;
@@ -931,6 +942,25 @@ u32 InjectSector0x96(u32 param)
         return 1;
     if (FileGetData(filename, sector0x96, 0x200, 0) != 0x200)
         return 1;
+    
+    // check loaded sector
+    sha_quick(sha256sum, sector0x96, 0x200, SHA256_MODE);
+    if (memcmp(sha256sum, sectorHash, 32) == 0) {
+        Debug("Detected: standard sector0x96");
+    } else if (memcmp(sha256sum, sectorA9lhHash, 32) == 0) {
+        Debug("Detected: a9lh sector0x96");
+    } else {
+        Debug("Unknown content, press <A> to inject");
+        while (true) {
+            u32 pad_state = InputWait();
+            if (pad_state & BUTTON_A) {
+                break;
+            } else if (pad_state & BUTTON_B) {
+                Debug("(cancelled by user)");
+                return 1;
+            }
+        }
+    }
         
     // setup key 0x11
     if (SetupSector0x96Key0x11() != 0)
