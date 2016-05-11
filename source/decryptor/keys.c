@@ -106,19 +106,45 @@ u32 SetupSdKeyY0x34(bool from_nand, u8* movable_key) // setup the SD keyY 0x34
 
 u32 SetupSector0x96Key0x11(void) // setup the sector0x96 key from OTP
 {
-    u8 otp[0x108];
-    u8 sha256sum[32];
+    static u8 otpsha256[32];
+    static int key_setup = 0; // 0 -> not done / 1 -> success / -1 -> failed
     
-    // read otp.bin
-    if ((FileGetData("otp.bin", otp, 0x100, 0) != 0x100) && (FileGetData("otp0x108.bin", otp, 0x100, 0) != 0x100)) {
-        Debug("otp.bin: not found or corrupted");
+    // on a9lh this MUST be run before accessing the SHA register in any other way
+    if (key_setup == 0) {
+        u8 currsha256[32];
+        u8 otp[0x100];
+        bool verified = false;
+
+        // store the current SHA256 from register
+        memcpy(currsha256, (void*)REG_SHAHASH, 32);
+        
+        // read otp.bin
+        if ((FileGetData("otp.bin", otp, 0x100, 0) != 0x100) && (FileGetData("otp0x108.bin", otp, 0x100, 0) != 0x100)) {
+            if ((*(u32*) 0x101401C0) != 0) { // if not on a9lh
+                Debug("sector0x96 Key: otp.bin not found");
+                key_setup = -1;
+                return 1;
+            } else {
+                memcpy(otpsha256, currsha256, 32); // use the hash register for a9lh
+            }
+        } else {
+            // calculate the SHA, compare
+            sha_quick(otpsha256, otp, 0x90, SHA256_MODE);
+            verified = (memcmp(otpsha256, currsha256, 32) == 0);
+        }
+        
+        Debug("sector0x96 Key: loaded%s, stored", verified ? ", verified" : "");
+        key_setup = 1;
+    }
+    
+    if (key_setup != 1) {
+        Debug("sector0x96 Key: not loaded");
         return 1;
     }
     
-    // set keyX / keyY from OTP SHA-256
-    sha_quick(sha256sum, otp, 0x90, SHA256_MODE);
-    setup_aeskeyX(0x11, sha256sum);
-    setup_aeskeyY(0x11, sha256sum + 16);
+    // setup the key
+    setup_aeskeyX(0x11, otpsha256);
+    setup_aeskeyY(0x11, otpsha256 + 16);
     use_aeskey(0x11);
     
     return 0;
