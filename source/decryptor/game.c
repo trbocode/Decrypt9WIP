@@ -861,7 +861,7 @@ u32 CryptCia(const char* filename, u8* ncch_crypt, bool cia_encrypt, bool cxi_on
         n_processed++;
     }
     
-    if (ncch_crypt) {
+    if (ncch_crypt && (result == 0)) {
         Debug("Pass #2: NCCH decryption...");
         next_offset = offset_content;
         for (u32 i = 0; i < content_count; i++) {
@@ -884,13 +884,13 @@ u32 CryptCia(const char* filename, u8* ncch_crypt, bool cia_encrypt, bool cxi_on
                     continue;
                 }
             } else if (ncch_state == 1) {
-                Debug("Failed!");
+                Debug("Failed decrypting NCCH!");
                 result = 1;
                 continue;
             }
             n_processed++;
         }
-        if (!untouched) {
+        if (!untouched && (result == 0)) {
             // recalculate content info hashes
             Debug("Recalculating TMD hashes...");
             for (u32 i = 0, kc = 0; i < 64 && kc < content_count; i++) {
