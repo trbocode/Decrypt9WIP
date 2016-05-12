@@ -17,13 +17,13 @@ typedef struct {
 
 typedef struct {
     AesKeyDesc desc;     // slot, type, id
-    u8   isPandaKey;     // 1 if for Panda unit, 0 otherwise
+    u8   isDevkitKey;     // 1 if for DevKit unit, 0 otherwise
     u8   keySha256[32];  // SHA-256 of the key
 } __attribute__((packed)) AesKeyHashInfo;
 
 typedef struct {
     u8   slot;           // keyslot, 0x00...0x39
-    u8   isPandaKey;     // 1 if for Panda unit, 0 otherwise
+    u8   isDevkitKey;     // 1 if for DevKit unit, 0 otherwise
     u8   sample[16];     // sample data, encoded with src = keyY = ctr = { 0 }
 } __attribute__((packed)) AesNcchSampleInfo;
 
@@ -52,7 +52,7 @@ u32 SetupCommonKeyY0x3D(u32 commonKeyIndex)
         {0x5E, 0x66, 0x99, 0x8A, 0xB4, 0xE8, 0x93, 0x16, 0x06, 0x85, 0x0F, 0xD7, 0xA1, 0x6D, 0xD7, 0x55} , // 5
     };
     // From https://github.com/profi200/Project_CTR/blob/master/makerom/pki/dev.h#L21
-    static const u8 common_key_panda[6][16] = {
+    static const u8 common_key_devkit[6][16] = {
         {0x55, 0xA3, 0xF8, 0x72, 0xBD, 0xC8, 0x0C, 0x55, 0x5A, 0x65, 0x43, 0x81, 0x13, 0x9E, 0x15, 0x3B} , // 0 - eShop Titles
         {0x44, 0x34, 0xED, 0x14, 0x82, 0x0C, 0xA1, 0xEB, 0xAB, 0x82, 0xC1, 0x6E, 0x7B, 0xEF, 0x0C, 0x25} , // 1 - System Titles
         {0xF6, 0x2E, 0x3F, 0x95, 0x8E, 0x28, 0xA2, 0x1F, 0x28, 0x9E, 0xEC, 0x71, 0xA8, 0x66, 0x29, 0xDC} , // 2
@@ -63,8 +63,8 @@ u32 SetupCommonKeyY0x3D(u32 commonKeyIndex)
     
     if (commonKeyIndex >= 6)
         return 1;
-    if (GetUnitKeysType() == KEYS_PANDA)
-        setup_aeskey(0x3D, (void*) common_key_panda[commonKeyIndex]);
+    if (GetUnitKeysType() == KEYS_DEVKIT)
+        setup_aeskey(0x3D, (void*) common_key_devkit[commonKeyIndex]);
     else
         setup_aeskeyY(0x3D, (void*) common_keyy[commonKeyIndex]);
     use_aeskey(0x3D);
@@ -241,7 +241,7 @@ u32 GetUnitKeysType(void)
 {
     static const u8 slot0x2CSampleRetail[16] = {
         0xBC, 0xC4, 0x16, 0x2C, 0x2A, 0x06, 0x91, 0xEE, 0x47, 0x18, 0x86, 0xB8, 0xEB, 0x2F, 0xB5, 0x48 };
-    static const u8 slot0x2CSamplePanda[16] = {
+    static const u8 slot0x2CSampleDevkit[16] = {
         0x29, 0xB5, 0x5D, 0x9F, 0x61, 0xAC, 0xD2, 0x28, 0x22, 0x23, 0xFB, 0x57, 0xDD, 0x50, 0x8A, 0xF5 };
     u8 sample[16] = { 0 };
     CryptBufferInfo info = {.keyslot = 0x2C, .setKeyY = 1, .buffer = sample, .size = 16, .mode = AES_CNT_CTRNAND_MODE};
@@ -252,8 +252,8 @@ u32 GetUnitKeysType(void)
     
     if (memcmp(sample, slot0x2CSampleRetail, 16) == 0) {
         return KEYS_RETAIL;
-    } else if (memcmp(sample, slot0x2CSamplePanda, 16) == 0) {
-        return KEYS_PANDA;
+    } else if (memcmp(sample, slot0x2CSampleDevkit, 16) == 0) {
+        return KEYS_DEVKIT;
     }
         
     return KEYS_UNKNOWN;
@@ -341,7 +341,7 @@ u32 LoadKeyFromFile(u32 keyslot, char type, char* id)
             continue;
         if ((!id && keyHashes[p].desc.id[0]) || (id && strncmp(id, keyHashes[p].desc.id, 10) != 0))
             continue;
-        if ((bool) keyHashes[p].isPandaKey != (GetUnitKeysType() == KEYS_PANDA))
+        if ((bool) keyHashes[p].isDevkitKey != (GetUnitKeysType() == KEYS_DEVKIT))
             continue;
         if (memcmp(keySha256, keyHashes[p].keySha256, 32) == 0) {
             verified = true;
@@ -382,7 +382,7 @@ u32 CheckKeySlot(u32 keyslot, char type)
          { 0xF3, 0x6F, 0x84, 0x7E, 0x59, 0x43, 0x6E, 0xD5, 0xA0, 0x40, 0x4C, 0x71, 0x19, 0xED, 0xF7, 0x0A } },
         { 0x25, 0, // Retail NCCH 7x
          { 0x34, 0x7D, 0x07, 0x48, 0xAE, 0x5D, 0xFB, 0xB0, 0xF5, 0x86, 0xD6, 0xB5, 0x14, 0x65, 0xF1, 0xFF } },
-        { 0x25, 1, // Panda NCCH 7x
+        { 0x25, 1, // DevKit NCCH 7x
          { 0xBC, 0x83, 0x7C, 0xC9, 0x99, 0xC8, 0x80, 0x9E, 0x8A, 0xDE, 0x4A, 0xFA, 0xAA, 0x72, 0x08, 0x28 } }
     };
     u64* state = (type == 'X') ? &keyXState : (type == 'Y') ? &keyYState : &keyState;
@@ -399,7 +399,7 @@ u32 CheckKeySlot(u32 keyslot, char type)
     for (u32 p = 0; (type == 'X') && (p < sizeof(keyNcchSamples) / sizeof(AesNcchSampleInfo)); p++) {
         if (keyNcchSamples[p].slot != keyslot) // only for keyslots in the keyNcchSamples table!
             continue;
-        if ((bool) keyNcchSamples[p].isPandaKey != (GetUnitKeysType() == KEYS_PANDA))
+        if ((bool) keyNcchSamples[p].isDevkitKey != (GetUnitKeysType() == KEYS_DEVKIT))
             continue;
         u8 sample[16] = { 0 };
         CryptBufferInfo info = {.keyslot = keyslot, .setKeyY = 1, .buffer = sample, .size = 16, .mode = AES_CNT_CTRNAND_MODE};
@@ -501,7 +501,7 @@ u32 BuildKeyDb(u32 param)
             if (id)
                 strncpy(info->id, id, 10);
             memset(info->reserved, 0x00, 2);
-            info->isPandaKey = 0; // <- see about this later
+            info->isDevkitKey = 0; // <- see about this later
             info->isEncrypted = 0;
             keys_found++;
             n_keys++;

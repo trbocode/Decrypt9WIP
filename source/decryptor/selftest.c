@@ -181,7 +181,7 @@ u32 SystemInfo(u32 param)
     const char* emunandstr[] = { "not ready", "not set up", "GW EmuNAND", "RedNAND" };
     const char* regionstr[] = { "JPN", "USA", "EUR", "AUS", "CHN", "KOR", "TWN", "UNK" };
     PartitionInfo* ctrnand_info = GetPartitionInfo(P_CTRNAND);
-    bool isPanda = (GetUnitKeysType() == KEYS_PANDA);
+    bool isDevkit = (GetUnitKeysType() == KEYS_DEVKIT);
     bool isN3ds = (GetUnitPlatform() == PLATFORM_N3DS);
     bool isA9lh = ((*(u32*) 0x101401C0) == 0);
     char sd_base_id0[64]; // fill this later
@@ -228,7 +228,7 @@ u32 SystemInfo(u32 param)
         (unsigned int) getle32(sdcid+8), (unsigned int) getle32(sdcid+12));
     
     // NAND stuff output here
-    Debug("NAND type / size: %s %s / %lluMB", (isPanda) ? "Panda" : "Retail", (isN3ds) ? "N3DS" : "O3DS", nand_size / 0x100000);
+    Debug("NAND type / size: %s %s / %lluMB", (isDevkit) ? "Devkit" : "Retail", (isN3ds) ? "N3DS" : "O3DS", nand_size / 0x100000);
     Debug("Serial / region: %.15s / %s", (char*) serial, (*region < 7) ? regionstr[*region] : regionstr[7]);
     Debug("NAND CID: %08X%08X%08X%08X", getbe32(nandcid+0), getbe32(nandcid+4), getbe32(nandcid+8), getbe32(nandcid+12));
     Debug("TWL customer ID: %08X%08X", getbe32(twlcustid+0), getbe32(twlcustid+4));
