@@ -239,24 +239,28 @@ u32 SetupCtrNandKeyY0x05(void) // setup the CTRNAND keyY 0x05
 
 u32 GetUnitKeysType(void)
 {
-    static const u8 slot0x2CSampleRetail[16] = {
-        0xBC, 0xC4, 0x16, 0x2C, 0x2A, 0x06, 0x91, 0xEE, 0x47, 0x18, 0x86, 0xB8, 0xEB, 0x2F, 0xB5, 0x48 };
-    static const u8 slot0x2CSampleDevkit[16] = {
-        0x29, 0xB5, 0x5D, 0x9F, 0x61, 0xAC, 0xD2, 0x28, 0x22, 0x23, 0xFB, 0x57, 0xDD, 0x50, 0x8A, 0xF5 };
-    u8 sample[16] = { 0 };
-    CryptBufferInfo info = {.keyslot = 0x2C, .setKeyY = 1, .buffer = sample, .size = 16, .mode = AES_CNT_CTRNAND_MODE};
-    memset(info.ctr, 0x00, 16);
-    memset(info.keyY, 0x00, 16);
-    memset(info.buffer, 0x00, 16);
-    CryptBuffer(&info);
+    static u32 keys_type = KEYS_UNKNOWN;
     
-    if (memcmp(sample, slot0x2CSampleRetail, 16) == 0) {
-        return KEYS_RETAIL;
-    } else if (memcmp(sample, slot0x2CSampleDevkit, 16) == 0) {
-        return KEYS_DEVKIT;
+    if (keys_type == KEYS_UNKNOWN) {
+        static const u8 slot0x2CSampleRetail[16] = {
+            0xBC, 0xC4, 0x16, 0x2C, 0x2A, 0x06, 0x91, 0xEE, 0x47, 0x18, 0x86, 0xB8, 0xEB, 0x2F, 0xB5, 0x48 };
+        static const u8 slot0x2CSampleDevkit[16] = {
+            0x29, 0xB5, 0x5D, 0x9F, 0x61, 0xAC, 0xD2, 0x28, 0x22, 0x23, 0xFB, 0x57, 0xDD, 0x50, 0x8A, 0xF5 };
+        u8 sample[16] = { 0 };
+        CryptBufferInfo info = {.keyslot = 0x2C, .setKeyY = 1, .buffer = sample, .size = 16, .mode = AES_CNT_CTRNAND_MODE};
+        memset(info.ctr, 0x00, 16);
+        memset(info.keyY, 0x00, 16);
+        memset(info.buffer, 0x00, 16);
+        CryptBuffer(&info);
+        
+        if (memcmp(sample, slot0x2CSampleRetail, 16) == 0) {
+            keys_type = KEYS_RETAIL;
+        } else if (memcmp(sample, slot0x2CSampleDevkit, 16) == 0) {
+            keys_type = KEYS_DEVKIT;
+        }
     }
         
-    return KEYS_UNKNOWN;
+    return keys_type;
 }
 
 u32 LoadKeyFromFile(u32 keyslot, char type, char* id)
