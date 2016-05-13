@@ -284,10 +284,12 @@ u32 InitializeD9()
             errorlevel = 2; // N3DS CTRNAND KeyY
         if (LoadKeyFromFile(0x25, 'X', NULL)) // NCCH 7x KeyX
             errorlevel = (errorlevel < 1) ? 1 : errorlevel;
-        if (LoadKeyFromFile(0x18, 'X', NULL)) // NCCH Secure3 KeyX
-            errorlevel = (errorlevel < 1) ? 1 : errorlevel;
-        if (LoadKeyFromFile(0x1B, 'X', NULL)) // NCCH Secure4 KeyX
-            errorlevel = (errorlevel < 1) ? 1 : errorlevel;
+        if (GetUnitKeysType() != KEYS_DEVKIT) { // don't even try 0x18 / 0x1B on devkits
+            if (LoadKeyFromFile(0x18, 'X', NULL)) // NCCH Secure3 KeyX
+                errorlevel = (errorlevel < 1) ? 1 : errorlevel;
+            if (LoadKeyFromFile(0x1B, 'X', NULL)) // NCCH Secure4 KeyX
+                errorlevel = (errorlevel < 1) ? 1 : errorlevel;
+        }
         Debug("Finalizing Initialization...");
         RemainingStorageSpace();
     } else {
