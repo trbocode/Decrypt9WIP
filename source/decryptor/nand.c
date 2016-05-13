@@ -196,6 +196,44 @@ static u32 CheckNandHeader(u8* header) {
     return NAND_HDR_UNK;
 }
 
+static u32 CheckFirmSize(const u8* firm, u32 f_size) {
+    // returns firm size if okay, 0 otherwise
+    u32 f_actualsize = 0;
+    if (f_size < 0x100)
+        return 0;
+    for (u32 section = 0; section < 4; section++) {
+        u32 offset = getle32(firm + 0x40 + 0x00 + (0x30*section));
+        u32 size = getle32(firm + 0x40 + 0x08 + (0x30*section));
+        if (!size)
+            continue;
+        if (offset < f_actualsize) {
+            Debug("FIRM sections are overlapping", section);
+            return 0;
+        }
+        f_actualsize = offset + size;
+        if (f_actualsize > 0x400000) {
+            Debug("FIRM size exceeds partition", section);
+            return 0;
+        }
+        // if size <= 0x200, only check size
+        if (f_size > 0x200) { // includes SHA-256 check
+            if (f_actualsize > f_size) {
+                Debug("FIRM section%u out of bounds", section);
+                return 0;
+            }
+            u8 l_sha256[32];
+            const u8* sha256 = firm + 0x40 + 0x10 + (0x30*section);
+            sha_quick(l_sha256, firm + offset, size, SHA256_MODE);
+            if (memcmp(l_sha256, sha256, 32) != 0) {
+                Debug("FIRM section%u hash mismatch", section);
+                return 0;
+            }
+        }
+    }
+    
+    return f_actualsize;
+}
+
 static u32 CheckNandDumpIntegrity(const char* path) {
     u8 header[0x200];
     u32 nand_hdr_type = NAND_HDR_UNK;
@@ -247,50 +285,37 @@ static u32 CheckNandDumpIntegrity(const char* path) {
     }
     
     // firm hash check
-    u32 firm_corruption = 0;
-    for (u32 f_num = 0; f_num < 2; f_num++) { 
+    for (u32 f_num = 0; f_num < 2; f_num++) {
+        u8* firm = BUFFER_ADDRESS;
         PartitionInfo* partition = partitions + 3 + f_num;
-        CryptBufferInfo info = {.keyslot = partition->keyslot, .setKeyY = 0, .size = 0x200, .buffer = header, .mode = partition->mode};
-        if ((GetNandCtr(info.ctr, partition->offset) != 0) || (!DebugFileRead(header, 0x200, partition->offset))) {
+        CryptBufferInfo info = {.keyslot = partition->keyslot, .setKeyY = 0, .size = 0x200, .buffer = firm, .mode = partition->mode};
+        if ((GetNandCtr(info.ctr, partition->offset) != 0) || (!DebugFileRead(firm, 0x200, partition->offset))) {
             FileClose();
             return 1;
         }
         CryptBuffer(&info);
-        for (u32 section = 0; section < 4; section++) {
-            u8 l_sha256[32];
-            u32 offset = partition->offset + getle32(header + 0x40 + 0x00 + (0x30*section));
-            u32 size = getle32(header + 0x40 + 0x08 + (0x30*section));
-            u8* sha256 = header + 0x40 + 0x10 + (0x30*section);
-            if (!size)
-                continue;
-            sha_init(SHA256_MODE);
-            for (u32 i = 0; i < size; i += BUFFER_MAX_SIZE) {
-                u8* buffer = BUFFER_ADDRESS;
-                u32 read_bytes = min(BUFFER_MAX_SIZE, (size - i));
-                info.size = read_bytes;
-                info.buffer = buffer;
-                GetNandCtr(info.ctr, offset + i);
-                FileRead(buffer, read_bytes, offset + i);
-                CryptBuffer(&info);
-                sha_update(buffer, read_bytes);
+        u32 firm_size = CheckFirmSize(firm, 0x200); // check the first 0x200 byte to get actual size
+        if (firm_size != 0) { // check the remaining bytes
+            info.buffer = firm + 0x200;
+            info.size = firm_size - 0x200;
+            if ((!DebugFileRead(firm + 0x200, firm_size - 0x200, partition->offset + 0x200))) {
+                FileClose();
+                return 1;
             }
-            sha_get(l_sha256);
-            if (memcmp(l_sha256, sha256, 32) != 0) {
-                Debug("FIRM%u section%u hash mismatch", f_num, section);
-                firm_corruption |= (1<<f_num);
+            CryptBuffer(&info);
+            firm_size = CheckFirmSize(firm, firm_size);
+        }
+        
+        if (firm_size == 0) {
+            if ((f_num == 0) && ((*(vu32*) 0x101401C0) == 0)) {
+                Debug("FIRM0 is corrupt (non critical)");
+                Debug("(this is expected with a9lh)");
+            } else {
+                Debug("FIRM%i is corrupt", f_num);
+                FileClose();
+                return 1;
             }
         }
-    }
-    if ((firm_corruption == 0x1) && ((*(vu32*) 0x101401C0) == 0)) {
-        Debug("FIRM0 is corrupt (non critical)");
-        Debug("(this is expected with a9lh)");
-    } else if (firm_corruption) {
-        if (firm_corruption == 0x3)
-            Debug("FIRM0 and FIRM1 are corrupt");
-        else
-            Debug("FIRM%i is corrupt", (firm_corruption == 0x2) ? 1 : 0);
-        FileClose();
-        return 1;
     }
     
     FileClose();
@@ -872,8 +897,9 @@ u32 RestoreNand(u32 param)
 u32 InjectNandPartition(u32 param)
 {
     PartitionInfo* p_info = NULL;
+    u8 header[NAND_SECTOR_SIZE];
     char filename[64];
-    u8 magic[NAND_SECTOR_SIZE];
+    bool is_firm = param & (P_FIRM0|P_FIRM1);
     
     if (!(param & N_NANDWRITE)) // developer screwup protection
         return 1;
@@ -890,28 +916,38 @@ u32 InjectNandPartition(u32 param)
     Debug("Encrypting & Injecting %s, size (MB): %u", p_info->name, p_info->size / (1024 * 1024));
     // User file select
     if (InputFileNameSelector(filename, p_info->name, "bin",
-        p_info->magic, (p_info->magic[0] != 0xFF) ? 8 : 0, p_info->size, false) != 0)
+        p_info->magic, (p_info->magic[0] != 0xFF) ? 8 : 0,
+        is_firm ? 0x200 : p_info->size, is_firm ? true : false) != 0)
         return 1;
     
     // Encryption check
-    if (DecryptNandToMem(magic, p_info->offset, 16, p_info) != 0)
+    if (DecryptNandToMem(header, p_info->offset, 16, p_info) != 0)
         return 1;
-    if ((p_info->magic[0] != 0xFF) && (memcmp(p_info->magic, magic, 8) != 0)) {
+    if ((p_info->magic[0] != 0xFF) && (memcmp(p_info->magic, header, 8) != 0)) {
         Debug("Corrupt partition or decryption error");
         if (p_info->keyslot == 0x05)
             Debug("(or slot0x05keyY not set up)");
         return 1;
     }
     
-    // File check
-    if (FileGetData(filename, magic, 8, 0) == 8) {
-        if ((p_info->magic[0] != 0xFF) && (memcmp(p_info->magic, magic, 8) != 0)) {
-            Debug("Bad file content, won't inject");
+    // FIRM check
+    if (is_firm) {
+        if (!FileOpen(filename))
+            return 1; // this should open without problem
+        if (!DebugFileRead(header, 0x200, 0))
+            return 1; // size was already checked
+        u32 file_size = FileGetSize();
+        u32 firm_size = CheckFirmSize(header, 0x200);
+        FileClose();
+        if (!firm_size || (firm_size > file_size)) {
+            Debug("FIRM is corrupt, won't inject");
             return 1;
+        } else if (file_size > p_info->size) {
+            Debug("File has bad size, won't inject");
+            return 1;
+        } else if (file_size < p_info->size) {
+            return EncryptFileToNand(filename, p_info->offset, file_size, p_info);
         }
-    } else {
-        Debug("File is too small, won't inject");
-        return 1;
     }
     
     return EncryptFileToNand(filename, p_info->offset, p_info->size, p_info);
