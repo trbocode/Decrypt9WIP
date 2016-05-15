@@ -728,7 +728,7 @@ u32 DecryptSector0x96(u32 param)
 {
     (void) (param); // param is unused here
     u8* sector0x96 = BUFFER_ADDRESS;
-    CryptBufferInfo info = {.keyslot = 0x11, .setKeyY = 0, .size = 0x200, .buffer = sector0x96, .mode = AES_CNT_EBC_DECRYPT_MODE};
+    CryptBufferInfo info = {.keyslot = 0x11, .setKeyY = 0, .size = 0x200, .buffer = sector0x96, .mode = AES_CNT_ECB_DECRYPT_MODE};
     char filename[64];
     
     // setup key 0x11
@@ -966,7 +966,7 @@ u32 InjectSector0x96(u32 param)
     };
 
     u8* sector0x96 = BUFFER_ADDRESS;
-    CryptBufferInfo info = {.keyslot = 0x11, .setKeyY = 0, .size = 0x200, .buffer = sector0x96, .mode = AES_CNT_EBC_ENCRYPT_MODE};
+    CryptBufferInfo info = {.keyslot = 0x11, .setKeyY = 0, .size = 0x200, .buffer = sector0x96, .mode = AES_CNT_ECB_ENCRYPT_MODE};
     char filename[64];
     u8 sha256sum[32];
     
