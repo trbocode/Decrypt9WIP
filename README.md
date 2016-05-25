@@ -158,7 +158,7 @@ This category includes special features which allow you to test and manage Decry
 * __De/Encrypt Key Database__: By default, the `aeskeydb.bin` created in Decrypt9 is encrypted, and the keys in it are not readable via a Hex Editor. Use this to either decrypt an encrypted database, or to encrypt a decrypted one. Note that Decrypt9 can load keys from both. 
 
 ## License
-You may use this under the terms of the GNE General Public License GPL v2 or under the terms of any later revisions of the GPL. Refer to the provided `LICENSE.txt` file for further information.
+You may use this under the terms of the GNU General Public License GPL v2 or under the terms of any later revisions of the GPL. Refer to the provided `LICENSE.txt` file for further information.
 
 ## Credits by Archshift
 * Roxas75 for the method of ARM9 code injection
