@@ -115,7 +115,7 @@ MenuInfo menu[] =
         }
     },
     {
-        "Partition Dump... (SysNAND)", 7, // ID 2
+        "Partition Dump... (SysNAND)", 8, // ID 2
         {
             { "Dump TWLN Partition",          &DecryptNandPartition, P_TWLN },
             { "Dump TWLP Partition",          &DecryptNandPartition, P_TWLP },
@@ -123,11 +123,12 @@ MenuInfo menu[] =
             { "Dump FIRM0 Partition",         &DecryptNandPartition, P_FIRM0 },
             { "Dump FIRM1 Partition",         &DecryptNandPartition, P_FIRM1 },
             { "Dump CTRNAND Partition",       &DecryptNandPartition, P_CTRNAND },
-            { "Dump Sector0x96",              &DecryptSector0x96,    0 }
+            { "Dump Sector 0x96",             &DecryptSector0x96,    0 },
+            { "Dump NAND Header",             &DumpNandHeader,       0 }
         }
     },
     {
-        "Partition Dump...(EmuNAND)", 7, // ID 3
+        "Partition Dump...(EmuNAND)", 8, // ID 3
         {
             { "Dump TWLN Partition",          &DecryptNandPartition, N_EMUNAND | P_TWLN },
             { "Dump TWLP Partition",          &DecryptNandPartition, N_EMUNAND | P_TWLP },
@@ -135,11 +136,12 @@ MenuInfo menu[] =
             { "Dump FIRM0 Partition",         &DecryptNandPartition, N_EMUNAND | P_FIRM0 },
             { "Dump FIRM1 Partition",         &DecryptNandPartition, N_EMUNAND | P_FIRM1 },
             { "Dump CTRNAND Partition",       &DecryptNandPartition, N_EMUNAND | P_CTRNAND },
-            { "Dump Sector0x96",              &DecryptSector0x96,    N_EMUNAND }
+            { "Dump Sector 0x96",             &DecryptSector0x96,    N_EMUNAND },
+            { "Dump NAND Header",             &DumpNandHeader,       N_EMUNAND }
         }
     },
     {
-        "Partition Inject... (SysNAND)", 7, // ID 4
+        "Partition Inject... (SysNAND)", 8, // ID 4
         {
             { "Inject TWLN Partition",        &InjectNandPartition, N_NANDWRITE | P_TWLN },
             { "Inject TWLP Partition",        &InjectNandPartition, N_NANDWRITE | P_TWLP },
@@ -147,11 +149,12 @@ MenuInfo menu[] =
             { "Inject FIRM0 Partition",       &InjectNandPartition, N_NANDWRITE | P_FIRM0 },
             { "Inject FIRM1 Partition",       &InjectNandPartition, N_NANDWRITE | P_FIRM1 },
             { "Inject CTRNAND Partition",     &InjectNandPartition, N_NANDWRITE | P_CTRNAND },
-            { "Inject Sector0x96",            &InjectSector0x96,    N_NANDWRITE }
+            { "Inject Sector 0x96",           &InjectSector0x96,    N_NANDWRITE },
+            { "Restore NAND Header",          &RestoreNandHeader,   N_NANDWRITE }
         }
     },
     {
-        "Partition Inject... (EmuNAND)", 7, // ID 5
+        "Partition Inject... (EmuNAND)", 8, // ID 5
         {
             { "Inject TWLN Partition",        &InjectNandPartition, N_NANDWRITE | N_EMUNAND | P_TWLN },
             { "Inject TWLP Partition",        &InjectNandPartition, N_NANDWRITE | N_EMUNAND | P_TWLP },
@@ -159,7 +162,8 @@ MenuInfo menu[] =
             { "Inject FIRM0 Partition",       &InjectNandPartition, N_NANDWRITE | N_EMUNAND | P_FIRM0 },
             { "Inject FIRM1 Partition",       &InjectNandPartition, N_NANDWRITE | N_EMUNAND | P_FIRM1 },
             { "Inject CTRNAND Partition",     &InjectNandPartition, N_NANDWRITE | N_EMUNAND | P_CTRNAND },
-            { "Inject Sector0x96",            &InjectSector0x96,    N_NANDWRITE | N_EMUNAND }
+            { "Inject Sector0x96",            &InjectSector0x96,    N_NANDWRITE | N_EMUNAND },
+            { "Restore NAND Header",          &RestoreNandHeader,   N_NANDWRITE | N_EMUNAND }
         }
     },
     {

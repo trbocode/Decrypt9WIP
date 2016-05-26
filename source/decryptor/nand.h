@@ -63,9 +63,13 @@ u32 TwlNandPadgen(u32 param);
 u32 Firm0Firm1Padgen(u32 param);
 
 u32 DumpNand(u32 param);
+u32 DumpNandHeader(u32 param);
 u32 RestoreNand(u32 param);
+u32 RestoreNandHeader(u32 param);
+
 u32 DecryptNandPartition(u32 param);
 u32 InjectNandPartition(u32 param);
+
 u32 DecryptSector0x96(u32 param);
 u32 InjectSector0x96(u32 param);
 

@@ -694,6 +694,35 @@ u32 DumpNand(u32 param)
     return result;
 }
 
+u32 DumpNandHeader(u32 param)
+{
+    char filename[64];
+    u8* header = BUFFER_ADDRESS;
+    
+    Debug("Dumping %sNAND header. Size (Byte): 512", (param & N_EMUNAND) ? "Emu" : "Sys");
+    
+    if (!DebugCheckFreeSpace(512))
+        return 1;
+    
+    if (OutputFileNameSelector(filename, "NAND_hdr.bin", NULL) != 0)
+        return 1;
+
+    if (ReadNandSectors(0, 1, header) != 0)  {
+        Debug("%sNAND read error", (emunand_header) ? "Emu" : "Sys");
+        return 1;
+    } else {
+        if (!DebugFileCreate(filename, true))
+            return 1;
+        if (!DebugFileWrite(header, NAND_SECTOR_SIZE, 0)) {
+            FileClose();
+            return 1;
+        }
+        FileClose();
+    }
+
+    return 0;
+}
+
 u32 DecryptNandPartition(u32 param)
 {
     PartitionInfo* p_info = NULL;
@@ -892,6 +921,37 @@ u32 RestoreNand(u32 param)
     FileClose();
 
     return result;
+}
+
+u32 RestoreNandHeader(u32 param)
+{
+    char filename[64];
+    u8* header = BUFFER_ADDRESS;
+
+    if (!(param & N_NANDWRITE)) // developer screwup protection
+        return 1;
+        
+    // user file select
+    if (InputFileNameSelector(filename, "NAND_hdr.bin", NULL, NULL, 0, 512, false) != 0)
+        return 1;
+    // read file to mem, check header
+    if (FileGetData(filename, header, 512, 0) != 512) {
+        Debug("File has bad size");
+        return 1; // this should not happen
+    }
+    if (CheckNandHeader(header) == NAND_HDR_UNK) {
+        Debug("NAND header was not recognized");
+        return 1;
+    }
+    
+    Debug("Restoring %sNAND header. Size (Byte): 512", (param & N_EMUNAND) ? "Emu" : "Sys");
+    
+    if (WriteNandSectors(0, 1, header) != 0) {
+        Debug("%sNAND write error", (emunand_header) ? "Emu" : "Sys");
+        return 1;
+    }
+
+    return 0;
 }
 
 u32 InjectNandPartition(u32 param)
