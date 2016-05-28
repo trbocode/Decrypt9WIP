@@ -41,7 +41,7 @@ MenuInfo menu[] =
         }
     },
     {
-        "SysNAND Options", 8,
+        "SysNAND Options", 9,
         {
             { "SysNAND Backup/Restore...",    NULL,                   SUBMENU_START + 0 },
             { "Partition Dump...",            NULL,                   SUBMENU_START + 2 },
@@ -50,11 +50,12 @@ MenuInfo menu[] =
             { "File Inject...",               NULL,                   SUBMENU_START + 8 },
             { "Health&Safety Dump",           &DumpHealthAndSafety,   0 },
             { "Health&Safety Inject",         &InjectHealthAndSafety, N_NANDWRITE },
+            { "FIRMs Dump",                   &DumpNcchFirms,         0 },
             { "Update SeedDB",                &UpdateSeedDb,          0 }
         }
     },
     {
-        "EmuNAND Options", 8,
+        "EmuNAND Options", 9,
         {
             { "EmuNAND Backup/Restore...",    NULL,                   SUBMENU_START + 1 },
             { "Partition Dump...",            NULL,                   SUBMENU_START + 3 },
@@ -63,6 +64,7 @@ MenuInfo menu[] =
             { "File Inject...",               NULL,                   SUBMENU_START + 9 },
             { "Health&Safety Dump",           &DumpHealthAndSafety,   N_EMUNAND },
             { "Health&Safety Inject",         &InjectHealthAndSafety, N_NANDWRITE | N_EMUNAND },
+            { "FIRMs Dump",                   &DumpNcchFirms,         N_EMUNAND },
             { "Update SeedDB",                &UpdateSeedDb,          N_EMUNAND }
         }
     },

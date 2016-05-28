@@ -196,7 +196,7 @@ static u32 CheckNandHeader(u8* header) {
     return NAND_HDR_UNK;
 }
 
-static u32 CheckFirmSize(const u8* firm, u32 f_size) {
+u32 CheckFirmSize(const u8* firm, u32 f_size) {
     // returns firm size if okay, 0 otherwise
     u32 f_actualsize = 0;
     if (f_size < 0x100)
