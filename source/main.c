@@ -69,7 +69,7 @@ MenuInfo menu[] =
         }
     },
     {
-        "Game Decryptor Options", 11,
+        "Game Decryptor Options", 12,
         {
             { "NCCH/NCSD Decryptor",          &CryptGameFiles,        GC_NCCH_PROCESS },
             { "NCCH/NCSD Encryptor",          &CryptGameFiles,        GC_NCCH_PROCESS | GC_NCCH_ENCRYPT },
@@ -81,7 +81,8 @@ MenuInfo menu[] =
             { "BOSS Encryptor",               &CryptGameFiles,        GC_BOSS_PROCESS | GC_BOSS_ENCRYPT },
             { "SD Decryptor/Encryptor",       &CryptSdFiles,          0 },
             { "SD Decryptor (SysNAND dir)",   &DecryptSdFilesDirect,  0 },
-            { "SD Decryptor (EmuNAND dir)",   &DecryptSdFilesDirect,  N_EMUNAND }
+            { "SD Decryptor (EmuNAND dir)",   &DecryptSdFilesDirect,  N_EMUNAND },
+            { "ARM9 Binary Decryptor",        &DecryptFirmArm9Bin,    0 }
         }
     },
     {

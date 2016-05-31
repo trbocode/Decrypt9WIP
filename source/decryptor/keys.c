@@ -152,6 +152,43 @@ u32 SetupSector0x96Key0x11(void) // setup the sector0x96 key from OTP
     return 0;
 }
 
+u32 SetupSecretKey0x11(u32 keynum) // setup key from secret sector
+{
+    static const char* filename = "secret_sector.bin";
+    static AesKeyDesc secret_key_desc[] = { { 0x11, 'N', "95" }, { 0x11, 'N', "96" } };
+    // from: https://github.com/AuroraWright/SafeA9LHInstaller/blob/master/source/installer.c#L9-L17
+    static const u8 sectorHash[0x20] = {
+        0x82, 0xF2, 0x73, 0x0D, 0x2C, 0x2D, 0xA3, 0xF3, 0x01, 0x65, 0xF9, 0x87, 0xFD, 0xCC, 0xAC, 0x5C,
+        0xBA, 0xB2, 0x4B, 0x4E, 0x5F, 0x65, 0xC9, 0x81, 0xCD, 0x7B, 0xE6, 0xF4, 0x38, 0xE6, 0xD9, 0xD3
+    };
+    
+    // try to get key from secret sector
+    if (FileOpen(filename) || FileOpen("sector0x96_emu.bin") || FileOpen("sector0x96.bin")) {
+        u8 secret_sector[0x200];
+        if (FileRead(secret_sector, 0x200, 0)) {
+            u8 shasum[32];
+            sha_quick(shasum, secret_sector, 0x200, SHA256_MODE);
+            if (memcmp(shasum, sectorHash, 32) == 0) {
+                // setup the key
+                setup_aeskey(0x11, secret_sector + (keynum*16));
+                use_aeskey(0x11);
+                Debug("0x11 SecretKey %i: verified, set up", keynum);
+                return 0;
+            }
+        }
+        FileClose();
+    }
+    
+    // load it from aeskeydb.bin / legacy file
+    if (keynum < sizeof(secret_key_desc) / sizeof(AesKeyDesc)) {
+        AesKeyDesc* key_desc = secret_key_desc + keynum;
+        return LoadKeyFromFile(key_desc->slot, key_desc->type, key_desc->id);
+    }
+    
+    Debug("0x11 SecretKey %i: not found");
+    return 1;
+}
+
 u32 SetupTwlKey0x03(void) // setup the TWLNAND key 0x03
 {
     // check if already loaded

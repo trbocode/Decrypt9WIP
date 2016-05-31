@@ -22,6 +22,7 @@ typedef struct {
 u32 SetupCommonKeyY0x3D(u32 commonKeyIndex);
 u32 SetupSdKeyY0x34(bool from_nand, u8* movable_key);
 u32 SetupSector0x96Key0x11(void);
+u32 SetupSecretKey0x11(u32 keynum);
 u32 SetupTwlKey0x03(void);
 u32 SetupCtrNandKeyY0x05(void);
 u32 GetUnitKeysType(void);

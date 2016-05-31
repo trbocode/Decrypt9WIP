@@ -1127,6 +1127,109 @@ u32 InjectSector0x96(u32 param)
     return 0;
 }
 
+u32 DecryptFirmArm9Bin(u32 param)
+{
+    (void) (param); // param is unused here
+    static const u8 keyX0x15hash[32] = {
+        0x42, 0xC3, 0xB3, 0x7A, 0xD6, 0x0F, 0x49, 0x43, 0xA4, 0x01, 0x38, 0x77, 0x81, 0xD4, 0xC0, 0x53,
+        0x4E, 0x4A, 0xE4, 0x5B, 0x64, 0x39, 0xEC, 0x69, 0x6C, 0xB0, 0xBD, 0x55, 0x11, 0x34, 0x29, 0xF1
+    };
+    static u8 magic[8] = {0x46, 0x49, 0x52, 0x4D, 0x00, 0x00, 0x00, 0x00};
+    u8* firm = BUFFER_ADDRESS;
+    u32 f_size = 0;
+    char filename[64];
+    
+    // user file select
+    if (InputFileNameSelector(filename, NULL, "bin", magic, 8, 0x200, true) != 0)
+        return 1;
+    
+    // open file, check size
+    f_size = FileGetData(filename, firm, 0x400000, 0);
+    if (f_size >= 0x400000) {
+        Debug("File is >= 4MB"); // 4MB is the maximum
+        return 1;
+    } else if (!CheckFirmSize(firm, f_size)) {
+        Debug("FIRM is corrupt");
+        return 1;
+    }
+    
+    // map the firm / get crypto type
+    u8* section2 = firm + getle32(firm + 0x40 + 0x00 + (0x30*2));
+    u32 s2_size = getle32(firm + 0x40 + 0x08 + (0x30*2));
+    Debug("FIRM size: %u Byte", f_size);
+    Debug("Section 2: %u Byte @ 0x%06X", s2_size, section2 - firm);
+    
+    // get keyX0x15
+    u8* keyX0x15 = section2;
+    CryptBufferInfo info = {.keyslot = 0x11, .setKeyY = 0, .buffer = keyX0x15, .size = 16, .mode = AES_CNT_ECB_DECRYPT_MODE};
+    memcpy(keyX0x15, section2, 16);
+    if (SetupSecretKey0x11(0) != 0)
+        return 1;
+    CryptBuffer(&info);
+    
+    // check keyX0x15 hash (same for all)
+    u8* shasum[32];
+    sha_quick(shasum, keyX0x15, 16, SHA256_MODE);
+    if (memcmp(shasum, keyX0x15hash, 32) != 0) {
+        Debug("Section 2 does not look encrypted");
+        return 1;
+    }
+    u32 crypto_type = (section2[0x53] == 0xFF) ? 0 : (section2[0x53] == '1') ? 1 : 2;
+    Debug("Crypto Type: %s", (crypto_type == 0) ? "< 9.5" : (crypto_type == 1) ? "9.5" : ">= 9.6");
+    
+    // get keyY0x15, setup key0x15
+    u8* keyY0x15 = section2 + 0x10;
+    setup_aeskeyX(0x15, keyX0x15);
+    setup_aeskeyY(0x15, keyY0x15);
+    use_aeskey(0x15);
+    Debug("0x15 Key: set up");
+    
+    // key0x16 setup
+    if (crypto_type) { // for FWs >= 9.5
+        u8* keyX0x16 = section2 + 0x60;
+        u8* keyY0x16 = keyY0x15;
+        info.buffer = keyX0x16;
+        if ((crypto_type == 2) && (SetupSecretKey0x11(1) != 0))
+            return 1;
+        CryptBuffer(&info);
+        setup_aeskeyX(0x16, keyX0x16);
+        setup_aeskeyY(0x16, keyY0x16);
+        use_aeskey(0x16);
+        Debug("0x16 Key: set up");
+    }
+    
+    // get arm9 binary size
+    u32 arm9bin_size = 0;
+    for (u32 i = 0; (i < 8) && *(section2 + 0x30 + i); i++)
+        arm9bin_size = (arm9bin_size * 10) + (*(section2 + 0x30 + i) - '0');
+    if (arm9bin_size + 0x800 > s2_size) {
+        Debug("Bad arm9 binary size (%u Byte)", arm9bin_size);
+        return 1;
+    }
+    
+    // decrypt arm9 binary
+    Debug("Decrypting arm9 binary (%u Byte)...", arm9bin_size);
+    info.buffer = section2 + 0x800;
+    info.size = arm9bin_size;
+    info.mode = AES_CNT_CTRNAND_MODE;
+    info.keyslot = (crypto_type) ? 0x16 : 0x15;
+    memcpy(info.ctr, section2 + 0x20, 16);
+    CryptBuffer(&info);
+    
+    // inject back
+    Debug("Done, injecting back..");
+    memcpy(firm, (u8*) "D9DFIRM", 7); // <-- so this doesn't get mixed up with a regular one
+    if (!DebugFileCreate(filename, true))
+        return 1;
+    if (!DebugFileWrite(firm, f_size, 0)) {
+        FileClose();
+        return 1;
+    }
+    FileClose();
+    
+    return 0;
+}
+
 u32 ValidateNandDump(u32 param)
 {
     (void) (param); // param is unused here
