@@ -32,24 +32,20 @@ u32 CryptTitlekeysFile(u32 param)
     
     if (!DebugFileOpen(filename))
         return 1;
-    
     if (!DebugFileRead(info, 16, 0)) {
         FileClose();
         return 1;
     }
-
     if (!info->n_entries || info->n_entries > MAX_ENTRIES) {
         Debug("Too many/few entries specified: %i", info->n_entries);
         FileClose();
         return 1;
     }
-
     Debug("Number of entries: %i", info->n_entries);
     if (!DebugFileRead(info->entries, info->n_entries * sizeof(TitleKeyEntry), 16)) {
         FileClose();
         return 1;
     }
-    
     FileClose();
 
     Debug("%scrypting Title Keys...", (param & TK_ENCRYPTED) ? "En" : "De");
@@ -58,13 +54,12 @@ u32 CryptTitlekeysFile(u32 param)
 
     if (OutputFileNameSelector(filename, (param & TK_ENCRYPTED) ? "encTitleKeys.bin" : "decTitleKeys.bin", NULL) != 0)
         return 1;
-    if (!DebugFileCreate(filename, true))
-        return 1;
-    if (!DebugFileWrite(info, info->n_entries * sizeof(TitleKeyEntry) + 16, 0)) {
-        FileClose();
+    u32 out_size = info->n_entries * sizeof(TitleKeyEntry) + 16;
+    if (FileDumpData(filename, info, out_size) != out_size) {
+        Debug("Error writing Titlekeys file");
         return 1;
     }
-    FileClose();
+    
 
     return 0;
 }
@@ -133,13 +128,11 @@ u32 DumpTitlekeysNand(u32 param)
         return 1;
     
     if(nKeys > 0) {
-        if (!DebugFileCreate(filename, true))
-            return 1;
-        if (!DebugFileWrite(info, 0x10 + nKeys * 0x20, 0)) {
-            FileClose();
+        u32 out_size = info->n_entries * sizeof(TitleKeyEntry) + 16;
+        if (FileDumpData(filename, info, out_size) != out_size) {
+            Debug("Error writing Titlekeys file");
             return 1;
         }
-        FileClose();
     } else {
         return 1;
     }

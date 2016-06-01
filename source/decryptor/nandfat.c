@@ -367,20 +367,16 @@ u32 InjectHealthAndSafety(u32 param)
     memset(buffer, 0, size_app[0]);
     if (size_hs > size_app[0]) {
         Debug("H&S inject app is too big!");
+        FileClose();
         return 1;
     }
-    if (!DebugFileRead(buffer, size_hs, 0)) {
+    if (FileCopyTo("hs.enc", buffer, size_hs) != size_hs) {
+        Debug("Error copying to hs.enc");
         FileClose();
         return 1;
     }
     FileClose();
-    if (!DebugFileCreate("hs.enc", true))
-        return 1;
-    if (!DebugFileWrite(buffer, size_app[0], 0)) {
-        FileClose();
-        return 1;
-    }
-    FileClose();
+    
     if (CryptNcch("hs.enc", 0, 0, 0, ncch->flags) != 0)
         return 1;
     
@@ -484,13 +480,10 @@ u32 DumpNcchFirms(u32 param)
         }
         firm_bin = buffer + firm_offset;
         snprintf(filename, 64, "%s_v%u.bin", firm->name, firm_ver);
-        if (!FileCreate(filename, true))
-            continue;
-        if (!DebugFileWrite(firm_bin, firm_size, 0)) {
-            FileClose();
+        if (FileDumpData(filename, firm_bin, firm_size) != firm_size) {
+            Debug("Error writing file");
             continue;
         }
-        FileClose();
         
         // Verify FIRM bin
         Debug("Verifying %s...", filename);
@@ -608,8 +601,10 @@ u32 UpdateSeedDb(u32 param)
     }
     
     Debug("Found %i new seeds, %i total", nNewSeeds, seedinfo->n_entries);
-    if (!DebugFileWrite(seedinfo, 16 + seedinfo->n_entries * sizeof(SeedInfoEntry), 0))
+    if (!DebugFileWrite(seedinfo, 16 + seedinfo->n_entries * sizeof(SeedInfoEntry), 0)) {
+        FileClose();
         return 1;
+    }
     FileClose();
     
     return 0;

@@ -158,14 +158,11 @@ u32 SelfTest(u32 param)
     }
     
     // write test data to file
-    Debug("");
-    if (!DebugFileCreate(filename, true))
-        return 1;
-    if (!DebugFileWrite(test_data, fsize_test, 0)) {
-        FileClose();
+    if (FileDumpData(filename, test_data, fsize_test) != fsize_test) {
+        Debug("");
+        Debug("Error writing test data");
         return 1;
     }
-    FileClose();
     
     return 0;
 }

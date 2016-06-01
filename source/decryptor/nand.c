@@ -769,14 +769,10 @@ u32 DumpNandHeader(u32 param)
     if (ReadNandSectors(0, 1, header) != 0)  {
         Debug("%sNAND read error", (emunand_header) ? "Emu" : "Sys");
         return 1;
-    } else {
-        if (!DebugFileCreate(filename, true))
-            return 1;
-        if (!DebugFileWrite(header, NAND_SECTOR_SIZE, 0)) {
-            FileClose();
-            return 1;
-        }
-        FileClose();
+    }
+    if (FileDumpData(filename, header, 0x200) != 0x200) {
+        Debug("Error writing file");
+        return 1;
     }
 
     return 0;
@@ -833,11 +829,10 @@ u32 DecryptSector0x96(u32 param)
     // write to file
     if (OutputFileNameSelector(filename, "sector0x96.bin", NULL) != 0)
         return 1;
-    if (!DebugFileCreate(filename, true))
+    if (FileDumpData(filename, sector0x96, 0x200) != 0x200) {
+        Debug("Error writing file");
         return 1;
-    if (!DebugFileWrite(sector0x96, 0x200, 0))
-        return 1;
-    FileClose();
+    }
     
     return 0;
 }
@@ -1227,13 +1222,10 @@ u32 DecryptFirmArm9Bin(u32 param)
     // inject back
     Debug("Done, injecting back..");
     memcpy(firm, (u8*) "D9DFIRM", 7); // <-- so this doesn't get mixed up with a regular one
-    if (!DebugFileCreate(filename, true))
-        return 1;
-    if (!DebugFileWrite(firm, f_size, 0)) {
-        FileClose();
+    if (FileDumpData(filename, firm, f_size) != f_size) {
+        Debug("Error writing file");
         return 1;
     }
-    FileClose();
     
     return 0;
 }
