@@ -282,7 +282,7 @@ u32 CheckFirmSize(const u8* firm, u32 f_size) {
     return f_actualsize;
 }
 
-static u32 CheckNandDumpIntegrity(const char* path) {
+static u32 CheckNandDumpIntegrity(const char* path, bool check_firm) {
     u8 header[0x200];
     u32 nand_hdr_type = NAND_HDR_UNK;
     
@@ -342,35 +342,37 @@ static u32 CheckNandDumpIntegrity(const char* path) {
     }
     
     // firm hash check
-    for (u32 f_num = 0; f_num < 2; f_num++) {
-        u8* firm = BUFFER_ADDRESS;
-        PartitionInfo* partition = partitions + 3 + f_num;
-        CryptBufferInfo info = {.keyslot = partition->keyslot, .setKeyY = 0, .size = 0x200, .buffer = firm, .mode = partition->mode};
-        if ((GetNandCtr(info.ctr, partition->offset) != 0) || (!DebugFileRead(firm, 0x200, partition->offset))) {
-            FileClose();
-            return 1;
-        }
-        CryptBuffer(&info);
-        u32 firm_size = CheckFirmSize(firm, 0x200); // check the first 0x200 byte to get actual size
-        if (firm_size != 0) { // check the remaining bytes
-            info.buffer = firm + 0x200;
-            info.size = firm_size - 0x200;
-            if ((!DebugFileRead(firm + 0x200, firm_size - 0x200, partition->offset + 0x200))) {
+    if (check_firm) {
+        for (u32 f_num = 0; f_num < 2; f_num++) {
+            u8* firm = BUFFER_ADDRESS;
+            PartitionInfo* partition = partitions + 3 + f_num;
+            CryptBufferInfo info = {.keyslot = partition->keyslot, .setKeyY = 0, .size = 0x200, .buffer = firm, .mode = partition->mode};
+            if ((GetNandCtr(info.ctr, partition->offset) != 0) || (!DebugFileRead(firm, 0x200, partition->offset))) {
                 FileClose();
                 return 1;
             }
             CryptBuffer(&info);
-            firm_size = CheckFirmSize(firm, firm_size);
-        }
-        
-        if (firm_size == 0) {
-            if ((f_num == 0) && ((*(vu32*) 0x101401C0) == 0)) {
-                Debug("FIRM0 is corrupt (non critical)");
-                Debug("(this is expected with a9lh)");
-            } else {
-                Debug("FIRM%i is corrupt", f_num);
-                FileClose();
-                return 1;
+            u32 firm_size = CheckFirmSize(firm, 0x200); // check the first 0x200 byte to get actual size
+            if (firm_size != 0) { // check the remaining bytes
+                info.buffer = firm + 0x200;
+                info.size = firm_size - 0x200;
+                if ((!DebugFileRead(firm + 0x200, firm_size - 0x200, partition->offset + 0x200))) {
+                    FileClose();
+                    return 1;
+                }
+                CryptBuffer(&info);
+                firm_size = CheckFirmSize(firm, firm_size);
+            }
+            
+            if (firm_size == 0) {
+                if ((f_num == 0) && ((*(vu32*) 0x101401C0) == 0)) {
+                    Debug("FIRM0 is corrupt (non critical)");
+                    Debug("(this is expected with a9lh)");
+                } else {
+                    Debug("FIRM%i is corrupt", f_num);
+                    FileClose();
+                    return 1;
+                }
             }
         }
     }
@@ -904,7 +906,7 @@ u32 RestoreNand(u32 param)
     // safety checks
     if (!(param & NR_NOCHECKS)) {
         Debug("Validating NAND dump %s...", filename);
-        if (CheckNandDumpIntegrity(filename) != 0)
+        if (CheckNandDumpIntegrity(filename, !(param & NR_KEEPA9LH)) != 0)
             return 1;
     }
     
@@ -1245,7 +1247,7 @@ u32 ValidateNandDump(u32 param)
     if (InputFileNameSelector(filename, "NAND.bin", NULL, NULL, 0, NAND_MIN_SIZE, true) != 0)
         return 1;
     Debug("Validating NAND dump %s...", filename);
-    if (CheckNandDumpIntegrity(filename) != 0)
+    if (CheckNandDumpIntegrity(filename, true) != 0)
         return 1;
     
     return 0;
