@@ -303,16 +303,18 @@ static u32 CheckNandDumpIntegrity(const char* path) {
     }
     // header type check
     nand_hdr_type = CheckNandHeaderType(header);
-    if ((nand_hdr_type == NAND_HDR_UNK) || (GetUnitPlatform() == PLATFORM_3DS && (nand_hdr_type != NAND_HDR_O3DS))) {
+    if ((nand_hdr_type == NAND_HDR_UNK) || ((GetUnitPlatform() == PLATFORM_3DS) && (nand_hdr_type != NAND_HDR_O3DS))) {
         FileClose();
         Debug("NAND header not recognized");
         return 1;
     }
-    // header integrity check
-    if (CheckNandHeaderIntegrity(header) != 0) {
-        FileClose();
-        Debug("NAND header integrity check failed!");
-        return 1;
+    // header integrity check - skip for O3DS headers on N3DS
+    if (!((GetUnitPlatform() == PLATFORM_N3DS) && (nand_hdr_type == NAND_HDR_O3DS))) {
+        if (CheckNandHeaderIntegrity(header) != 0) {
+            FileClose();
+            Debug("NAND header integrity check failed!");
+            return 1;
+        }
     }
     
     // magic number / crypto check
@@ -994,9 +996,13 @@ u32 RestoreNandHeader(u32 param)
         Debug("File has bad size");
         return 1; // this should not happen
     }
-    if (CheckNandHeaderType(header) == NAND_HDR_UNK) {
-        Debug("NAND header was not recognized");
-        return 1;
+    // header integrity check - skip for O3DS headers on N3DS
+    if (!((GetUnitPlatform() == PLATFORM_N3DS) && (CheckNandHeaderType(header) == NAND_HDR_O3DS))) {
+        if (CheckNandHeaderIntegrity(header) != 0) {
+            FileClose();
+            Debug("NAND header integrity check failed!");
+            return 1;
+        }
     }
     
     Debug("Restoring %sNAND header. Size (Byte): 512", (param & N_EMUNAND) ? "Emu" : "Sys");
