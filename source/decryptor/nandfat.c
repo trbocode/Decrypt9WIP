@@ -494,6 +494,18 @@ u32 DumpNcchFirms(u32 param)
             Debug("Verified okay!");
         }
         
+        if (i < 4) { // only for N3DS FIRMs
+            Debug("Decrypting ARM9 binary...");
+            if (DecryptFirmArm9Mem(firm_bin, firm_size) != 0)
+                continue;
+            snprintf(filename, 64, "%s_v%u.dec", firm->name, firm_ver);
+            if (FileDumpData(filename, firm_bin, firm_size) != firm_size) {
+                Debug("Error writing file");
+                continue;
+            }
+            Debug("Done!");
+        }
+        
         success |= (1<<i);
     }
     

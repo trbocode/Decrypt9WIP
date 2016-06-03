@@ -1130,28 +1130,14 @@ u32 InjectSector0x96(u32 param)
     return 0;
 }
 
-u32 DecryptFirmArm9Bin(u32 param)
+u32 DecryptFirmArm9Mem(u8* firm, u32 f_size)
 {
-    (void) (param); // param is unused here
     static const u8 keyX0x15hash[32] = {
         0x42, 0xC3, 0xB3, 0x7A, 0xD6, 0x0F, 0x49, 0x43, 0xA4, 0x01, 0x38, 0x77, 0x81, 0xD4, 0xC0, 0x53,
         0x4E, 0x4A, 0xE4, 0x5B, 0x64, 0x39, 0xEC, 0x69, 0x6C, 0xB0, 0xBD, 0x55, 0x11, 0x34, 0x29, 0xF1
     };
-    static u8 magic[8] = {0x46, 0x49, 0x52, 0x4D, 0x00, 0x00, 0x00, 0x00};
-    u8* firm = BUFFER_ADDRESS;
-    u32 f_size = 0;
-    char filename[64];
     
-    // user file select
-    if (InputFileNameSelector(filename, NULL, "bin", magic, 8, 0x200, true) != 0)
-        return 1;
-    
-    // open file, check size
-    f_size = FileGetData(filename, firm, 0x400000, 0);
-    if (f_size >= 0x400000) {
-        Debug("File is >= 4MB"); // 4MB is the maximum
-        return 1;
-    } else if (!CheckFirmSize(firm, f_size)) {
+    if (!CheckFirmSize(firm, f_size)) {
         Debug("FIRM is corrupt");
         return 1;
     }
@@ -1185,7 +1171,7 @@ u32 DecryptFirmArm9Bin(u32 param)
     setup_aeskeyX(0x15, keyX0x15);
     setup_aeskeyY(0x15, keyY0x15);
     use_aeskey(0x15);
-    Debug("0x15 Key: set up");
+    Debug("0x15 KeyX & KeyY: decrypted, set up");
     
     // key0x16 setup
     if (crypto_type) { // for FWs >= 9.5
@@ -1198,7 +1184,7 @@ u32 DecryptFirmArm9Bin(u32 param)
         setup_aeskeyX(0x16, keyX0x16);
         setup_aeskeyY(0x16, keyY0x16);
         use_aeskey(0x16);
-        Debug("0x16 Key: set up");
+        Debug("0x16 KeyX & KeyY: decrypted, set up");
     }
     
     // get arm9 binary size
@@ -1219,9 +1205,40 @@ u32 DecryptFirmArm9Bin(u32 param)
     memcpy(info.ctr, section2 + 0x20, 16);
     CryptBuffer(&info);
     
+    // recalculate section 2 hash
+    sha_quick(firm + 0x40 + 0x10 + (0x30*2), section2, s2_size, SHA256_MODE);
+    
+    // mark FIRM as decrypted
+    memcpy(firm, (u8*) "DECFIRM", 7);
+    
+    return 0;
+}
+
+u32 DecryptFirmArm9File(u32 param)
+{
+    (void) (param); // param is unused here
+    static u8 magic[8] = {0x46, 0x49, 0x52, 0x4D, 0x00, 0x00, 0x00, 0x00};
+    u8* firm = BUFFER_ADDRESS;
+    u32 f_size = 0;
+    char filename[64];
+    
+    // user file select
+    if (InputFileNameSelector(filename, NULL, "bin", magic, 8, 0x200, true) != 0)
+        return 1;
+    
+    // open file, check size
+    f_size = FileGetData(filename, firm, 0x400000, 0);
+    if (f_size >= 0x400000) {
+        Debug("File is >= 4MB"); // 4MB is the maximum
+        return 1;
+    }
+    
+    // decrypt ARM9 binary (if encrypted)
+    if (DecryptFirmArm9Mem(firm, f_size) != 0)
+        return 1;
+    
     // inject back
     Debug("Done, injecting back..");
-    memcpy(firm, (u8*) "D9DFIRM", 7); // <-- so this doesn't get mixed up with a regular one
     if (FileDumpData(filename, firm, f_size) != f_size) {
         Debug("Error writing file");
         return 1;

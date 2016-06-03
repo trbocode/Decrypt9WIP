@@ -46,6 +46,7 @@ PartitionInfo* GetPartitionInfo(u32 partition_id);
 u32 GetNandCtr(u8* ctr, u32 offset);
 
 u32 CheckFirmSize(const u8* firm, u32 f_size);
+u32 DecryptFirmArm9Mem(u8* firm, u32 f_size);
 
 u32 OutputFileNameSelector(char* filename, const char* basename, char* extension);
 u32 InputFileNameSelector(char* filename, const char* basename, char* extension, u8* magic, u32 msize, u32 fsize, bool accept_bigger);
@@ -73,5 +74,5 @@ u32 InjectNandPartition(u32 param);
 u32 DecryptSector0x96(u32 param);
 u32 InjectSector0x96(u32 param);
 
-u32 DecryptFirmArm9Bin(u32 param);
+u32 DecryptFirmArm9File(u32 param);
 u32 ValidateNandDump(u32 param);
