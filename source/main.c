@@ -41,35 +41,29 @@ MenuInfo menu[] =
         }
     },
     {
-        "SysNAND Options", 9,
+        "SysNAND Options", 6,
         {
-            { "SysNAND Backup/Restore...",    NULL,                   SUBMENU_START + 0 },
-            { "Partition Dump...",            NULL,                   SUBMENU_START + 2 },
-            { "Partition Inject...",          NULL,                   SUBMENU_START + 4 },
-            { "File Dump...",                 NULL,                   SUBMENU_START + 6 },
-            { "File Inject...",               NULL,                   SUBMENU_START + 8 },
-            { "Health&Safety Dump",           &DumpHealthAndSafety,   0 },
-            { "Health&Safety Inject",         &InjectHealthAndSafety, N_NANDWRITE },
-            { "FIRMs Dump",                   &DumpNcchFirms,         0 },
-            { "Update SeedDB",                &UpdateSeedDb,          0 }
+            { "SysNAND Backup/Restore...",    NULL,                   SUBMENU_START +  0 },
+            { "Partition Dump...",            NULL,                   SUBMENU_START +  2 },
+            { "Partition Inject...",          NULL,                   SUBMENU_START +  4 },
+            { "File Dump...",                 NULL,                   SUBMENU_START +  6 },
+            { "File Inject...",               NULL,                   SUBMENU_START +  8 },
+            { "Miscellaneous...",             NULL,                   SUBMENU_START + 10 }
         }
     },
     {
-        "EmuNAND Options", 9,
+        "EmuNAND Options", 6,
         {
-            { "EmuNAND Backup/Restore...",    NULL,                   SUBMENU_START + 1 },
-            { "Partition Dump...",            NULL,                   SUBMENU_START + 3 },
-            { "Partition Inject...",          NULL,                   SUBMENU_START + 5 },
-            { "File Dump...",                 NULL,                   SUBMENU_START + 7 },
-            { "File Inject...",               NULL,                   SUBMENU_START + 9 },
-            { "Health&Safety Dump",           &DumpHealthAndSafety,   N_EMUNAND },
-            { "Health&Safety Inject",         &InjectHealthAndSafety, N_NANDWRITE | N_EMUNAND },
-            { "FIRMs Dump",                   &DumpNcchFirms,         N_EMUNAND },
-            { "Update SeedDB",                &UpdateSeedDb,          N_EMUNAND }
+            { "EmuNAND Backup/Restore...",    NULL,                   SUBMENU_START +  1 },
+            { "Partition Dump...",            NULL,                   SUBMENU_START +  3 },
+            { "Partition Inject...",          NULL,                   SUBMENU_START +  5 },
+            { "File Dump...",                 NULL,                   SUBMENU_START +  7 },
+            { "File Inject...",               NULL,                   SUBMENU_START +  9 },
+            { "Miscellaneous...",             NULL,                   SUBMENU_START + 11 }
         }
     },
     {
-        "Game Decryptor Options", 12,
+        "Content Decryptor Options", 11,
         {
             { "NCCH/NCSD Decryptor",          &CryptGameFiles,        GC_NCCH_PROCESS },
             { "NCCH/NCSD Encryptor",          &CryptGameFiles,        GC_NCCH_PROCESS | GC_NCCH_ENCRYPT },
@@ -81,8 +75,7 @@ MenuInfo menu[] =
             { "BOSS Encryptor",               &CryptGameFiles,        GC_BOSS_PROCESS | GC_BOSS_ENCRYPT },
             { "SD Decryptor/Encryptor",       &CryptSdFiles,          0 },
             { "SD Decryptor (SysNAND dir)",   &DecryptSdFilesDirect,  0 },
-            { "SD Decryptor (EmuNAND dir)",   &DecryptSdFilesDirect,  N_EMUNAND },
-            { "ARM9 Binary Decryptor",        &DecryptFirmArm9Bin,    0 }
+            { "SD Decryptor (EmuNAND dir)",   &DecryptSdFilesDirect,  N_EMUNAND }
         }
     },
     {
@@ -231,6 +224,28 @@ MenuInfo menu[] =
             { "Inject nagsave.bin",           &InjectFile,           N_NANDWRITE | N_EMUNAND | F_NAGSAVE },
             { "Inject nnidsave.bin",          &InjectFile,           N_NANDWRITE | N_EMUNAND | F_NNIDSAVE },
             { "Inject friendsave.bin",        &InjectFile,           N_NANDWRITE | N_EMUNAND | F_FRIENDSAVE }
+        }
+    },
+    {
+        "Miscellaneous... (SysNAND)", 5, // ID 10
+        {
+            
+            { "Health&Safety Dump",           &DumpHealthAndSafety,   0 },
+            { "Health&Safety Inject",         &InjectHealthAndSafety, N_NANDWRITE },
+            { "Update SeedDB",                &UpdateSeedDb,          0 },
+            { "NCCH FIRMs Dump",              &DumpNcchFirms,         0 },
+            { "FIRM ARM9 Decryptor",          &DecryptFirmArm9File,   0 }
+        }
+    },
+    {
+        "Miscellaneous... (EmuNAND)", 5, // ID 11
+        {
+            
+            { "Health&Safety Dump",           &DumpHealthAndSafety,   N_EMUNAND },
+            { "Health&Safety Inject",         &InjectHealthAndSafety, N_NANDWRITE | N_EMUNAND },
+            { "Update SeedDB",                &UpdateSeedDb,          N_EMUNAND },
+            { "NCCH FIRMs Dump",              &DumpNcchFirms,         N_EMUNAND },
+            { "FIRM ARM9 Decryptor",          &DecryptFirmArm9File,   0 }
         }
     },
     {
