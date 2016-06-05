@@ -61,10 +61,6 @@ u32 EncryptFileToNand(const char* filename, u32 offset, u32 size, PartitionInfo*
 u32 CheckEmuNand(void);
 u32 SetNand(bool set_emunand, bool force_emunand);
 
-u32 CtrNandPadgen(u32 param);
-u32 TwlNandPadgen(u32 param);
-u32 Firm0Firm1Padgen(u32 param);
-
 u32 DumpNand(u32 param);
 u32 DumpNandHeader(u32 param);
 u32 RestoreNand(u32 param);

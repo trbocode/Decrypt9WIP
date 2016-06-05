@@ -11,6 +11,7 @@
 #include "decryptor/nandfat.h"
 #include "decryptor/titlekey.h"
 #include "decryptor/selftest.h"
+#include "decryptor/xorpad.h"
 
 #define SUBMENU_START 6
 
