@@ -148,12 +148,14 @@ brahma: submodules a9lh
 	
 release:
 	@rm -fr $(BUILD) $(OUTPUT_D) $(RELEASE)
+	@-make --no-print-directory gateway
 	@-make --no-print-directory cakerop
 	@rm -fr $(BUILD) $(OUTPUT).bin $(OUTPUT).elf $(CURDIR)/$(LOADER)/data
 	@make --no-print-directory brahma
 	@[ -d $(RELEASE) ] || mkdir -p $(RELEASE)
 	@[ -d $(RELEASE)/$(TARGET) ] || mkdir -p $(RELEASE)/$(TARGET)
 	@[ -d $(RELEASE)/scripts ] || mkdir -p $(RELEASE)/scripts
+	@-cp $(OUTPUT_D)/Launcher.dat $(RELEASE)
 	@cp $(OUTPUT).bin $(RELEASE)
 	@-cp $(OUTPUT).dat $(RELEASE)
 	@-cp $(OUTPUT).nds $(RELEASE)
