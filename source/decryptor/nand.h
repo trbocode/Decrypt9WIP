@@ -13,9 +13,6 @@
 #define P_FIRM1     (1<<4)
 #define P_CTRNAND   (1<<5)
 
-// force slot 0x04 for CTRNAND padgen
-#define PG_FORCESLOT4 (1<<0)
-
 // options for NAND backup & restore
 #define NB_MINSIZE  (1<<10)
 #define NR_NOCHECKS (1<<11)
@@ -53,7 +50,6 @@ u32 InputFileNameSelector(char* filename, const char* basename, char* extension,
 
 u32 DecryptNandToMem(u8* buffer, u32 offset, u32 size, PartitionInfo* partition);
 u32 DecryptNandToFile(const char* filename, u32 offset, u32 size, PartitionInfo* partition);
-u32 DecryptNandToHash(u8* hash, u32 offset, u32 size, PartitionInfo* partition);
 u32 EncryptMemToNand(u8* buffer, u32 offset, u32 size, PartitionInfo* partition);
 u32 EncryptFileToNand(const char* filename, u32 offset, u32 size, PartitionInfo* partition);
 
