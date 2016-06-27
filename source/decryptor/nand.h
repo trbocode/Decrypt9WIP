@@ -20,8 +20,9 @@
 
 // these three are not handled by the feature functions
 // they have to be handled by the menu system
-#define N_EMUNAND   (1<<29)
-#define N_FORCEEMU  (1<<30)
+#define N_EMUNAND   (1<<28)
+#define N_FORCEEMU  (1<<29)
+#define N_A9LHWRITE (1<<30)
 #define N_NANDWRITE (1<<31)
 
 // return values for the CheckEmuNAND() function

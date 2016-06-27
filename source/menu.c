@@ -20,6 +20,9 @@ u32 ScrollOutput()
     u32 l_total = 0; // total lines
     u32 l_curr = 0; // current line
     
+    // read log file (second time)
+    log_size = FileGetData(LOG_FILE, logtext, 1024 * 1024, log_start);
+    
     // allow 1MB of text max
     if ((log_size == 0) || (log_size >= 1024 * 1024))
         return 0;
@@ -118,28 +121,40 @@ u32 ProcessEntry(MenuEntry* entry)
 {
     bool emunand    = entry->param & N_EMUNAND;
     bool nand_force = entry->param & N_FORCEEMU;
-    bool warning    = entry->param & N_NANDWRITE;
+    bool nand_write = entry->param & N_NANDWRITE;
+    bool a9lh_write = (entry->param & N_A9LHWRITE) && ((*(u32*) 0x101401C0) == 0);
     
     u32 pad_state;
     u32 res = 0;
     
     // unlock sequence for dangerous features
-    if (warning) {
-        u32 unlockSequenceEmu[] = { BUTTON_LEFT, BUTTON_RIGHT, BUTTON_DOWN, BUTTON_UP, BUTTON_A };
-        u32 unlockSequenceSys[] = { BUTTON_LEFT, BUTTON_UP, BUTTON_RIGHT, BUTTON_UP, BUTTON_A };
-        u32 unlockLvlMax = ((emunand) ? sizeof(unlockSequenceEmu) : sizeof(unlockSequenceSys)) / sizeof(u32);
-        u32* unlockSequence = (emunand) ? unlockSequenceEmu : unlockSequenceSys;
+    if (nand_write || a9lh_write) {
+        const u32 unlockSequences[3][5] = {
+            { BUTTON_LEFT , BUTTON_RIGHT, BUTTON_DOWN , BUTTON_UP   , BUTTON_A }, // EmuNAND
+            { BUTTON_LEFT , BUTTON_UP   , BUTTON_RIGHT, BUTTON_UP   , BUTTON_A }, // SysNAND
+            { BUTTON_RIGHT, BUTTON_DOWN , BUTTON_LEFT , BUTTON_DOWN , BUTTON_A }  // A9LH
+        };
+        const u32 unlockLvlMax = 5;
+        u32* unlockSequence = (u32*) &(unlockSequences[(emunand) ? 0 : (a9lh_write) ? 2 : 1]);
+        u32 warnColor = (emunand) ? COLOR_YELLOW : COLOR_RED;
         u32 unlockLvl = 0;
         #ifdef USE_THEME
         LoadThemeGfx((emunand) ? GFX_DANGER_E : GFX_DANGER_S, false);
         #endif
         DebugClear();
-        Debug("You selected \"%s\".", entry->name);
-        Debug("This feature writes to the %s.", (emunand) ? "EmuNAND" : "SysNAND");
-        Debug("Doing this is potentially dangerous!");
+        Debug("You selected [%s].", entry->name);
+        Debug("");
+        if (!a9lh_write) {
+            DebugColor(warnColor, "This feature writes to the %s.", (emunand) ? "EmuNAND" : "SysNAND");
+            DebugColor(warnColor, "This may overwrite important data!");
+        } else {
+            DebugColor(warnColor, "!!! THIS WILL OVERWRITE THE A9LH !!!");
+            DebugColor(warnColor, "!!! INSTALLATION IN YOUR SYSNAND !!!");
+        }
         Debug("");
         Debug("If you wish to proceed, enter:");
-        Debug((emunand) ? "<Left>, <Right>, <Down>, <Up>, <A>" : "<Left>, <Up>, <Right>, <Up>, <A>");
+        Debug((emunand) ? "<Left>, <Right>, <Down>, <Up>, <A>" : (a9lh_write) ? "<Right>, <Down>, <Left>, <Down>, <A>" : 
+            "<Left>, <Up>, <Right>, <Up>, <A>");
         Debug("");
         Debug("(B to return, START to reboot)");
         while (true) {
@@ -166,8 +181,9 @@ u32 ProcessEntry(MenuEntry* entry)
     LoadThemeGfx(GFX_PROGRESS, false);
     #endif
     DebugClear();
+    Debug("Selected: [%s]", entry->name);
     res = (SetNand(emunand, nand_force) == 0) ? (*(entry->function))(entry->param) : 1;
-    Debug("%s: %s!", entry->name, (res == 0) ? "succeeded" : "failed");
+    DebugColor((res == 0) ? COLOR_GREEN : COLOR_RED, "%s: %s!", entry->name, (res == 0) ? "succeeded" : "failed");
     Debug("");
     Debug("Press B to return, START to reboot.");
     #ifdef USE_THEME

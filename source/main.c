@@ -105,8 +105,8 @@ MenuInfo menu[] =
         {
             { "NAND Backup",                  &DumpNand,              0 },
             { "NAND Backup (min size)",       &DumpNand,              NB_MINSIZE },
-            { "NAND Restore",                 &RestoreNand,           N_NANDWRITE },
-            { "NAND Restore (forced)",        &RestoreNand,           N_NANDWRITE | NR_NOCHECKS },
+            { "NAND Restore",                 &RestoreNand,           N_NANDWRITE | N_A9LHWRITE },
+            { "NAND Restore (forced)",        &RestoreNand,           N_NANDWRITE | N_A9LHWRITE | NR_NOCHECKS },
             { "NAND Restore (keep a9lh)",     &RestoreNand,           N_NANDWRITE | NR_KEEPA9LH },
             { "Validate NAND Dump",           &ValidateNandDump,      0 }
         }
@@ -153,11 +153,11 @@ MenuInfo menu[] =
             { "Inject TWLN Partition",        &InjectNandPartition, N_NANDWRITE | P_TWLN },
             { "Inject TWLP Partition",        &InjectNandPartition, N_NANDWRITE | P_TWLP },
             { "Inject AGBSAVE Partition",     &InjectNandPartition, N_NANDWRITE | P_AGBSAVE },
-            { "Inject FIRM0 Partition",       &InjectNandPartition, N_NANDWRITE | P_FIRM0 },
-            { "Inject FIRM1 Partition",       &InjectNandPartition, N_NANDWRITE | P_FIRM1 },
+            { "Inject FIRM0 Partition",       &InjectNandPartition, N_NANDWRITE | N_A9LHWRITE | P_FIRM0 },
+            { "Inject FIRM1 Partition",       &InjectNandPartition, N_NANDWRITE | N_A9LHWRITE | P_FIRM1 },
             { "Inject CTRNAND Partition",     &InjectNandPartition, N_NANDWRITE | P_CTRNAND },
-            { "Inject Sector 0x96",           &InjectSector0x96,    N_NANDWRITE },
-            { "Restore NAND Header",          &RestoreNandHeader,   N_NANDWRITE }
+            { "Inject Sector 0x96",           &InjectSector0x96,    N_NANDWRITE | N_A9LHWRITE },
+            { "Restore NAND Header",          &RestoreNandHeader,   N_NANDWRITE | N_A9LHWRITE }
         }
     },
     {

@@ -839,7 +839,10 @@ u32 RestoreNand(u32 param)
     u32 nand_size = getMMCDevice(0)->total_size * NAND_SECTOR_SIZE;
     u32 result = 0;
 
-    if (!(param & N_NANDWRITE)) // developer screwup protection
+    // developer screwup protection
+    if (!(param & N_NANDWRITE))
+        return 1;
+    if (!(param & N_EMUNAND) && !(param & NR_KEEPA9LH) && !(param & N_A9LHWRITE))
         return 1;
         
     // user file select
@@ -930,8 +933,11 @@ u32 RestoreNandHeader(u32 param)
     char filename[64];
     u8* header = BUFFER_ADDRESS;
 
-    if (!(param & N_NANDWRITE)) // developer screwup protection
+    // developer screwup protection
+    if (!(param & N_NANDWRITE))
         return 1;
+    if (!(param & N_EMUNAND) && !(param & N_A9LHWRITE))
+        return 1;  
         
     // user file select
     if (InputFileNameSelector(filename, "NAND_hdr.bin", NULL, NULL, 0, 512, false) != 0)
@@ -967,7 +973,10 @@ u32 InjectNandPartition(u32 param)
     char filename[64];
     bool is_firm = param & (P_FIRM0|P_FIRM1);
     
-    if (!(param & N_NANDWRITE)) // developer screwup protection
+    // developer screwup protection
+    if (!(param & N_NANDWRITE))
+        return 1;
+    if (is_firm && !(param & N_EMUNAND) && !(param & N_A9LHWRITE))
         return 1;
     
     for (u32 partition_id = P_TWLN; partition_id <= P_CTRNAND; partition_id = partition_id << 1) {
@@ -1036,7 +1045,10 @@ u32 InjectSector0x96(u32 param)
     char filename[64];
     u8 sha256sum[32];
     
-    if (!(param & N_NANDWRITE)) // developer screwup protection
+    // developer screwup protection
+    if (!(param & N_NANDWRITE))
+        return 1;
+    if (!(param & N_EMUNAND) && !(param & N_A9LHWRITE))
         return 1;
     
     // read from file
