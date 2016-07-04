@@ -38,9 +38,7 @@
 #define BUFFER_ADDRESS  ((u8*) 0x21000000)
 #define BUFFER_MAX_SIZE ((u32) (1 * 1024 * 1024))
     
-// work files / directories
-#define GAME_DIR "/D9Game"
-#define WORK_DIR "/Decrypt9"
+// log file name
 #define LOG_FILE "Decrypt9.log"
 
 static inline u32 strchrcount(const char* str, char symbol) {

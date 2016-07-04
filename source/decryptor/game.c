@@ -718,8 +718,8 @@ u32 CryptGameFiles(u32 param)
     const u8 boss_magic[] = {0x62, 0x6F, 0x73, 0x73, 0x00, 0x01, 0x00, 0x01};
     const char* ncsd_partition_name[8] = {
         "Executable", "Manual", "DPC", "Unknown", "Unknown", "Unknown", "UpdateN3DS", "UpdateO3DS" 
-    };
-    char* batch_dir = GAME_DIR;
+    }; 
+    const char* batch_dir = GetGameDir();
     u8* buffer = (u8*) 0x20316000;
     
     bool batch_ncch = param & GC_NCCH_PROCESS;
@@ -734,12 +734,10 @@ u32 CryptGameFiles(u32 param)
     u32 n_processed = 0;
     u32 n_failed = 0;
     
-    if (!DebugDirOpen(batch_dir)) {
-        if (!DebugDirOpen(WORK_DIR)) {
-            Debug("No working directory found!");
-            return 1;
-        }
-        batch_dir = WORK_DIR;
+    if (!batch_dir || !DebugDirOpen(batch_dir)) {
+        Debug("Game directory not found!");
+        Debug("(check readme for more info)");
+        return 1;
     }
     
     char path[256];
@@ -821,19 +819,16 @@ u32 CryptSdFiles(u32 param)
 {
     (void) (param); // param is unused here
     const char* subpaths[] = {"dbs", "extdata", "title", NULL};
-    char* batch_dir = GAME_DIR;
+    const char* batch_dir = GetGameDir();
     u32 n_processed = 0;
     u32 n_failed = 0;
     u32 plen = 0;
     
-    if (!DebugDirOpen(batch_dir)) {
-        if (!DebugDirOpen(WORK_DIR)) {
-            Debug("No working directory found!");
-            return 1;
-        }
-        batch_dir = WORK_DIR;
+    if (!batch_dir) {
+        Debug("Game directory not found!");
+        Debug("(check readme for more info)");
+        return 1;
     }
-    DirClose();
     plen = strnlen(batch_dir, 128);
     
     // setup AES key from SD
@@ -882,19 +877,16 @@ u32 DecryptSdFilesDirect(u32 param)
     char* filelist = (char*) 0x20400000;
     u8 movable_keyY[16] = { 0 };
     char basepath[256];
-    char* batch_dir = GAME_DIR;
+    const char* batch_dir = GetGameDir();
     u32 n_processed = 0;
     u32 n_failed = 0;
     u32 bplen = 0;
     
-    if (!DebugDirOpen(batch_dir)) {
-        if (!DebugDirOpen(WORK_DIR)) {
-            Debug("No working directory found!");
-            return 1;
-        }
-        batch_dir = WORK_DIR;
+    if (!batch_dir) {
+        Debug("Game directory not found!");
+        Debug("(check readme for more info)");
+        return 1;
     }
-    DirClose();
     
     if (SetupSdKeyY0x34(true, movable_keyY) != 0)
         return 1; // movable.sed has to be present in NAND
@@ -1189,13 +1181,11 @@ u32 DumpGameCart(u32 param)
     
     // create file, write first 0x4000 byte
     Debug("");
-    snprintf(filename, 64, "/%s/%.16s%s.3ds", GAME_DIR, ncch->productCode, (param & CD_DECRYPT) ? "-dec" : "");
+    snprintf(filename, 64, "/%s%s%.16s%s.3ds", GetGameDir() ? GetGameDir() : "", GetGameDir() ? "/" : "", 
+        ncch->productCode, (param & CD_DECRYPT) ? "-dec" : "");
     if (!FileCreate(filename, true)) {
-        snprintf(filename, 64, "%.16s%s.3ds", ncch->productCode, (param & CD_DECRYPT) ? "-dec" : "");
-        if (!FileCreate(filename, true)) {
-            Debug("Could not create output file on SD");
-            return 1;
-        }
+        Debug("Could not create output file on SD");
+        return 1;
     }
     memset(((u8*) ncsd) + 0x1200, 0xFF, 0x4000 - 0x1200);
     if (!DebugFileWrite((void*) ncsd, 0x4000, 0)) {
@@ -1291,13 +1281,11 @@ u32 DumpPrivateHeader(u32 param)
     Debug("%016llX%016llX", getbe64(privateHeader), getbe64(privateHeader + 0x08));
     
     // dump to file
-    snprintf(filename, 64, "/%s/%.16s-private.bin", GAME_DIR, ncch->productCode);
-    if (FileDumpData(filename, privateHeader, 0x50) != 0x50) {
-        snprintf(filename, 64, "%.16s-private.bin", ncch->productCode);
-        if (FileDumpData(filename, privateHeader, 0x50) != 0x50) {
-            Debug("Could not create output file on SD");
-            return 1;
-        }
+    snprintf(filename, 64, "/%s%s%.16s-private.bin", GetGameDir() ? GetGameDir() : "",
+        GetGameDir() ? "/" : "", ncch->productCode);
+    if (!FileCreate(filename, true)) {
+        Debug("Could not create output file on SD");
+        return 1;
     }
     
     return 0;

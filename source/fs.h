@@ -2,8 +2,15 @@
 
 #include "common.h"
 
+#define WORK_DIRS   "/files9", "/Decrypt9"
+#define GAME_DIRS   "/files9/D9Game", "/Decrypt9/D9Game", "/D9Game", WORK_DIRS
+
 bool InitFS();
 void DeinitFS();
+
+/** Work directory handling **/
+const char* GetWorkDir();
+const char* GetGameDir();
 
 /** Checks if there is enough space free on the SD card **/
 bool DebugCheckFreeSpace(size_t required);
@@ -29,10 +36,6 @@ bool DebugFileWrite(void* buf, size_t size, size_t foffset);
 
 /** Gets the size of the opened file */
 size_t FileGetSize();
-
-/** Creates a directory */
-bool DirMake(const char* path);
-bool DebugDirMake(const char* path);
 
 /** Opens an existing directory */
 bool DirOpen(const char* path);
