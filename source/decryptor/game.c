@@ -1283,7 +1283,7 @@ u32 DumpPrivateHeader(u32 param)
     // dump to file
     snprintf(filename, 64, "/%s%s%.16s-private.bin", GetGameDir() ? GetGameDir() : "",
         GetGameDir() ? "/" : "", ncch->productCode);
-    if (!FileCreate(filename, true)) {
+    if (FileDumpData(filename, privateHeader, 0x50) != 0x50) {
         Debug("Could not create output file on SD");
         return 1;
     }
