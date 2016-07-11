@@ -8,15 +8,16 @@
 #include "decryptor/nand.h"
 #include "decryptor/game.h"
 #include "decryptor/xorpad.h"
+#include "fatfs/sdmmc.h"
 
 
 u32 CreatePad(PadInfo *info)
 {
     u8* buffer = BUFFER_ADDRESS;
-    u32 size_bytes = info->size_mb * 1024*1024;
+    u32 size_byte = (info->size_mb) ? info->size_mb * 1024*1024 : info->size_b;
     u32 result = 0;
     
-    if (!DebugCheckFreeSpace(size_bytes))
+    if (!DebugCheckFreeSpace(size_byte))
         return 1;
     
     if (!FileCreate(info->filename, true)) // No DebugFileCreate() here - messages are already given
@@ -25,11 +26,11 @@ u32 CreatePad(PadInfo *info)
     CryptBufferInfo decryptInfo = {.keyslot = info->keyslot, .setKeyY = info->setKeyY, .mode = info->mode, .buffer = buffer};
     memcpy(decryptInfo.ctr, info->ctr, 16);
     memcpy(decryptInfo.keyY, info->keyY, 16);
-    for (u32 i = 0; i < size_bytes; i += BUFFER_MAX_SIZE) {
-        u32 curr_block_size = min(BUFFER_MAX_SIZE, size_bytes - i);
+    for (u32 i = 0; i < size_byte; i += BUFFER_MAX_SIZE) {
+        u32 curr_block_size = min(BUFFER_MAX_SIZE, size_byte - i);
         decryptInfo.size = curr_block_size;
         memset(buffer, 0x00, curr_block_size);
-        ShowProgress(i, size_bytes);
+        ShowProgress(i, size_byte);
         CryptBuffer(&decryptInfo);
         if (!DebugFileWrite((void*)buffer, curr_block_size, i)) {
             result = 1;
@@ -297,6 +298,64 @@ u32 SdPadgenDirect(u32 param)
         memcpy(padInfo.ctr, info->entries[i].ctr, 16);
         memcpy(padInfo.filename, info->entries[i].filename, 180);
         Debug ("%2i: %s (%iMB)", i, info->entries[i].filename, info->entries[i].size_mb);
+        if (CreatePad(&padInfo) != 0)
+            return 1; // this can't fail anyways
+    }
+
+    return 0;
+}
+
+u32 AnyPadgen(u32 param)
+{
+    (void) (param); // param is unused here
+    AnyPadInfo *info = (AnyPadInfo*) 0x20316000;
+    
+    // get header
+    if ((FileGetData("anypad.bin", info, 16, 0) != 16) || !info->n_entries || info->n_entries > MAX_ENTRIES) {
+        Debug("Corrupt or not existing: anypad.bin");
+        return 1;
+    }
+    
+    // get data
+    u32 data_size = info->n_entries * sizeof(AnyPadInfoEntry);
+    if (FileGetData("anypad.bin", (u8*) info + 16, data_size, 16) != data_size) {
+        Debug("File is missing data: anypad.bin");
+        return 1;
+    }
+    
+    Debug("Processing anypad.bin...");
+    Debug("Number of entries: %i", info->n_entries);
+    for (u32 i = 0; i < info->n_entries; i++) { // this translates all entries to a standard padInfo struct
+        AnyPadInfoEntry* entry = &(info->entries[i]);
+        PadInfo padInfo = {.keyslot = entry->keyslot, .setKeyY = 0, .size_mb = 0, .size_b = entry->size_b, .mode = entry->mode};
+        memcpy(padInfo.filename, entry->filename, 80);
+        memcpy(padInfo.ctr, entry->ctr, 16);
+        // process keys
+        if (entry->setNormalKey)
+            setup_aeskey(entry->keyslot, entry->normalKey);
+        if (entry->setKeyX)
+            setup_aeskeyX(entry->keyslot, entry->keyX);
+        if (entry->setKeyY)
+            setup_aeskeyY(entry->keyslot, entry->keyY);
+        use_aeskey(entry->keyslot);
+        // process flags
+        if (entry->flags & (AP_USE_NAND_CTR|AP_USE_SD_CTR)) {
+            u32 ctr_add = getbe32(padInfo.ctr + 12);
+            u8 shasum[32];
+            u8 cid[16];
+            sdmmc_get_cid((entry->flags & AP_USE_NAND_CTR) ? 1 : 0, (uint32_t*) cid);
+            if (entry->mode == AES_CNT_TWLNAND_MODE) {
+                sha_quick(shasum, cid, 16, SHA1_MODE);
+                for (u32 i = 0; i < 16; i++)
+                    padInfo.ctr[i] = shasum[15-i];
+            } else {
+                sha_quick(shasum, cid, 16, SHA256_MODE);
+                memcpy(padInfo.ctr, shasum, 16);
+            }
+            add_ctr(padInfo.ctr, ctr_add);
+        }
+        // create the pad
+        Debug ("%2i: %s (%ikB)", i, entry->filename, entry->size_b / 1024);
         if (CreatePad(&padInfo) != 0)
             return 1; // this can't fail anyways
     }
