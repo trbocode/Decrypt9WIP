@@ -27,38 +27,30 @@ const char* GetWorkDir()
     const char* root = "/";
     const char* work_dirs[] = { WORK_DIRS };
     u32 n_dirs = sizeof(work_dirs) / sizeof(char*);
-    static char* work_dir = NULL;
     
-    if (!work_dir) {
-        u32 i;
-        for (i = 0; i < n_dirs; i++) {
-            FILINFO fno;
-            if ((f_stat(work_dirs[i], &fno) == FR_OK) && (fno.fattrib & AM_DIR))
-                break;
-        }
-        work_dir = (char*) ((i >= n_dirs) ? root : work_dirs[i]);
+    u32 i;
+    for (i = 0; i < n_dirs; i++) {
+        FILINFO fno;
+        if ((f_stat(work_dirs[i], &fno) == FR_OK) && (fno.fattrib & AM_DIR))
+            break;
     }
     
-    return work_dir;
+    return ((i >= n_dirs) ? root : work_dirs[i]);
 }
 
 const char* GetGameDir()
 {
     const char* game_dirs[] = { GAME_DIRS };
     u32 n_dirs = sizeof(game_dirs) / sizeof(char*);
-    static char* game_dir = NULL;
     
-    if (!game_dir) {
-        u32 i;
-        for (i = 0; i < n_dirs; i++) {
-            FILINFO fno;
-            if ((f_stat(game_dirs[i], &fno) == FR_OK) && (fno.fattrib & AM_DIR))
-                break;
-        }
-        game_dir = (char*) ((i >= n_dirs) ? NULL : game_dirs[i]);
+    u32 i;
+    for (i = 0; i < n_dirs; i++) {
+        FILINFO fno;
+        if ((f_stat(game_dirs[i], &fno) == FR_OK) && (fno.fattrib & AM_DIR))
+            break;
     }
     
-    return game_dir;
+    return ((i >= n_dirs) ? NULL : game_dirs[i]);
 }
 
 bool DebugCheckFreeSpace(size_t required)
