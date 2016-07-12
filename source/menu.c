@@ -20,9 +20,6 @@ u32 ScrollOutput()
     u32 l_total = 0; // total lines
     u32 l_curr = 0; // current line
     
-    // read log file (second time)
-    log_size = FileGetData(LOG_FILE, logtext, 1024 * 1024, log_start);
-    
     // allow 1MB of text max
     if ((log_size == 0) || (log_size >= 1024 * 1024))
         return 0;
