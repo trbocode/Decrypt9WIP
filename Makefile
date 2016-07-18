@@ -51,6 +51,8 @@ else ifeq ($(FONT),6x10)
 CFLAGS	+=	-DFONT_6X10
 else ifeq ($(FONT),ACORN)
 CFLAGS	+=	-DFONT_ACORN
+else
+CFLAGS	+=	-DFONT_6X10
 endif
 
 CXXFLAGS	:= $(CFLAGS) -fno-rtti -fno-exceptions
