@@ -10,6 +10,11 @@
 #define SCREEN_HEIGHT 240
 #define SCREEN_WIDTH_TOP 400
 #define SCREEN_WIDTH_BOT 320
+#ifdef USE_LINUX_FONT
+#define FONT_WIDTH_EXT 6
+#else
+#define FONT_WIDTH_EXT 8
+#endif
 
 #define RGB(r,g,b) (r<<24|b<<16|g<<8|r)
 
@@ -39,7 +44,7 @@
 #endif
 
 #define DBG_N_CHARS_Y ((DBG_END_Y - DBG_START_Y) / DBG_STEP_Y)
-#define DBG_N_CHARS_X (((DBG_END_X - DBG_START_X) / 8) + 1)
+#define DBG_N_CHARS_X (((DBG_END_X - DBG_START_X) / FONT_WIDTH) + 1)
 
 #ifdef EXEC_GATEWAY
 	#define TOP_SCREEN0 (u8*)(*(u32*)((uint32_t)0x080FFFC0 + 4 * (*(u32*)0x080FFFD8 & 1)))
