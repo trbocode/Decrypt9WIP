@@ -1025,6 +1025,12 @@ u32 InjectNandPartition(u32 param)
         }
     }
     
+    // if partition is AGBSAVE, set CFG_BOOTENV = 0x7
+    // https://www.3dbrew.org/wiki/CONFIG_Registers#CFG_BOOTENV
+    if (param & P_AGBSAVE) {
+        *(u32*) 0x10010000 = 0x7;
+    }
+    
     return EncryptFileToNand(filename, p_info->offset, p_info->size, p_info);
 }
 
