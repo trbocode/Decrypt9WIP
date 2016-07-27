@@ -1025,12 +1025,6 @@ u32 InjectNandPartition(u32 param)
         }
     }
     
-    // if partition is AGBSAVE, set CFG_BOOTENV = 0x7
-    // https://www.3dbrew.org/wiki/CONFIG_Registers#CFG_BOOTENV
-    if (param & P_AGBSAVE) {
-        *(u32*) 0x10010000 = 0x7;
-    }
-    
     return EncryptFileToNand(filename, p_info->offset, p_info->size, p_info);
 }
 
@@ -1100,6 +1094,110 @@ u32 InjectSector0x96(u32 param)
     }
     
     return 0;
+}
+
+u32 DumpGbaVcSave(u32 param)
+{
+    (void) (param); // param is unused here
+    const u8 magic[8] = { 0x2E, 0x53, 0x41, 0x56, 0xFF, 0xFF, 0xFF, 0xFF };
+    PartitionInfo* p_info = GetPartitionInfo(P_AGBSAVE);
+    u8* agbsave = BUFFER_ADDRESS;
+    u32 save_size = 0;
+    char filename[64];
+    
+    if (CheckKeySlot(0x24, 'Y')) {
+        Debug("slot0x24KeyY not set up");
+        return 1;
+    }
+    
+    Debug("Dumping & Decrypting GBA VC Save...");
+    if (DecryptNandToMem(agbsave, p_info->offset, p_info->size, p_info) != 0)
+        return 1;
+    
+    // check AGBSAVE header
+    if (memcmp(agbsave, magic, 8) != 0) {
+        Debug("AGBSAVE is corrupted or empty");
+        return 1;
+    }
+    
+    // get save size
+    save_size = getle32(agbsave + 0x54);
+    if (save_size + 0x200 > p_info->size) {
+        Debug("Bad save size");
+        return 1;
+    }
+    
+    // check CMAC
+    u8 cmac[16] __attribute__((aligned(32)));
+    u8 shasum[32];
+    sha_quick(shasum, agbsave + 0x30, 0x200 + save_size, SHA256_MODE);
+    use_aeskey(0x24);
+    aes_cmac(shasum, cmac, 2);
+    if (memcmp(agbsave + 0x20, cmac, 16) != 0) {
+        Debug("Warning: current CMAC does not match");
+    }
+    
+    // dump the file
+    if (OutputFileNameSelector(filename, "gbavcsave.bin", NULL) != 0)
+        return 1;
+    if (FileDumpData(filename, agbsave + 0x200, save_size) != save_size) {
+        Debug("Error writing file");
+        return 1;
+    }
+    
+    return 0;
+}
+
+u32 InjectGbaVcSave(u32 param)
+{
+    (void) (param); // param is unused here
+    const u8 magic[8] = { 0x2E, 0x53, 0x41, 0x56, 0xFF, 0xFF, 0xFF, 0xFF };
+    PartitionInfo* p_info = GetPartitionInfo(P_AGBSAVE);
+    u8* agbsave = BUFFER_ADDRESS;
+    u32 save_size = 0;
+    char filename[64];
+    
+    if (CheckKeySlot(0x24, 'Y')) {
+        Debug("slot0x24KeyY not set up");
+        return 1;
+    }
+    
+    if (DecryptNandToMem(agbsave, p_info->offset, 0x200, p_info) != 0)
+        return 1;
+    
+    // check AGBSAVE header
+    if (memcmp(agbsave, magic, 8) != 0) {
+        Debug("AGBSAVE is corrupted or empty");
+        return 1;
+    }
+    
+    // get save size
+    save_size = getle32(agbsave + 0x54);
+    if (save_size + 0x200 > p_info->size) {
+        Debug("Bad save size");
+        return 1;
+    }
+    
+    // get the save from file
+    Debug("Encrypting & Injecting GBA VC Save...");
+    if (InputFileNameSelector(filename, "gbavcsave.bin", NULL, NULL, 0, save_size, false) != 0)
+        return 1;
+    if (FileGetData(filename, agbsave + 0x200, save_size, 0) != save_size)
+        return 1;
+    
+    // fix CMAC
+    u8* cmac = agbsave + 0x20;
+    u8 shasum[32];
+    sha_quick(shasum, agbsave + 0x30, 0x200 + save_size, SHA256_MODE);
+    use_aeskey(0x24);
+    aes_cmac(shasum, cmac, 2);
+    
+    // set CFG_BOOTENV = 0x7 so the save is taken over
+    // https://www.3dbrew.org/wiki/CONFIG_Registers#CFG_BOOTENV
+    *(u32*) 0x10010000 = 0x7;
+    
+    // inject to AGBSAVE partition
+    return EncryptMemToNand(agbsave, p_info->offset, p_info->size, p_info);
 }
 
 u32 DecryptFirmArm9Mem(u8* firm, u32 f_size)

@@ -239,11 +239,13 @@ MenuInfo menu[] =
         }
     },
     {
-        "Miscellaneous... (SysNAND)", 5, // ID 10
+        "Miscellaneous... (SysNAND)", 7, // ID 10
         {
             
             { "Health&Safety Dump",           &DumpHealthAndSafety,   0 },
             { "Health&Safety Inject",         &InjectHealthAndSafety, N_NANDWRITE },
+            { "GBA VC Save Dump",             &DumpGbaVcSave,         0 },
+            { "GBA VC Save Inject",           &InjectGbaVcSave,       0 },
             { "Update SeedDB",                &UpdateSeedDb,          0 },
             { "NCCH FIRMs Dump",              &DumpNcchFirms,         0 },
             { "FIRM ARM9 Decryptor",          &DecryptFirmArm9File,   0 }
@@ -326,6 +328,8 @@ u32 InitializeD9()
             if (LoadKeyFromFile(0x1B, 'X', NULL)) // NCCH Secure4 KeyX
                 errorlevel = (errorlevel < 1) ? 1 : errorlevel;
         }
+        if (LoadKeyFromFile(0x24, 'Y', NULL)) // AGBSAVE CMAC KeyY
+            errorlevel = (errorlevel < 1) ? 1 : errorlevel;
         Debug("Finalizing Initialization...");
         RemainingStorageSpace();
     } else {

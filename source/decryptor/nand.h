@@ -67,5 +67,7 @@ u32 InjectNandPartition(u32 param);
 u32 DecryptSector0x96(u32 param);
 u32 InjectSector0x96(u32 param);
 
+u32 DumpGbaVcSave(u32 param);
+u32 InjectGbaVcSave(u32 param);
 u32 DecryptFirmArm9File(u32 param);
 u32 ValidateNandDump(u32 param);
