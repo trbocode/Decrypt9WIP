@@ -1,6 +1,7 @@
 #include "fs.h"
 #include "draw.h"
 #include "platform.h"
+#include "decryptor/aes.h"
 #include "decryptor/sha.h"
 #include "decryptor/hashfile.h"
 #include "decryptor/game.h"
@@ -43,11 +44,13 @@ TitleListInfo titleList[] = {
     { "AGB_FIRM_N3DS"         , 0x00040138, { 0x20000202, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000 } }
 };
 
-NandFileInfo fileList[] = {
+NandFileInfo fileList[] = { // first six entries are .dbs, placement corresponds to id
     { "ticket.db",             "ticket.db",             "DBS        TICKET  DB ",                P_CTRNAND },
+    { "certs.db",              "certs.db",              "DBS        CERTS   DB ",                P_CTRNAND },
     { "title.db",              "title.db",              "DBS        TITLE   DB ",                P_CTRNAND },
     { "import.db",             "import.db",             "DBS        IMPORT  DB ",                P_CTRNAND },
-    { "certs.db",              "certs.db",              "DBS        CERTS   DB ",                P_CTRNAND },
+    { "tmp_t.db",              "tmp_t.db",              "DBS        TMP_T   DB ",                P_CTRNAND },
+    { "tmp_i.db",              "tmp_i.db",              "DBS        TMP_I   DB ",                P_CTRNAND },
     { "SecureInfo_A",          "SecureInfo",            "RW         SYS        SECURE~?   ",     P_CTRNAND },
     { "LocalFriendCodeSeed_B", "LocalFriendCodeSeed",   "RW         SYS        LOCALF~?   ",     P_CTRNAND },
     { "rand_seed",             "rand_seed",             "RW         SYS        RAND_S~?   ",     P_CTRNAND },
@@ -264,6 +267,25 @@ u32 DebugSeekTitleInNand(u32* offset_tmd, u32* size_tmd, u32* offset_app, u32* s
     return 0;
 }
 
+u32 FixCmac(u8* cmac, u8* data, u32 size, u32 keyslot)
+{
+    u8 lcmac[16] __attribute__((aligned(32)));
+    u8 shasum[32];
+    
+    // calculate cmac (local)
+    sha_quick(shasum, data, size, SHA256_MODE);
+    use_aeskey(keyslot);
+    aes_cmac(shasum, lcmac, 2);
+    if (memcmp(lcmac, cmac, 16) != 0) {
+        memcpy(cmac, lcmac, 16);
+        Debug("CMAC mismatch -> fixed CMAC");
+        return 1;
+    } else {
+        Debug("Validated CMAC okay");
+        return 0;
+    }
+}
+
 u32 DumpFile(u32 param)
 {
     NandFileInfo* f_info = GetNandFileInfo(param);
@@ -299,6 +321,21 @@ u32 InjectFile(u32 param)
         return 1;
     if (EncryptFileToNand(filename, offset, size, p_info) != 0)
         return 1;
+    
+    // fix CMACs for .db files
+    if (f_info - fileList < 6) {
+        u32 id = f_info - fileList;
+        u8 header[0x200];
+        u8 temp[0x200];
+        Debug("Also checking internal .db CMAC...");
+        if (FileGetData(filename, header, 0x200, 0) != 0x200)
+            return 1;
+        memcpy(temp + 0x0, "CTR-9DB0", 8);
+        memcpy(temp + 0x8, &id, 4);
+        memcpy(temp + 0xC, header + 0x100, 0x100);
+        if ((FixCmac(header, temp, 0x10C, 0x0B) != 0) && (EncryptMemToNand(header, offset, 0x200, p_info) != 0))
+            return 1;
+    }
     
     return 0;
 }
@@ -519,6 +556,38 @@ u32 DumpNcchFirms(u32 param)
         Debug("(none)");
     
     return success ? 0 : 1;
+}
+
+u32 AutoFixDbCmacs(u32 param)
+{
+    (void) (param); // param is unused here
+    u32 res = 0;
+    
+    if (!(param & N_NANDWRITE)) // developer screwup protection
+        return 1;
+    
+    Debug("Checking and fixing .db CMACs...");
+    for (u32 id = 0; id < 6; id++) { // fix CMACs for .db files only
+        NandFileInfo* f_info = fileList + id;
+        PartitionInfo* p_info = GetPartitionInfo(f_info->partition_id);
+        u8 header[0x200];
+        u8 temp[0x200];
+        u32 offset;
+        u32 size;
+        if ((DebugSeekFileInNand(&offset, &size, f_info->name_l, f_info->path, p_info) != 0) || (size < 0x200)) {
+            res = 1;
+            continue;
+        }
+        if (DecryptNandToMem(header, offset, 0x200, p_info) != 0)
+            return 1;
+        memcpy(temp + 0x0, "CTR-9DB0", 8);
+        memcpy(temp + 0x8, &id, 4);
+        memcpy(temp + 0xC, header + 0x100, 0x100);
+        if ((FixCmac(header, temp, 0x10C, 0x0B) != 0) && (EncryptMemToNand(header, offset, 0x200, p_info) != 0))
+            return 1;
+    }
+    
+    return res;
 }
 
 u32 UpdateSeedDb(u32 param)

@@ -1133,9 +1133,8 @@ u32 DumpGbaVcSave(u32 param)
     sha_quick(shasum, agbsave + 0x30, 0x200 + save_size, SHA256_MODE);
     use_aeskey(0x24);
     aes_cmac(shasum, cmac, 2);
-    if (memcmp(agbsave + 0x20, cmac, 16) != 0) {
+    if (memcmp(agbsave + 0x20, cmac, 16) != 0)
         Debug("Warning: current CMAC does not match");
-    }
     
     // dump the file
     if (OutputFileNameSelector(filename, "gbavcsave.bin", NULL) != 0)
@@ -1156,6 +1155,9 @@ u32 InjectGbaVcSave(u32 param)
     u8* agbsave = BUFFER_ADDRESS;
     u32 save_size = 0;
     char filename[64];
+    
+    if (!(param & N_NANDWRITE)) // developer screwup protection
+        return 1;
     
     if (CheckKeySlot(0x24, 'Y')) {
         Debug("slot0x24KeyY not set up");

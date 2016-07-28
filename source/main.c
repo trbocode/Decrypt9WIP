@@ -239,25 +239,27 @@ MenuInfo menu[] =
         }
     },
     {
-        "Miscellaneous... (SysNAND)", 7, // ID 10
+        "Miscellaneous... (SysNAND)", 8, // ID 10
         {
             
             { "Health&Safety Dump",           &DumpHealthAndSafety,   0 },
             { "Health&Safety Inject",         &InjectHealthAndSafety, N_NANDWRITE },
             { "GBA VC Save Dump",             &DumpGbaVcSave,         0 },
-            { "GBA VC Save Inject",           &InjectGbaVcSave,       0 },
+            { "GBA VC Save Inject",           &InjectGbaVcSave,       N_NANDWRITE },
             { "Update SeedDB",                &UpdateSeedDb,          0 },
+            { "Autofix .DB CMACs",            &AutoFixDbCmacs,        N_NANDWRITE },
             { "NCCH FIRMs Dump",              &DumpNcchFirms,         0 },
             { "FIRM ARM9 Decryptor",          &DecryptFirmArm9File,   0 }
         }
     },
     {
-        "Miscellaneous... (EmuNAND)", 5, // ID 11
+        "Miscellaneous... (EmuNAND)", 6, // ID 11
         {
             
             { "Health&Safety Dump",           &DumpHealthAndSafety,   N_EMUNAND },
             { "Health&Safety Inject",         &InjectHealthAndSafety, N_NANDWRITE | N_EMUNAND },
             { "Update SeedDB",                &UpdateSeedDb,          N_EMUNAND },
+            { "Autofix .DB CMACs",            &AutoFixDbCmacs,        N_NANDWRITE | N_EMUNAND },
             { "NCCH FIRMs Dump",              &DumpNcchFirms,         N_EMUNAND },
             { "FIRM ARM9 Decryptor",          &DecryptFirmArm9File,   0 }
         }
