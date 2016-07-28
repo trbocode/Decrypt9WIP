@@ -40,7 +40,6 @@
 #define AES_CNT_ECB_DECRYPT_MODE (AES_ECB_DECRYPT_MODE | AES_CNT_INPUT_ORDER | AES_CNT_OUTPUT_ORDER | AES_CNT_INPUT_ENDIAN | AES_CNT_OUTPUT_ENDIAN)
 #define AES_CNT_ECB_ENCRYPT_MODE (AES_ECB_ENCRYPT_MODE | AES_CNT_INPUT_ORDER | AES_CNT_OUTPUT_ORDER | AES_CNT_INPUT_ENDIAN | AES_CNT_OUTPUT_ENDIAN)
 
-
 void setup_aeskeyX(u8 keyslot, void* keyx);
 void setup_aeskeyY(u8 keyslot, void* keyy);
 void setup_aeskey(u8 keyslot, void* keyy);
