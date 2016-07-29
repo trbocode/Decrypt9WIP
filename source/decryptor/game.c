@@ -279,7 +279,7 @@ u32 CryptNcch(const char* filename, u32 offset, u32 size, u64 seedId, u8* encryp
     bool usesSec4Crypto = (ncch->flags[3] == 0x0B);
     bool usesFixedKey = ncch->flags[7] & 0x01;
     
-    Debug("Code / Crypto: %.16s / %s%s%s%s", ncch->productCode, (usesFixedKey) ? "FixedKey " : "", (usesSec4Crypto) ? "Secure4 " : (usesSec3Crypto) ? "Secure3 " : (uses7xCrypto) ? "7x " : "", (usesSeedCrypto) ? "Seed " : "", (!uses7xCrypto && !usesSeedCrypto && !usesFixedKey) ? "Standard" : "");
+    Debug("Code / Crypto: %.16s / %s%s%s%s", ncch->productcode, (usesFixedKey) ? "FixedKey " : "", (usesSec4Crypto) ? "Secure4 " : (usesSec3Crypto) ? "Secure3 " : (uses7xCrypto) ? "7x " : "", (usesSeedCrypto) ? "Seed " : "", (!uses7xCrypto && !usesSeedCrypto && !usesFixedKey) ? "Standard" : "");
     
     // setup zero key crypto
     if (usesFixedKey) {
@@ -428,12 +428,10 @@ u32 CryptNcch(const char* filename, u32 offset, u32 size, u64 seedId, u8* encryp
 
 u32 CryptCia(const char* filename, u8* ncch_crypt, bool cia_encrypt, bool cxi_only)
 {
+    const u8 sig_type[4] =  { 0x00, 0x01, 0x00, 0x04 };
     u8* buffer = (u8*) 0x20316600;
     __attribute__((aligned(16))) u8 titlekey[16];
     u64 titleId;
-    u8* content_list;
-    u8* ticket_data;
-    u8* tmd_data;
     
     u32 offset_ticktmd;
     u32 offset_content;    
@@ -490,45 +488,40 @@ u32 CryptCia(const char* filename, u8* ncch_crypt, bool cia_encrypt, bool cxi_on
     }
     FileClose();
     
-    u32 signature_size[2] = { 0 };
-    u8* section_data[2] = {buffer, buffer + align(size_ticket, 64)};
-    for (u32 i = 0; i < 2; i++) {
-        u32 type = section_data[i][3];
-        signature_size[i] = (type == 3) ? 0x240 : (type == 4) ? 0x140 : (type == 5) ? 0x80 : 0;         
-        if ((signature_size[i] == 0) || (memcmp(section_data[i], "\x00\x01\x00", 3) != 0)) {
-            Debug("Unknown signature type: %08X", getbe32(section_data[i]));
-            return 1;
-        }
+    Ticket* ticket = (Ticket*) buffer;
+    TitleMetaData* tmd = (TitleMetaData*) (buffer + align(size_ticket, 64));
+    TmdContentChunk* content_list = (TmdContentChunk*) (tmd + 1);
+    if (memcmp(ticket->sig_type, sig_type, 4) != 0) {
+        Debug("Bad ticket signature type");
+        return 1; // this should never happen
+    }
+    if (memcmp(tmd->sig_type, sig_type, 4) != 0) {
+        Debug("Bad TMD signature type");
+        return 1; // this should never happen
     }
     
-    ticket_data = section_data[0] + signature_size[0];
-    size_ticket -= signature_size[0];
-    tmd_data = section_data[1] + signature_size[1];
-    size_tmd -= signature_size[1];
-    
     // extract & decrypt titlekey
-    if (size_ticket < 0x210) {
+    if (size_ticket < 0x140 + 0x210) {
         Debug("Ticket is too small (%i byte)", size_ticket);
         return 1;
     }
     TitleKeyEntry titlekeyEntry;
-    titleId = getbe64(ticket_data + 0x9C);
-    memcpy(titlekeyEntry.titleId, ticket_data + 0x9C, 8);
-    memcpy(titlekeyEntry.titleKey, ticket_data + 0x7F, 16);
-    titlekeyEntry.commonKeyIndex = *(ticket_data + 0xB1);
+    titleId = getbe64(ticket->title_id);
+    memcpy(titlekeyEntry.titleId, ticket->title_id, 8);
+    memcpy(titlekeyEntry.titleKey, ticket->titlekey, 16);
+    titlekeyEntry.commonKeyIndex = ticket->commonkey_idx;
     CryptTitlekey(&titlekeyEntry, false);
     memcpy(titlekey, titlekeyEntry.titleKey, 16);
     
     // get content data from TMD
-    content_count = getbe16(tmd_data + 0x9E);
-    content_list = tmd_data + 0xC4 + (64 * 0x24);
-    if (content_count * 0x30 != size_tmd - (0xC4 + (64 * 0x24))) {
+    content_count = getbe16(tmd->content_count);
+    if (content_count * 0x30 != size_tmd - (0x140 + 0xC4 + (64 * 0x24))) {
         Debug("TMD content count (%i) / list size mismatch", content_count);
         return 1;
     }
-    u32 size_tmd_content = 0;
+    u64 size_tmd_content = 0;
     for (u32 i = 0; i < content_count; i++)
-        size_tmd_content += getbe32(content_list + (0x30 * i) + 0xC);
+        size_tmd_content += getbe64(content_list[i].size);
     if (size_tmd_content != size_content) {
         Debug("TMD content size / actual size mismatch");
         return 1;
@@ -544,15 +537,15 @@ u32 CryptCia(const char* filename, u8* ncch_crypt, bool cia_encrypt, bool cxi_on
         Debug("Pass #1: CIA decryption...");
     if (cxi_only) content_count = 1;
     for (u32 i = 0; i < content_count; i++) {
-        u32 size = getbe32(content_list + (0x30 * i) + 0xC);
+        u32 size = (u32) getbe64(content_list[i].size);
         u32 offset = next_offset;
         next_offset = offset + size;
-        if (!(content_list[(0x30 * i) + 0x7] & 0x1) != cia_encrypt)
+        if (!(content_list[i].type[1] & 0x1) != cia_encrypt)
             continue; // depending on 'cia_encrypt' setting: not/already encrypted
         untouched = false;
         if (cia_encrypt) {
             Debug("Verifying unencrypted content...");
-            if (CheckHashFromFile(filename, offset, size, content_list + (0x30 * i) + 0x10) != 0) {
+            if (CheckHashFromFile(filename, offset, size, content_list[i].hash) != 0) {
                 Debug("Verification failed!");
                 result = 1;
                 continue;
@@ -561,7 +554,7 @@ u32 CryptCia(const char* filename, u8* ncch_crypt, bool cia_encrypt, bool cxi_on
         }
         Debug("%scrypting Content %i of %i (%iMB)...", (cia_encrypt) ? "En" : "De", i + 1, content_count, size / (1024*1024));
         memset(info.ctr, 0x00, 16);
-        memcpy(info.ctr, content_list + (0x30 * i) + 4, 2);
+        memcpy(info.ctr, content_list[i].index, 2);
         if (CryptSdToSd(filename, offset, size, &info, true) != 0) {
             Debug("%scryption failed!", (cia_encrypt) ? "En" : "De");
             result = 1;
@@ -569,14 +562,14 @@ u32 CryptCia(const char* filename, u8* ncch_crypt, bool cia_encrypt, bool cxi_on
         }
         if (!cia_encrypt) {
             Debug("Verifying decrypted content...");
-            if (CheckHashFromFile(filename, offset, size, content_list + (0x30 * i) + 0x10) != 0) {
+            if (CheckHashFromFile(filename, offset, size, content_list[i].hash) != 0) {
                 Debug("Verification failed!");
                 result = 1;
                 continue;
             }
             Debug("Verified OK!");
         }
-        content_list[(0x30 * i) + 0x7] ^= 0x1;
+        content_list[i].type[1] ^= 0x1;
         n_processed++;
     }
     
@@ -588,7 +581,7 @@ u32 CryptCia(const char* filename, u8* ncch_crypt, bool cia_encrypt, bool cxi_on
             u32 size = getbe32(content_list + (0x30 * i) + 0xC);
             u32 offset = next_offset;
             next_offset = offset + size;
-            if (content_list[(0x30 * i) + 0x7] & 0x1)
+            if (content_list[i].type[1] & 0x1)
                 continue; // skip this if still CIA (shallow) encrypted
             Debug("Processing Content %i of %i (%iMB)...", i + 1, content_count, size / (1024*1024));
             ncch_state = CryptNcch(filename, offset, size, titleId, NULL);
@@ -597,7 +590,7 @@ u32 CryptCia(const char* filename, u8* ncch_crypt, bool cia_encrypt, bool cxi_on
             if (ncch_state == 0) {
                 untouched = false;
                 Debug("Recalculating hash...");
-                if (GetHashFromFile(filename, offset, size, content_list + (0x30 * i) + 0x10) != 0) {
+                if (GetHashFromFile(filename, offset, size, content_list[i].hash) != 0) {
                     Debug("Recalculation failed!");
                     result = 1;
                     continue;
@@ -613,15 +606,12 @@ u32 CryptCia(const char* filename, u8* ncch_crypt, bool cia_encrypt, bool cxi_on
             // recalculate content info hashes
             Debug("Recalculating TMD hashes...");
             for (u32 i = 0, kc = 0; i < 64 && kc < content_count; i++) {
-                u32 k = getbe16(tmd_data + 0xC4 + (i * 0x24) + 0x02);
-                u8 chunk_hash[32];
-                sha_quick(chunk_hash, content_list + kc * 0x30, k * 0x30, SHA256_MODE);
-                memcpy(tmd_data + 0xC4 + (i * 0x24) + 0x04, chunk_hash, 32);
+                TmdContentInfo* cntinfo = tmd->contentinfo + i;
+                u32 k = getbe16(cntinfo->cmd_count);
+                sha_quick(cntinfo->hash, content_list + kc, k * sizeof(TmdContentChunk), SHA256_MODE);
                 kc += k;
             }
-            u8 tmd_hash[32];
-            sha_quick(tmd_hash, tmd_data + 0xC4, 64 * 0x24, SHA256_MODE);
-            memcpy(tmd_data + 0xA4, tmd_hash, 32);
+            sha_quick(tmd->contentinfo_hash, (u8*)tmd->contentinfo, 64 * sizeof(TmdContentInfo), SHA256_MODE);
         }
     }
     
@@ -1155,7 +1145,7 @@ u32 DumpGameCart(u32 param)
     }
     
     // output some info
-    Debug("Product ID: %.16s", ncch->productCode);
+    Debug("Product ID: %.16s", ncch->productcode);
     Debug("Cartridge data size: %lluMB", cart_size / 0x100000);
     Debug("Cartridge used size: %lluMB", data_size / 0x100000);
     if (data_size > cart_size) {
@@ -1182,7 +1172,7 @@ u32 DumpGameCart(u32 param)
     // create file, write first 0x4000 byte
     Debug("");
     snprintf(filename, 64, "/%s%s%.16s%s.3ds", GetGameDir() ? GetGameDir() : "", GetGameDir() ? "/" : "", 
-        ncch->productCode, (param & CD_DECRYPT) ? "-dec" : "");
+        ncch->productcode, (param & CD_DECRYPT) ? "-dec" : "");
     if (!FileCreate(filename, true)) {
         Debug("Could not create output file on SD");
         return 1;
@@ -1194,7 +1184,7 @@ u32 DumpGameCart(u32 param)
     }
     
     if (!(param & CD_DECRYPT)) { // dump the encrypted cart
-        Debug("Dumping cartridge %.16s (%lluMB)...", ncch->productCode, dump_size / 0x100000);
+        Debug("Dumping cartridge %.16s (%lluMB)...", ncch->productcode, dump_size / 0x100000);
         result = DumpCartToFile(0x4000, dump_size - 0x4000, dump_size, NULL, NULL);
     } else { // dump decrypted partitions
         u32 p;
@@ -1282,7 +1272,7 @@ u32 DumpPrivateHeader(u32 param)
     
     // dump to file
     snprintf(filename, 64, "/%s%s%.16s-private.bin", GetGameDir() ? GetGameDir() : "",
-        GetGameDir() ? "/" : "", ncch->productCode);
+        GetGameDir() ? "/" : "", ncch->productcode);
     if (FileDumpData(filename, privateHeader, 0x50) != 0x50) {
         Debug("Could not create output file on SD");
         return 1;

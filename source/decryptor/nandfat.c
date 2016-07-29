@@ -422,27 +422,29 @@ u32 InjectHealthAndSafety(u32 param)
         return 1;
     
     Debug("Fixing TMD...");
-    u8* tmd_data = (u8*) 0x20316000;
-    if (DecryptNandToMem(tmd_data, offset_tmd, size_tmd, ctrnand_info) != 0)
-        return 1; 
-    tmd_data += (tmd_data[3] == 3) ? 0x240 : (tmd_data[3] == 4) ? 0x140 : 0x80;
-    u8* content_list = tmd_data + 0xC4 + (64 * 0x24);
-    u32 cnt_count = getbe16(tmd_data + 0x9E);
-    if (GetHashFromFile("hs.enc", 0, size_app[0], content_list + 0x10) != 0) {
+    TitleMetaData* tmd = (TitleMetaData*) 0x20316000;
+    TmdContentChunk* content_list = (TmdContentChunk*) (tmd + 1);
+    const u8 sig_type[4] = { 0x00, 0x01, 0x00, 0x04 };
+    if (DecryptNandToMem((u8*) tmd, offset_tmd, size_tmd, ctrnand_info) != 0)
+        return 1;
+    u32 cnt_count = getbe16(tmd->content_count);
+    if (memcmp(tmd->sig_type, sig_type, 4) != 0) {
+        Debug("Bad TMD signature type");
+        return 1; // this should never happen
+    }
+    if (GetHashFromFile("hs.enc", 0, size_app[0], content_list->hash) != 0) {
         Debug("Failed!");
         return 1;
     }
     for (u32 i = 0, kc = 0; i < 64 && kc < cnt_count; i++) {
-        u32 k = getbe16(tmd_data + 0xC4 + (i * 0x24) + 0x02);
-        u8* chunk_hash = tmd_data + 0xC4 + (i * 0x24) + 0x04;
-        sha_quick(chunk_hash, content_list + kc * 0x30, k * 0x30, SHA256_MODE);
+        TmdContentInfo* cntinfo = tmd->contentinfo + i;
+        u32 k = getbe16(cntinfo->cmd_count);
+        sha_quick(cntinfo->hash, content_list + kc, k * sizeof(TmdContentChunk), SHA256_MODE);
         kc += k;
     }
-    u8* tmd_hash = tmd_data + 0xA4;
-    sha_quick(tmd_hash, tmd_data + 0xC4, 64 * 0x24, SHA256_MODE);
-    tmd_data = (u8*) 0x20316000;
-    if (EncryptMemToNand(tmd_data, offset_tmd, size_tmd, ctrnand_info) != 0)
-        return 1; 
+    sha_quick(tmd->contentinfo_hash, (u8*)tmd->contentinfo, 64 * sizeof(TmdContentInfo), SHA256_MODE);
+    if (EncryptMemToNand((u8*) tmd, offset_tmd, size_tmd, ctrnand_info) != 0)
+        return 1;
     
     
     return 0;

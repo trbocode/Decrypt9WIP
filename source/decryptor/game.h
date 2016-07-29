@@ -32,7 +32,7 @@ typedef struct {
 typedef struct {
 	u32 offset;
 	u32 size;
-} NcchPartition;
+} __attribute__((packed)) NcchPartition;
 
 typedef struct {
 	u8  signature[0x100];
@@ -48,7 +48,7 @@ typedef struct {
 	u8  partition_flags[8];
 	u8  partitionId_table[8][8];
 	u8  reserved[0x40];
-} NcsdHeader;
+} __attribute__((packed, aligned(16))) NcsdHeader;
 
 typedef struct {
     u8  signature[0x100];
@@ -61,7 +61,7 @@ typedef struct {
     u64 programId;
     u8  reserved1[0x10];
     u8  hash_logo[0x20];
-    char productCode[0x10];
+    char productcode[0x10];
     u8  hash_exthdr[0x20];
     u32 size_exthdr;
     u8  reserved2[0x4];
@@ -82,6 +82,75 @@ typedef struct {
     u8  hash_romfs[0x20];
 } __attribute__((packed, aligned(16))) NcchHeader;
 
+// from: https://github.com/profi200/Project_CTR/blob/02159e17ee225de3f7c46ca195ff0f9ba3b3d3e4/ctrtool/tik.h#L15-L39
+typedef struct {
+    u8 sig_type[4];
+	u8 signature[0x100];
+	u8 padding1[0x3C];
+	u8 issuer[0x40];
+	u8 ecdsa[0x3C];
+    u8 version;
+    u8 ca_crl_version;
+    u8 signer_crl_version;
+	u8 titlekey[0x10];
+	u8 reserved0;
+	u8 ticket_id[8];
+	u8 console_id[4];
+	u8 title_id[8];
+	u8 sys_access[2];
+	u8 ticket_version[2];
+	u8 time_mask[4];
+	u8 permit_mask[4];
+	u8 title_export;
+	u8 commonkey_idx;
+	u8 unknown_buf[0x30];
+	u8 content_permissions[0x40];
+	u8 reserved1[2];
+	u8 timelimits[0x40];
+    u8 content_index[0xAC];
+} __attribute__((packed)) Ticket;
+
+// from: https://github.com/profi200/Project_CTR/blob/02159e17ee225de3f7c46ca195ff0f9ba3b3d3e4/ctrtool/tmd.h#L18-L59;
+typedef struct {
+	u8 id[4];
+	u8 index[2];
+    u8 type[2];
+    u8 size[8];
+    u8 hash[0x20];
+} __attribute__((packed)) TmdContentChunk;
+
+typedef struct {
+	u8 index[2];
+	u8 cmd_count[2];
+	u8 hash[0x20];
+} __attribute__((packed)) TmdContentInfo;
+
+typedef struct {
+    u8 sig_type[4];
+    u8 signature[0x100];
+	u8 padding[0x3C];
+	u8 issuer[0x40];
+    u8 version;
+    u8 ca_crl_version;
+    u8 signer_crl_version;
+	u8 reserved0;
+	u8 system_version[8];
+	u8 title_id[8];
+	u8 title_type[4];
+	u8 group_id[2];
+	u8 save_size[4];
+	u8 twl_privsave_size[4];
+	u8 reserved1[4];
+	u8 twl_flag;
+	u8 reserved2[0x31];
+	u8 access_rights[4];
+	u8 title_version[2];
+	u8 content_count[2];
+	u8 boot_content[2];
+	u8 reserved3[2];
+	u8 contentinfo_hash[0x20];
+	TmdContentInfo contentinfo[64];
+} __attribute__((packed)) TitleMetaData;
 
 u32 GetSdCtr(u8* ctr, const char* path);
 u32 GetNcchCtr(u8* ctr, NcchHeader* ncch, u8 sub_id);
