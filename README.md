@@ -183,9 +183,10 @@ You may use this under the terms of the GNU General Public License GPL v2 or und
 * Everyone mentioned by Archshift above
 * Archshift for starting this project and being a great project maintainer
 * b1l1s, Normmatt for their 'behind-the-scenes' work and for making arm9loaderhax support possible
+* Gelex for various code improvements and useful advice throughout D9 development
 * patois, delebile, SteveIce10 for Brahma and it's updates
 * mid-kid for CakeHax and for hosting freenode #Cakey
 * Shadowtrance, dark_samus3, Syphurith, AuroraWright for being of great help developing this
 * profi200 for helpful hints that first made developing some features possible
-* Datalogger, zoogie, atkfromabove, mixups, key1340, k8099, Al3x_10m, Supster131, stbinan, Wolfvak, Gelex and countless others from freenode #Cakey and the GBAtemp forums for testing, feedback and helpful hints
+* Datalogger, zoogie, atkfromabove, mixups, key1340, k8099, Al3x_10m, Supster131, stbinan, Wolfvak and countless others from freenode #Cakey and the GBAtemp forums for testing, feedback and helpful hints
 * Everyone I forgot about - if you think you deserve to be mentioned, just contact me
