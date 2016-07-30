@@ -560,22 +560,24 @@ u32 DumpNcchFirms(u32 param)
     return success ? 0 : 1;
 }
 
-u32 AutoFixDbCmacs(u32 param)
+u32 AutoFixCmacs(u32 param)
 {
     (void) (param); // param is unused here
+    NandFileInfo* f_info;
+    PartitionInfo* p_info;
+    u32 offset;
+    u32 size;
     u32 res = 0;
     
     if (!(param & N_NANDWRITE)) // developer screwup protection
         return 1;
     
     Debug("Checking and fixing .db CMACs...");
-    for (u32 id = 0; id < 6; id++) { // fix CMACs for .db files only
-        NandFileInfo* f_info = fileList + id;
-        PartitionInfo* p_info = GetPartitionInfo(f_info->partition_id);
+    for (u32 id = 0; id < 6; id++) { // fix CMACs for .db files
         u8 header[0x200];
         u8 temp[0x200];
-        u32 offset;
-        u32 size;
+        f_info = fileList + id;
+        p_info = GetPartitionInfo(f_info->partition_id);
         if ((DebugSeekFileInNand(&offset, &size, f_info->name_l, f_info->path, p_info) != 0) || (size < 0x200)) {
             res = 1;
             continue;
@@ -588,6 +590,25 @@ u32 AutoFixDbCmacs(u32 param)
         if ((FixCmac(header, temp, 0x10C, 0x0B) != 0) && (EncryptMemToNand(header, offset, 0x200, p_info) != 0))
             return 1;
     }
+    
+    Debug("Checking and fixing movable.sed CMAC...");
+    f_info = GetNandFileInfo(F_MOVABLE);
+    p_info = GetPartitionInfo(f_info->partition_id);
+    u8 movable[0x200];
+    if ((DebugSeekFileInNand(&offset, &size, f_info->name_l, f_info->path, p_info) != 0) || (size < 0x120)) {
+        return 1;
+    }
+    if (size == 0x120) {
+        Debug("movable.sed has no CMAC yet");
+        return res;
+    } else if (size != 0x140) {
+        Debug("movable.sed has bad size");
+        return 1;
+    }
+    if (DecryptNandToMem(movable, offset, 0x200, p_info) != 0)
+        return 1;
+    if ((FixCmac(movable + 0x130, movable, 0x130, 0x0B) != 0) && (EncryptMemToNand(movable, offset, 0x200, p_info) != 0))
+            return 1;
     
     return res;
 }
