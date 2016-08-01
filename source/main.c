@@ -65,19 +65,12 @@ MenuInfo menu[] =
         }
     },
     {
-        "Content Decryptor Options", 11,
+        "Content Decryptor Options", 4,
         {
-            { "NCCH/NCSD Decryptor",          &CryptGameFiles,        GC_NCCH_PROCESS },
-            { "NCCH/NCSD Encryptor",          &CryptGameFiles,        GC_NCCH_PROCESS | GC_NCCH_ENCRYPT },
-            { "CIA Decryptor (shallow)",      &CryptGameFiles,        GC_CIA_PROCESS },
-            { "CIA Decryptor (deep)",         &CryptGameFiles,        GC_CIA_PROCESS | GC_CIA_DEEP },
-            { "CIA Decryptor (CXI only)",     &CryptGameFiles,        GC_CIA_PROCESS | GC_CIA_DEEP | GC_CXI_ONLY },
-            { "CIA Encryptor (NCCH)",         &CryptGameFiles,        GC_CIA_PROCESS | GC_NCCH_ENCRYPT },
-            { "BOSS Decryptor",               &CryptGameFiles,        GC_BOSS_PROCESS },
-            { "BOSS Encryptor",               &CryptGameFiles,        GC_BOSS_PROCESS | GC_BOSS_ENCRYPT },
-            { "SD Decryptor/Encryptor",       &CryptSdFiles,          0 },
-            { "SD Decryptor (SysNAND dir)",   &DecryptSdFilesDirect,  0 },
-            { "SD Decryptor (EmuNAND dir)",   &DecryptSdFilesDirect,  N_EMUNAND }
+            { "NCCH/NCSD File Options...",    NULL,                   SUBMENU_START + 12 },
+            { "CIA File Options...",          NULL,                   SUBMENU_START + 13 },
+            { "BOSS File Options...",         NULL,                   SUBMENU_START + 14 },
+            { "SD File Options...",           NULL,                   SUBMENU_START + 15 }
         }
     },
     {
@@ -262,6 +255,39 @@ MenuInfo menu[] =
             { "Autofix CMACs",                &AutoFixCmacs,          N_NANDWRITE | N_EMUNAND },
             { "NCCH FIRMs Dump",              &DumpNcchFirms,         N_EMUNAND },
             { "FIRM ARM9 Decryptor",          &DecryptFirmArm9File,   0 }
+        }
+    },
+    {
+        "NCCH/NCSD File Options", 3, // ID 12
+        {
+            { "NCCH/NCSD Decryptor",          &CryptGameFiles,        GC_NCCH_PROCESS },
+            { "NCCH/NCSD Encryptor (0x2C)",   &CryptGameFiles,        GC_NCCH_PROCESS | GC_NCCH_ENC0x2C },
+            { "NCCH/NCSD Encryptor (zero)",   &CryptGameFiles,        GC_NCCH_PROCESS | GC_NCCH_ENCZERO }
+        }
+    },
+    {
+        "CIA File Options", 5, // ID 13
+        {
+            { "CIA Decryptor (shallow)",      &CryptGameFiles,        GC_CIA_PROCESS },
+            { "CIA Decryptor (deep)",         &CryptGameFiles,        GC_CIA_PROCESS | GC_CIA_DEEP },
+            { "CIA Decryptor (CXI only)",     &CryptGameFiles,        GC_CIA_PROCESS | GC_CIA_DEEP | GC_CXI_ONLY },
+            { "CIA Encryptor (NCCH 0x2C)",    &CryptGameFiles,        GC_CIA_PROCESS | GC_NCCH_ENC0x2C },
+            { "CIA Encryptor (NCCH zero)",    &CryptGameFiles,        GC_CIA_PROCESS | GC_NCCH_ENCZERO }
+        }
+    },
+    {
+        "BOSS File Options", 2, // ID 14
+        {
+            { "BOSS Decryptor",               &CryptGameFiles,        GC_BOSS_PROCESS },
+            { "BOSS Encryptor",               &CryptGameFiles,        GC_BOSS_PROCESS | GC_BOSS_ENCRYPT }
+        }
+    },
+    {
+        "SD File Options", 3, // ID 15
+        {
+            { "SD Decryptor/Encryptor",       &CryptSdFiles,          0 },
+            { "SD Decryptor (SysNAND dir)",   &DecryptSdFilesDirect,  0 },
+            { "SD Decryptor (EmuNAND dir)",   &DecryptSdFilesDirect,  N_EMUNAND }
         }
     },
     {

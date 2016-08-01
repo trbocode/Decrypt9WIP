@@ -705,6 +705,7 @@ u32 CryptGameFiles(u32 param)
 {
     u8 ncch_crypt_none[8]     = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x04 };
     u8 ncch_crypt_standard[8] = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
+    u8 ncch_crypt_zerokey[8]  = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01 };
     const u8 boss_magic[] = {0x62, 0x6F, 0x73, 0x73, 0x00, 0x01, 0x00, 0x01};
     const char* ncsd_partition_name[8] = {
         "Executable", "Manual", "DPC", "Unknown", "Unknown", "Unknown", "UpdateN3DS", "UpdateO3DS" 
@@ -718,7 +719,8 @@ u32 CryptGameFiles(u32 param)
     bool boss_encrypt = param & GC_BOSS_ENCRYPT;
     bool cia_encrypt = param & GC_CIA_ENCRYPT;
     bool cxi_only = param & GC_CXI_ONLY;
-    u8* ncch_crypt = (param & GC_NCCH_ENCRYPT) ? ncch_crypt_standard : NULL;
+    u8* ncch_crypt = (param & GC_NCCH_ENC0x2C) ? ncch_crypt_standard :
+        (param & GC_NCCH_ENCZERO) ? ncch_crypt_zerokey : NULL;
     u8* cia_ncch_crypt = (param & GC_CIA_DEEP) ? ncch_crypt_none : ncch_crypt;
     
     u32 n_processed = 0;
