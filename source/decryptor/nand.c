@@ -1130,10 +1130,10 @@ u32 DumpGbaVcSave(u32 param)
     // check CMAC
     u8 cmac[16] __attribute__((aligned(32)));
     u8 shasum[32];
-    sha_quick(shasum, agbsave + 0x30, 0x200 + save_size, SHA256_MODE);
+    sha_quick(shasum, agbsave + 0x30, (0x200 - 0x30) + save_size, SHA256_MODE);
     use_aeskey(0x24);
     aes_cmac(shasum, cmac, 2);
-    if (memcmp(agbsave + 0x20, cmac, 16) != 0)
+    if (memcmp(agbsave + 0x10, cmac, 16) != 0)
         Debug("Warning: current CMAC does not match");
     
     // dump the file
@@ -1188,9 +1188,9 @@ u32 InjectGbaVcSave(u32 param)
         return 1;
     
     // fix CMAC
-    u8* cmac = agbsave + 0x20;
+    u8* cmac = agbsave + 0x10;
     u8 shasum[32];
-    sha_quick(shasum, agbsave + 0x30, 0x200 + save_size, SHA256_MODE);
+    sha_quick(shasum, agbsave + 0x30, (0x200 - 0x30) + save_size, SHA256_MODE);
     use_aeskey(0x24);
     aes_cmac(shasum, cmac, 2);
     
