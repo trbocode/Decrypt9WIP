@@ -22,7 +22,7 @@ u32 CryptBuffer(CryptBufferInfo *info)
     use_aeskey(info->keyslot);
 
     if ((mode & (0x7 << 27)) == AES_CTR_MODE) {
-        ctr_decrypt((void*) buffer, (void*) buffer, size / 0x10, mode, ctr);
+        ctr_decrypt((void*) buffer, (void*) buffer, (size + 0xF) / 0x10, mode, ctr);
     } else for (u32 i = 0; i < size; i += 0x10, buffer += 0x10) {
         if (((mode & (0x7 << 27)) != AES_ECB_DECRYPT_MODE) && ((mode & (0x7 << 27)) != AES_ECB_ENCRYPT_MODE))
             set_ctr(ctr);

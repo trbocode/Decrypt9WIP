@@ -376,7 +376,7 @@ u32 CryptNcch(const char* filename, u32 offset, u32 size, u64 seedId, u8* encryp
             for (u32 i = 0; i < 10; i++) {
                 char* name_exefs_file = (char*) buffer + (i*0x10);
                 u32 offset_exefs_file = getle32(buffer + (i*0x10) + 0x8) + 0x200;
-                u32 size_exefs_file = getle32(buffer + (i*0x10) + 0xC);
+                u32 size_exefs_file = align(getle32(buffer + (i*0x10) + 0xC), 0x200);
                 CryptBufferInfo* infoExeFs = ((strncmp(name_exefs_file, "banner", 8) == 0) ||
                     (strncmp(name_exefs_file, "icon", 8) == 0)) ? &info0 : &info1;
                 if (size_exefs_file == 0)
@@ -1069,7 +1069,7 @@ static u32 DecryptCartNcchToFile(u32 offset, u32 size, u32 total)
         for (u32 i = 0; i < 10; i++) {
             char* name = (char*) exefs + (i*0x10);
             u32 offset_exefs_file = getle32(exefs + (i*0x10) + 0x8) + 0x200;
-            u32 size_exefs_file = getle32(exefs + (i*0x10) + 0xC);
+            u32 size_exefs_file = align(getle32(exefs + (i*0x10) + 0xC), 0x200);
             if (!size_exefs_file)
                 continue;
             GetNcchCtr(info.ctr, ncch, 2);
