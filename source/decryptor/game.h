@@ -153,6 +153,34 @@ typedef struct {
 	TmdContentInfo contentinfo[64];
 } __attribute__((packed)) TitleMetaData;
 
+typedef struct {
+    u32 offset_cert;
+    u32 offset_ticktmd;
+    u32 offset_ticket;
+    u32 offset_tmd;
+    u32 offset_meta;
+    u32 offset_content;
+    u32 size_cert;
+    u32 size_ticktmd;
+    u32 size_ticket;
+    u32 size_tmd;
+    u32 size_meta;
+    u64 size_content;
+    u64 size_cia;
+} __attribute__((packed)) CiaInfo;
+
+typedef struct {
+    u32 size_header;
+    u16 type;
+    u16 version;
+    u32 size_cert;
+    u32 size_ticket;
+    u32 size_tmd;
+    u32 size_meta;
+    u64 size_content;
+    u8  content_index[0x2000];
+} __attribute__((packed)) CiaHeader;
+
 u32 GetSdCtr(u8* ctr, const char* path);
 u32 GetNcchCtr(u8* ctr, NcchHeader* ncch, u8 sub_id);
 u32 SdFolderSelector(char* path, u8* keyY);

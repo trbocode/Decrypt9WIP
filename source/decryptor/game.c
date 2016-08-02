@@ -426,20 +426,34 @@ u32 CryptNcch(const char* filename, u32 offset, u32 size, u64 seedId, u8* encryp
     return ((result == 0) && !encrypt_flags) ? VerifyNcch(filename, offset) : result;
 }
 
+u32 GetCiaInfo(CiaInfo* info, CiaHeader* header)
+{
+    info->offset_cert = align(header->size_header, 64);
+    info->offset_ticket = info->offset_cert + align(header->size_cert, 64);
+    info->offset_tmd = info->offset_ticket + align(header->size_ticket, 64);
+    info->offset_content = info->offset_tmd + align(header->size_tmd, 64);
+    info->offset_meta = (header->size_meta) ? info->offset_content + align(header->size_content, 64) : 0;
+    info->offset_ticktmd = info->offset_ticket;
+    
+    info->size_cert = header->size_cert;
+    info->size_ticket = header->size_ticket;
+    info->size_tmd = header->size_tmd;
+    info->size_content = header->size_content;
+    info->size_meta = header->size_meta;
+    info->size_ticktmd = info->offset_content - info->offset_ticket;
+    info->size_cia = (header->size_meta) ? info->offset_meta + info->size_meta :
+        info->offset_content + info->size_content;
+    
+    return 0;
+}
+
 u32 CryptCia(const char* filename, u8* ncch_crypt, bool cia_encrypt, bool cxi_only)
 {
     const u8 sig_type[4] =  { 0x00, 0x01, 0x00, 0x04 };
     u8* buffer = (u8*) 0x20316600;
     __attribute__((aligned(16))) u8 titlekey[16];
+    CiaInfo cia;
     u64 titleId;
-    
-    u32 offset_ticktmd;
-    u32 offset_content;    
-    u32 size_ticktmd;
-    u32 size_ticket;
-    u32 size_tmd;
-    u32 size_content;
-    
     u32 content_count;
     u32 result = 0;
     
@@ -454,42 +468,30 @@ u32 CryptCia(const char* filename, u8* ncch_crypt, bool cia_encrypt, bool cxi_on
     }
     
     // get offsets for various sections & check
-    u32 section_size[6];
-    u32 section_offset[6];
-    section_size[0] = getle32(buffer);
-    section_offset[0] = 0;
-    for (u32 i = 1; i < 6; i++) {
-        section_size[i] = getle32(buffer + 4 + ((i == 4) ? (5*4) : (i == 5) ? (4*4) : (i*4)) );
-        section_offset[i] = section_offset[i-1] + align(section_size[i-1], 64);
-    }
-    offset_ticktmd = section_offset[2];
-    offset_content = section_offset[4];
-    size_ticktmd = section_offset[4] - section_offset[2];
-    size_ticket = section_size[2];
-    size_tmd = section_size[3];
-    size_content = section_size[4];
+    if (GetCiaInfo(&cia, (CiaHeader*) buffer) != 0)
+        return 1;
     
-    if (FileGetSize() < section_offset[5] + align(section_size[5], 64)) {
+    if (FileGetSize() < cia.size_cia) {
         Debug("Not a CIA or corrupt file");
         FileClose();
         return 1;
     }
     
-    if ((size_ticktmd) > 0x10000) {
+    if (cia.size_ticktmd > 0x10000) {
         Debug("Ticket/TMD too big");
         FileClose();
         return 1;
     }
     
     // load ticket & tmd to buffer, close file
-    if (!DebugFileRead(buffer, size_ticktmd, offset_ticktmd)) {
+    if (!DebugFileRead(buffer, cia.size_ticktmd, cia.offset_ticktmd)) {
         FileClose();
         return 1;
     }
     FileClose();
     
     Ticket* ticket = (Ticket*) buffer;
-    TitleMetaData* tmd = (TitleMetaData*) (buffer + align(size_ticket, 64));
+    TitleMetaData* tmd = (TitleMetaData*) (buffer + align(cia.size_ticket, 64));
     TmdContentChunk* content_list = (TmdContentChunk*) (tmd + 1);
     if (memcmp(ticket->sig_type, sig_type, 4) != 0) {
         Debug("Bad ticket signature type");
@@ -501,8 +503,8 @@ u32 CryptCia(const char* filename, u8* ncch_crypt, bool cia_encrypt, bool cxi_on
     }
     
     // extract & decrypt titlekey
-    if (size_ticket < 0x140 + 0x210) {
-        Debug("Ticket is too small (%i byte)", size_ticket);
+    if (cia.size_ticket != 0x140 + 0x210) {
+        Debug("Ticket is too small (%i byte)", cia.size_ticket);
         return 1;
     }
     TitleKeyEntry titlekeyEntry;
@@ -515,21 +517,21 @@ u32 CryptCia(const char* filename, u8* ncch_crypt, bool cia_encrypt, bool cxi_on
     
     // get content data from TMD
     content_count = getbe16(tmd->content_count);
-    if (content_count * 0x30 != size_tmd - (0x140 + 0xC4 + (64 * 0x24))) {
+    if (content_count * 0x30 != cia.size_tmd - (0x140 + 0xC4 + (64 * 0x24))) {
         Debug("TMD content count (%i) / list size mismatch", content_count);
         return 1;
     }
     u64 size_tmd_content = 0;
     for (u32 i = 0; i < content_count; i++)
         size_tmd_content += getbe64(content_list[i].size);
-    if (size_tmd_content != size_content) {
+    if (size_tmd_content != cia.size_content) {
         Debug("TMD content size / actual size mismatch");
         return 1;
     }
     
     bool untouched = true;
     u32 n_processed = 0;
-    u32 next_offset = offset_content;
+    u32 next_offset = cia.offset_content;
     CryptBufferInfo info = {.setKeyY = 0, .keyslot = 0x11, .mode = (cia_encrypt) ? AES_CNT_TITLEKEY_ENCRYPT_MODE : AES_CNT_TITLEKEY_DECRYPT_MODE};
     setup_aeskey(0x11, titlekey);
     
@@ -575,7 +577,7 @@ u32 CryptCia(const char* filename, u8* ncch_crypt, bool cia_encrypt, bool cxi_on
     
     if (ncch_crypt && (result == 0)) {
         Debug("Pass #2: NCCH decryption...");
-        next_offset = offset_content;
+        next_offset = cia.offset_content;
         for (u32 i = 0; i < content_count; i++) {
             u32 ncch_state;
             u32 size = getbe32(content_list + (0x30 * i) + 0xC);
@@ -620,7 +622,7 @@ u32 CryptCia(const char* filename, u8* ncch_crypt, bool cia_encrypt, bool cxi_on
     } else if (n_processed > 0) {
         if (!FileOpen(filename)) // already checked this file
             return 1;
-        if (!DebugFileWrite(buffer, size_ticktmd, offset_ticktmd))
+        if (!DebugFileWrite(buffer, cia.size_ticktmd, cia.offset_ticktmd))
             result = 1;
         FileClose();
     }
