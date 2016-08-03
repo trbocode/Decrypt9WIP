@@ -258,11 +258,12 @@ MenuInfo menu[] =
         }
     },
     {
-        "NCCH/NCSD File Options", 3, // ID 12
+        "NCCH/NCSD File Options", 4, // ID 12
         {
             { "NCCH/NCSD Decryptor",          &CryptGameFiles,        GC_NCCH_PROCESS },
             { "NCCH/NCSD Encryptor (0x2C)",   &CryptGameFiles,        GC_NCCH_PROCESS | GC_NCCH_ENC0x2C },
-            { "NCCH/NCSD Encryptor (zero)",   &CryptGameFiles,        GC_NCCH_PROCESS | GC_NCCH_ENCZERO }
+            { "NCCH/NCSD Encryptor (zero)",   &CryptGameFiles,        GC_NCCH_PROCESS | GC_NCCH_ENCZERO },
+            { "NCCH/NCSD to CIA Converter",   &ConvertNcsdNcchToCia,  0 }
         }
     },
     {

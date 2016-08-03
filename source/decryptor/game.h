@@ -17,6 +17,7 @@
 #define CD_DECRYPT      (1<<1)
 
 #define MAX_ENTRIES 1024
+#define CIA_CERT_SIZE 0xA00
 
 typedef struct {
     u64 titleId;
@@ -158,12 +159,14 @@ typedef struct {
     u32 offset_ticktmd;
     u32 offset_ticket;
     u32 offset_tmd;
+    u32 offset_content_list;
     u32 offset_meta;
     u32 offset_content;
     u32 size_cert;
     u32 size_ticktmd;
     u32 size_ticket;
     u32 size_tmd;
+    u32 size_content_list;
     u32 size_meta;
     u64 size_content;
     u64 size_cia;
@@ -191,6 +194,7 @@ u32 CryptBoss(const char* filename, bool encrypt);
 
 // --> FEATURE FUNCTIONS <--
 u32 CryptGameFiles(u32 param);
+u32 ConvertNcsdNcchToCia(u32 param);
 u32 CryptSdFiles(u32 param);
 u32 DecryptSdFilesDirect(u32 param);
 u32 DumpGameCart(u32 param);
