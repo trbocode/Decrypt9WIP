@@ -870,7 +870,7 @@ u32 BuildCiaStub(u8* stub, u8* ncchncsd)
         0x10, 0x78, 0xDF, 0x42, 0x99, 0x80, 0x3A, 0x68, 0x58, 0xF0, 0x41, 0xF9, 0xCB, 0x10, 0xE6, 0x35
     };
     u8* cert = (u8*) (stub + cia.offset_cert);
-    u8* cert_db = (u8*) 0x2031A000; // should be okay to use this space, but be careful
+    u8* cert_db = (u8*) 0x20400000; // should be okay to use this area
     PartitionInfo* p_ctrnand = GetPartitionInfo(P_CTRNAND);
     u32 offset_db, size_db;
     if ((SeekFileInNand(&offset_db, &size_db, "DBS        CERTS   DB ", p_ctrnand) != 0) || (size_db != 0x6000)){
@@ -1260,7 +1260,7 @@ u32 DecryptSdFilesDirect(u32 param)
     return (n_processed) ? 0 : 1;
 }
 
-static u32 DumpCartToFile(u32 offset, u32 size, u32 total, CryptBufferInfo* info, u8* out)
+static u32 DumpCartToFile(u32 offset_cart, u32 offset_file, u32 size, u32 total, CryptBufferInfo* info, u8* out)
 {
     // this assumes cart dumping initialized & file open for writing
     // also, careful, uses standard buffer
@@ -1271,13 +1271,13 @@ static u32 DumpCartToFile(u32 offset, u32 size, u32 total, CryptBufferInfo* info
         info->buffer = buffer;
     }
     
-    // if offset does not start at sector boundary
-    if (offset % 0x200) { 
-        u32 read_bytes = 0x200 - (offset % 0x200);
+    // if offset_cart does not start at sector boundary
+    if (offset_cart % 0x200) { 
+        u32 read_bytes = 0x200 - (offset_cart % 0x200);
         Cart_Dummy();
         Cart_Dummy();
-        CTR_CmdReadData(offset / 0x200, 0x200, 1, buffer);
-        memmove(buffer, buffer + (offset % 0x200), read_bytes);
+        CTR_CmdReadData(offset_cart / 0x200, 0x200, 1, buffer);
+        memmove(buffer, buffer + (offset_cart % 0x200), read_bytes);
         if (info) {
             info->size = read_bytes;
             CryptBuffer(info);
@@ -1286,18 +1286,19 @@ static u32 DumpCartToFile(u32 offset, u32 size, u32 total, CryptBufferInfo* info
             memcpy(out, buffer, read_bytes);
             out += read_bytes;
         }
-        if (!DebugFileWrite(buffer, read_bytes, offset)) 
+        if (!DebugFileWrite(buffer, read_bytes, offset_file)) 
            return 1;
-        offset += read_bytes;
+        offset_cart += read_bytes;
+        offset_file += read_bytes;
     }
     
     for (u64 i = 0; i < size; i += CART_CHUNK_SIZE) {
         u32 read_bytes = min(CART_CHUNK_SIZE, (size - i));
         if (total)
-            ShowProgress(offset + i, total);
+            ShowProgress(offset_file + i, total);
         Cart_Dummy();
         Cart_Dummy();
-        CTR_CmdReadData((offset + i) / 0x200, 0x200, (read_bytes + 0x1FF) / 0x200, buffer);
+        CTR_CmdReadData((offset_cart + i) / 0x200, 0x200, (read_bytes + 0x1FF) / 0x200, buffer);
         if (info) {
             info->size = read_bytes;
             CryptBuffer(info);
@@ -1306,7 +1307,7 @@ static u32 DumpCartToFile(u32 offset, u32 size, u32 total, CryptBufferInfo* info
             memcpy(out, buffer, read_bytes);
             out += read_bytes;
         }
-        if (!DebugFileWrite(buffer, read_bytes, offset + i)) {
+        if (!DebugFileWrite(buffer, read_bytes, offset_file + i)) {
             result = 1;
             break;
         }
@@ -1316,7 +1317,7 @@ static u32 DumpCartToFile(u32 offset, u32 size, u32 total, CryptBufferInfo* info
     return result;
 }
 
-static u32 DecryptCartNcchToFile(u32 offset, u32 size, u32 total)
+static u32 DecryptCartNcchToFile(u32 offset_cart, u32 offset_file, u32 size, u32 total)
 {
     // this assumes cart dumping to be initialized already and file open for writing(!)
     // algorithm is simplified / slimmed when compared to CryptNcch()
@@ -1330,7 +1331,7 @@ static u32 DecryptCartNcchToFile(u32 offset, u32 size, u32 total)
     // read header
     Cart_Dummy();
     Cart_Dummy();
-    CTR_CmdReadData(offset / 0x200, 0x200, 1, ncch);
+    CTR_CmdReadData(offset_cart / 0x200, 0x200, 1, ncch);
     
     // check header, set up stuff
     if ((memcmp(ncch->magic, "NCCH", 4) != 0) || (ncch->size > (size / 0x200))) {
@@ -1341,7 +1342,7 @@ static u32 DecryptCartNcchToFile(u32 offset, u32 size, u32 total)
     // check crypto, setup crypto
     if (ncch->flags[7] & 0x04) { // for unencrypted partitions...
         Debug("Not encrypted, dumping instead...");
-        return DumpCartToFile(offset, size, total, NULL, NULL);
+        return DumpCartToFile(offset_cart, offset_file, size, total, NULL, NULL);
     } else if (ncch->flags[7] & 0x1) { // zeroKey / fixedKey crypto
         // from https://github.com/profi200/Project_CTR/blob/master/makerom/pki/dev.h
         u8 zeroKey[16] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
@@ -1368,20 +1369,20 @@ static u32 DecryptCartNcchToFile(u32 offset, u32 size, u32 total)
     ncch->flags[3] = 0x00;
     ncch->flags[7] &= (0x01|0x20)^0xFF;
     ncch->flags[7] |= 0x04;
-    if (!DebugFileWrite(ncch, 0x200, offset))
+    if (!DebugFileWrite(ncch, 0x200, offset_file))
         return 1;
         
     // process ExHeader
     if (ncch->size_exthdr > 0) {
         GetNcchCtr(info.ctr, ncch, 1);
         info.keyslot = slot_base;
-        if (DumpCartToFile(offset + 0x200, 0x800, total, &info, NULL) != 0)
+        if (DumpCartToFile(offset_cart + 0x200, offset_file + 0x200, 0x800, total, &info, NULL) != 0)
             return 1;
     }
     
     // logo region / plain region
     if (ncch->offset_exefs > 5) {
-        if (DumpCartToFile(offset + 0xA00, (ncch->offset_exefs - 5) * 0x200, total, NULL, NULL) != 0)
+        if (DumpCartToFile(offset_cart + 0xA00, offset_file + 0xA00, (ncch->offset_exefs - 5) * 0x200, total, NULL, NULL) != 0)
             return 1;
     }
     
@@ -1392,12 +1393,12 @@ static u32 DecryptCartNcchToFile(u32 offset, u32 size, u32 total)
         u32 size_exefs = ((ncch->offset_romfs) ? (ncch->offset_romfs - ncch->offset_exefs) :
             ncch->size_exefs) * 0x200;
         // dump the whole thing encrypted, then overwrite with decrypted
-        if (DumpCartToFile(offset + offset_exefs, size_exefs, total, NULL, NULL) != 0)
+        if (DumpCartToFile(offset_cart + offset_exefs, offset_file + offset_exefs, size_exefs, total, NULL, NULL) != 0)
             return 1;
         // using 7x crypto routines for everything
         GetNcchCtr(info.ctr, ncch, 2);
         info.keyslot = slot_base;
-        if (DumpCartToFile(offset + offset_exefs, 0x200, total, &info, exefs) != 0)
+        if (DumpCartToFile(offset_cart + offset_exefs, offset_file + offset_exefs, 0x200, total, &info, exefs) != 0)
             return 1;
         for (u32 i = 0; i < 10; i++) {
             char* name = (char*) exefs + (i*0x10);
@@ -1408,7 +1409,8 @@ static u32 DecryptCartNcchToFile(u32 offset, u32 size, u32 total)
             GetNcchCtr(info.ctr, ncch, 2);
             add_ctr(info.ctr, offset_exefs_file / 0x10);
             info.keyslot = ((strncmp(name, "banner", 8) == 0) || (strncmp(name, "icon", 8) == 0)) ? slot_base : slot_7x;
-            if (DumpCartToFile(offset + offset_exefs + offset_exefs_file, size_exefs_file, total, &info, NULL) != 0)
+            if (DumpCartToFile(offset_cart + offset_exefs + offset_exefs_file,
+                offset_file + offset_exefs + offset_exefs_file, size_exefs_file, total, &info, NULL) != 0)
                 return 1;
         }
     }
@@ -1417,7 +1419,8 @@ static u32 DecryptCartNcchToFile(u32 offset, u32 size, u32 total)
     if (ncch->size_romfs > 0) {
         GetNcchCtr(info.ctr, ncch, 3);
         info.keyslot = slot_7x;
-        if (DumpCartToFile(offset + (ncch->offset_romfs * 0x200), (ncch->size_romfs * 0x200), total, &info, NULL) != 0)
+        if (DumpCartToFile(offset_cart + (ncch->offset_romfs * 0x200),
+            offset_file + (ncch->offset_romfs * 0x200), (ncch->size_romfs * 0x200), total, &info, NULL) != 0)
             return 1;
     }
     
@@ -1428,6 +1431,8 @@ u32 DumpGameCart(u32 param)
 {
     NcsdHeader* ncsd = (NcsdHeader*) 0x20316000;
     NcchHeader* ncch = (NcchHeader*) 0x20317000;
+    CiaHeader* cia_stub = (CiaHeader*) 0x2031A000;
+    CiaInfo cia;
     char filename[64];
     u64 cart_size = 0;
     u64 data_size = 0;
@@ -1488,37 +1493,80 @@ u32 DumpGameCart(u32 param)
         Debug("Bad cartridge size");
         return 1; // should never happen
     }
-    dump_size = (param & CD_TRIM) ? data_size : cart_size;
-    Debug("Cartridge dump size: %lluMB", dump_size / 0x100000);
-    if ((dump_size == 0x100000000) && (data_size < dump_size)) {
-        dump_size -= 0x200; // silently remove the last sector for 4GB ROMs
-    } else if (dump_size >= 0x100000000) { // should not happen
-        Debug("Error: Too big for the FAT32 file system");
-        if (!(param & CD_TRIM))
-            Debug("(maybe try dumping trimmed?)");
-        return 1;
+    if (param & CD_MAKECIA) {
+        if (BuildCiaStub((u8*) cia_stub, (u8*) ncsd) == 0)
+            return 1;
+        GetCiaInfo(&cia, cia_stub);
+        dump_size = cia.size_cia;
+        Debug("Cartridge CIA size : %lluMB", dump_size / 0x100000);
+        if (dump_size >= 0x100000000) { // should not happen
+            Debug("Error: Too big for the FAT32 file system");
+            return 1;
+        }
+    } else {
+        dump_size = (param & CD_TRIM) ? data_size : cart_size;
+        Debug("Cartridge dump size: %lluMB", dump_size / 0x100000);
+        if ((dump_size == 0x100000000) && (data_size < dump_size)) {
+            dump_size -= 0x200; // silently remove the last sector for 4GB ROMs
+        } else if (dump_size >= 0x100000000) { // should not happen
+            Debug("Error: Too big for the FAT32 file system");
+            if (!(param & CD_TRIM))
+                Debug("(maybe try dumping trimmed?)");
+            return 1;
+        }
     }
     
     if (!DebugCheckFreeSpace((size_t) dump_size))
         return 1;
     
-    // create file, write first 0x4000 byte
+    // create file, write CIA / NCSD header
     Debug("");
-    snprintf(filename, 64, "/%s%s%.16s%s.3ds", GetGameDir() ? GetGameDir() : "", GetGameDir() ? "/" : "", 
-        ncch->productcode, (param & CD_DECRYPT) ? "-dec" : "");
+    snprintf(filename, 64, "/%s%s%.16s%s.%s", GetGameDir() ? GetGameDir() : "", GetGameDir() ? "/" : "", 
+        ncch->productcode, (param & CD_DECRYPT) ? "-dec" : "", (param & CD_MAKECIA) ? "cia" : "3ds");
     if (!FileCreate(filename, true)) {
         Debug("Could not create output file on SD");
         return 1;
     }
-    memset(((u8*) ncsd) + 0x1200, 0xFF, 0x4000 - 0x1200);
-    if (!DebugFileWrite((void*) ncsd, 0x4000, 0)) {
-        FileClose();
-        return 1;
+    if (param & CD_MAKECIA) { // CIA stub, including header, cert, ticket, TMD
+        if (!DebugFileWrite((void*) cia_stub, cia.offset_content, 0)) {
+            FileClose();
+            return 1;
+        }
+    } else { // NCSD: first 0x4000 byte, including NCSD header
+        memset(((u8*) ncsd) + 0x1200, 0xFF, 0x4000 - 0x1200);
+        if (!DebugFileWrite((void*) ncsd, 0x4000, 0)) {
+            FileClose();
+            return 1;
+        }
     }
     
-    if (!(param & CD_DECRYPT)) { // dump the encrypted cart
+    if (param & CD_MAKECIA) {
+        u32 next_offset = cia.offset_content;
+        u32 p;
+        for (p = 0; p < 3; p++) {
+            u32 size = ncsd->partitions[p].size * 0x200;
+            u32 offset_cart = ncsd->partitions[p].offset * 0x200;
+            u32 offset_file = next_offset;
+            if (size == 0) 
+                continue;
+            next_offset += size;
+            if (param & CD_DECRYPT) {
+                Debug("Decrypting partition #%lu (%luMB)...", p, size / 0x100000);
+                if (DecryptCartNcchToFile(offset_cart, offset_file, size, dump_size) != 0)
+                    break;
+            } else {
+                Debug("Dumping partition #%lu (%luMB)...", p, size / 0x100000);
+                if (DumpCartToFile(offset_cart, offset_file, size, dump_size, NULL, NULL) != 0)
+                    break;
+            } 
+        }
+        if (param & CD_DECRYPT)
+            Debug("Decryption %s!", (p == 3) ? "success!" : "failed!");
+        if (p != 3)
+            result = 1;
+    } else if (!(param & CD_DECRYPT)) { // dump the encrypted cart
         Debug("Dumping cartridge %.16s (%lluMB)...", ncch->productcode, dump_size / 0x100000);
-        result = DumpCartToFile(0x4000, dump_size - 0x4000, dump_size, NULL, NULL);
+        result = DumpCartToFile(0x4000, 0x4000, dump_size - 0x4000, dump_size, NULL, NULL);
     } else { // dump decrypted partitions
         u32 p;
         for (p = 0; p < 8; p++) {
@@ -1527,7 +1575,7 @@ u32 DumpGameCart(u32 param)
             if (size == 0) 
                 continue;
             Debug("Decrypting partition #%lu (%luMB)...", p, size / 0x100000);
-            if (DecryptCartNcchToFile(offset, size, dump_size) != 0)
+            if (DecryptCartNcchToFile(offset, offset, size, dump_size) != 0)
                 break;
         }
         if (p == 8) {
@@ -1539,22 +1587,42 @@ u32 DumpGameCart(u32 param)
         
         if ((result == 0) && (dump_size > data_size)) {
             Debug("Dumping padding (%lluMB)...", (dump_size - data_size) / 0x100000);
-            result = DumpCartToFile(data_size, dump_size - data_size, dump_size, NULL, NULL);
+            result = DumpCartToFile(data_size, data_size, dump_size - data_size, dump_size, NULL, NULL);
         }
     }
     FileClose();
     
+    if ((param & CD_MAKECIA) && (result == 0)) {
+        Debug("Finalizing CIA file...");
+        if (FixCiaFile(filename) != 0)
+            result = 1;
+    }
+    
     // verify decrypted ROM
     if ((result == 0) && (param & CD_DECRYPT)) {
         Debug("");
-        for (u32 p = 0; p < 8; p++) {
-            u32 offset = ncsd->partitions[p].offset * 0x200;
-            u32 size = ncsd->partitions[p].size * 0x200;
-            if (size == 0) 
-                continue;
-            Debug("Verifiying partition #%lu (%luMB)...", p, size / 0x100000);
-            if (VerifyNcch(filename, offset) != 0)
-                result = 1;
+        if (param & CD_MAKECIA) {
+            u32 next_offset = cia.offset_content;
+            for (u32 p = 0; p < 3; p++) {
+                u32 offset = next_offset;
+                u32 size = ncsd->partitions[p].size * 0x200;
+                if (size == 0) 
+                    continue;
+                next_offset += size;
+                Debug("Verifiying partition #%lu (%luMB)...", p, size / 0x100000);
+                if (VerifyNcch(filename, offset) != 0)
+                    result = 1;
+            }
+        } else {
+            for (u32 p = 0; p < 8; p++) {
+                u32 offset = ncsd->partitions[p].offset * 0x200;
+                u32 size = ncsd->partitions[p].size * 0x200;
+                if (size == 0) 
+                    continue;
+                Debug("Verifiying partition #%lu (%luMB)...", p, size / 0x100000);
+                if (VerifyNcch(filename, offset) != 0)
+                    result = 1;
+            }
         }
         Debug("Verification %s", (result == 0) ? "success!" : "failed!");
     }

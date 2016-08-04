@@ -74,12 +74,13 @@ MenuInfo menu[] =
         }
     },
     {
-        "Gamecart Dumper Options", 5,
+        "Gamecart Dumper Options", 6,
         {
             { "Dump Cart (full)",             &DumpGameCart,          0 },
             { "Dump Cart (trim)",             &DumpGameCart,          CD_TRIM },
             { "Dump & Decrypt Cart (full)",   &DumpGameCart,          CD_DECRYPT },
             { "Dump & Decrypt Cart (trim)",   &DumpGameCart,          CD_DECRYPT | CD_TRIM },
+            { "Dump Cart to CIA",             &DumpGameCart,          CD_DECRYPT | CD_MAKECIA },
             { "Dump Private Header",          &DumpPrivateHeader,     0 }
         }
     },
