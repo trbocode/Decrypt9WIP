@@ -259,22 +259,20 @@ MenuInfo menu[] =
         }
     },
     {
-        "NCCH/NCSD File Options", 4, // ID 12
+        "NCCH/NCSD File Options", 3, // ID 12
         {
             { "NCCH/NCSD Decryptor",          &CryptGameFiles,        GC_NCCH_PROCESS },
-            { "NCCH/NCSD Encryptor (0x2C)",   &CryptGameFiles,        GC_NCCH_PROCESS | GC_NCCH_ENC0x2C },
-            { "NCCH/NCSD Encryptor (zero)",   &CryptGameFiles,        GC_NCCH_PROCESS | GC_NCCH_ENCZERO },
+            { "NCCH/NCSD Encryptor",          &CryptGameFiles,        GC_NCCH_PROCESS | GC_NCCH_ENC0x2C },
             { "NCCH/NCSD to CIA Converter",   &ConvertNcsdNcchToCia,  0 }
         }
     },
     {
-        "CIA File Options", 5, // ID 13
+        "CIA File Options", 4, // ID 13
         {
             { "CIA Decryptor (shallow)",      &CryptGameFiles,        GC_CIA_PROCESS },
             { "CIA Decryptor (deep)",         &CryptGameFiles,        GC_CIA_PROCESS | GC_CIA_DEEP },
             { "CIA Decryptor (CXI only)",     &CryptGameFiles,        GC_CIA_PROCESS | GC_CIA_DEEP | GC_CXI_ONLY },
-            { "CIA Encryptor (NCCH 0x2C)",    &CryptGameFiles,        GC_CIA_PROCESS | GC_NCCH_ENC0x2C },
-            { "CIA Encryptor (NCCH zero)",    &CryptGameFiles,        GC_CIA_PROCESS | GC_NCCH_ENCZERO }
+            { "CIA Encryptor (NCCH)",         &CryptGameFiles,        GC_CIA_PROCESS | GC_NCCH_ENC0x2C }
         }
     },
     {
