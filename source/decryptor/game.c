@@ -971,22 +971,28 @@ u32 FixCiaFile(const char* filename)
                 Debug("Failed reading NCCH content");
                 return 1;
             }
+            
+            // prepare crypto stuff (even if it may not get used)
+            CryptBufferInfo info = {.setKeyY = 1, .keyslot = 0x2C, .buffer = exthdr, .size = 0x400, .mode = AES_CNT_CTRNAND_MODE};
+            memcpy(info.keyY, ncch->signature, 16);
+            if (ncch->flags[7] & 0x01) { // set up zerokey crypto instead
+                __attribute__((aligned(16))) u8 zeroKey[16] =
+                    {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
+                info.setKeyY = 0;
+                info.keyslot = 0x11;
+                setup_aeskey(0x11, zeroKey);
+                use_aeskey(0x11);
+            }
+                    
             if (ncch->size_exthdr > 0) {
-                if (ncch->flags[7] & 0x01) { // zerokey crypto -> ignore this
-                    Debug("Zerokey crypto is not supported here");
-                    return 1;
-                } else if (ncch->flags[7] & 0x04) { // not encrypted -> fine
-                    exthdr[0xD] |= (1<<1); // set SD flag
-                    memcpy(tmd->save_size, exthdr + 0x1C0, 4); // get save size for CXI
-                    sha_quick(ncch->hash_exthdr, exthdr, 0x400, SHA256_MODE);
-                } else { // encrypted -> decrypt then reencrypt
-                    CryptBufferInfo info = {.setKeyY = 1, .keyslot = 0x2C, .buffer = exthdr, .size = 0x400, .mode = AES_CNT_CTRNAND_MODE};
-                    memcpy(info.keyY, ncch->signature, 16);
+                if (!(ncch->flags[7] & 0x04)) { // encrypted NCCH
                     GetNcchCtr(info.ctr, ncch, 1);
                     CryptBuffer(&info);
-                    exthdr[0xD] |= (1<<1); // set SD flag
-                    memcpy(tmd->save_size, exthdr + 0x1C0, 4); // get save size for CXI
-                    sha_quick(ncch->hash_exthdr, exthdr, 0x400, SHA256_MODE);
+                }
+                exthdr[0xD] |= (1<<1); // set SD flag
+                memcpy(tmd->save_size, exthdr + 0x1C0, 4); // get save size for CXI
+                sha_quick(ncch->hash_exthdr, exthdr, 0x400, SHA256_MODE); // fix exheader hash
+                if (!(ncch->flags[7] & 0x04)) { // encrypted NCCH
                     GetNcchCtr(info.ctr, ncch, 1);
                     CryptBuffer(&info);
                 }
