@@ -28,6 +28,7 @@ See this incomplete list, more detailed descriptions are found further below.
 * Create and update the SeedDB file
 * Directly decrypt (_cryptofix_) NCCH ('.3DS') and CIA files
 * Directly decrypt files from the '/Nintendo 3DS/' folder
+* Dump retail game cartridges
 * ... and a lot more
 
 ## How to run this / entry points
@@ -44,10 +45,10 @@ If you are a developer and you are building this, you may also just run `make re
 ## Working folders
 
 Basically every input file for Decrypt9 can be placed into the SD card root and output files can be written there, too. Working folders are mostly optional. However, using them is recommended and even required for some of the Decrypt9 features to work. These two folders (on the root of your SD card) are used:
-* __`/D9Game/`__: NCCH (.3DS), CIA, BOSS, SD card files (from the '/Nintendo 3DS/' folder) go here and are decrypted in place by the respective features.
-* __`/Decrypt9/`__: Everything that doesn't go into `/D9Game/` goes here, and this is also the standard output folder. If `/D9Game/` does not exist, NCCH, CIA, BOSS and SD card files are also processed in this folder.
+* __`/files9/D9Game/`__: NCCH (.3DS), CIA, BOSS, SD card files (from the '/Nintendo 3DS/' folder) go here and are decrypted in place by the respective features. The cart dumper uses this directory as output directory.
+* __`/files9/`__: Everything that doesn't go into `/files9/D9Game/` goes here, and this is also the standard output folder. If `/files9/D9Game/` does not exist, NCCH, CIA, BOSS and SD card files are also processed in this folder.
 
-Decryption of game files (NCCH, CIA, BOSS, SD) needs at least one of these two folders to exist. Input files are first searched in `/Decrypt9/` and (if not found) then in the SD card root.
+Decryption of game files (NCCH, CIA, BOSS, SD) needs at least one of these two folders to exist. Input files are first searched in `/files9/` and (if not found) then in the SD card root.
 
 ## Support files
 
@@ -56,6 +57,7 @@ Depending on the environment, Decrypt9 is ran from, you may need support files t
 * __`slot0x25keyX.bin`__: This file is needed to decrypt 7x crypto NCCHs and CIAs on O3DS < 7.0.
 * __`slot0x18keyX.bin`__: This file is needed to decrypt Secure 3 crypto NCCHs and CIAs on O3DS without A9LH.
 * __`slot0x1BkeyX.bin`__: This file is needed to decrypt Secure 4 crypto NCCHs and CIAs in every environment.
+* __`slot0x24keyY.bin`__: This file is needed to properly dump & inject GBA VC savegames.
 * __`aeskeydb.bin`__: This is an alternative to the four `slot0x??key?.bin` files mentioned above. It can contain multiple keys. It can be created from your existing `slot0x??key?.bin`files in Decrypt9 via the 'Build Key Database' feature.
 * __`seeddb.bin`__: Decrypt9 can create and update this file from the seeds installed in your system. This file is needed to decrypt seed crypto NCCHs and CIAs. Note that your seeddb.bin must also contain the seed for the specific game you need to decrypt.
 * __`otp.bin`__: This file is console-unique and is required - on entrypoints other than A9LH - for decryption of the 'secret' sector 0x96 on N3DS (and O3DS with a9lh installed). Refer to [this guide](https://github.com/Plailect/Guide/wiki) for instructions on how to get your own `otp.bin` file.
@@ -87,6 +89,7 @@ This category includes all features that generate XORpads. XORpads are not usefu
 * __SD Padgen (SDinfo.bin)__: This generates XORpads for files installed into the '/Nintendo 3DS/' folder of your SD card. Use the included Python script `sdinfo_gen.py` and place the the resulting `sdinfo.bin` into your `/Decrypt9/` work folder. If the SD files to generate XORpads for are from a different NAND (different console, f.e.), you also need the respective `movable.sed` file (dumpable via Dercrypt9) to generate valid XORpads. By now, this feature should only make sense when decrypting stuff from another 3DS - use one of the two features below or the SD Decryptor instead. Use [padXORer by xerpi](https://github.com/polaris-/3ds_extract) to apply XORpads.
 * __SD Padgen (SysNAND dir)__: This is basically an improved version of the above feature. For typical users, there are two folders in '/Nintendo 3DS/' on the SD card, one belonging to the SysNAND, the other to EmuNAND. This feature will generate XORpads for encrypted content inside the folder belonging to the SysNAND. It won't touch your SysNAND, thus it is not a dangerous feature. A folder selection prompt will allow you to specify exactly the XORpads you want to be generated (use the arrow keys to select). Generating all of them at once is not recommended, because this can lead to several GBs of data and very long processing time.
 * __SD Padgen (EmuNAND dir)__: This is the same as the above feature, but utilizing the EmuNAND folder below '/Nintendo 3DS/' on the SD card. The EmuNAND folder is typically a lot larger than the SysNAND folder, so be careful when selecting the content for which to generate XORpads for.
+* __Any Padgen (anypad.bin)__: This feature is a more versatile alternative to various other padgen features. It uses the anypad.bin file as base. For information on the format of this file, refer to `game.h`.
 * __CTRNAND Padgen__: This generates a XORpad for the CTRNAND partition inside your 3DS console flash memory. Use this with a NAND (SysNAND/EmuNAND) dump from your console and [3DSFAT16Tool](https://gbatemp.net/threads/port-release-3dsfat16tool-c-rewrite-by-d0k3.390942/) to decrypt and re-encrypt the CTRNAND partition on PC. This is useful for any modification you might want to do to the main file system of your 3DS.
 * __CTRNAND Padgen (slot0x4)__: This is an N3DS only feature. It is the same as the above option, but forces to use slot0x04 when generating the XORpad. Slot0x04 XORpads are required for decryption and encryption of the CTRNAND partition from downgraded N3DS NAND (SysNAND / EmuNAND) dumps.
 * __TWLNAND Padgen__: This generates a XORpad for the TWLNAND partition inside your 3DS console flash memory. Use this with a NAND (SysNAND/EmuNAND) dump from your console and [3DSFAT16Tool](https://gbatemp.net/threads/port-release-3dsfat16tool-c-rewrite-by-d0k3.390942/) to decrypt and re-encrypt the TWLNAND partition on PC. This can be used, f.e. to set up the [SudokuHax exploit](https://gbatemp.net/threads/tutorial-new-installing-sudokuhax-on-3ds-4-x-9-2.388621/).
@@ -136,23 +139,31 @@ This is actually two categories in the main menu, but the functionality provided
 * __Miscellaneous..__: This section contains various features that don't fit into any of the other categories.
   * __Health&Safety Dump__: This allows you to to dump the decrypted Health and Safety system app to your SD card. The dumped H&S app can be used to [create injectable files for any homebrew software](https://gbatemp.net/threads/release-inject-any-app-into-health-safety-o3ds-n3ds-cfw-only.402236/).
   * __Health&Safety Inject(!)__: This is used to inject any app into your Health & Safety system app (as long as it is smaller than the original H&S app). Multiple safety clamps are in place, and this is a pretty safe feature. Users are still adviced to be cautious using this and only use eiter the original hs.app or inject apps created with the [Universal Inject Generator](https://gbatemp.net/threads/release-inject-any-app-into-health-safety-o3ds-n3ds-cfw-only.402236/). This feature will detect all injectable apps on the SD card and let the user choose which one to inject.
+  * __GBA VC Save Dump__: Only available on SysNAND, use this to dump the GBA VC Savegame from your NAND. Other than the headered `AGBSAVE.bin` format, this allows usage in emulators. `slot0x24keyY.bin` is required for this to work.
+  * __GBA VC Save Inject__: Only available on SysNAND, use this to inject back a GBA VC Savegame (f.e. after manual editing) to your NAND. Same as above, `slot0x24keyY.bin` is required for this to work.
   * __Update SeedDB__: Use this to create or update the ´seeddb.bin´ file on your SD card with the seeds currently installed in your Sys/EmuNAND. Only new seeds will get added to `seeddb.bin`, seeds already in the database stay untouched.
+  * __Autofix CMACs__: Use this to automatically fix the CMACs for `movable.sed` and `*.db` inside the CTRNAND. This is useful for fixing corrupted files and/or transferring CTRNAND partitions between consoles. 
   * __NCCH FIRMs Dump__: Use this to dump NATIVE_FIRM, SAFE_MODE_FIRM, TWL_FIRM and AGB_FIRM from your NAND. For N3DS FIRMs, the ARM9 section will be decrypted as well. This feature is at the moment only useful for research.
   * __FIRM ARM9 Decryptor__: Use this to decrypt the ARM9 section of N3DS FIRMs. This feature is at the moment only useful for research.
 
 ### Content Decryptor Options
-This category includes all features that allow the decryption (and encryption) of external and internal content files. Content files are directly processed - the encrypted versions are overwritten with the decrypted ones and vice versa, so keep backups. The standard work folder for content files is `/D9Game/`, but if that does not exist, content files are processed inside the `/Decrypt9/` work folder.
-* __NCCH/NCSD Decryptor__: Use this to fully decrypt all NCCH / NCSD files in the folder. Files with .3DS and .APP extension are typically NCCH / NCSD files. A full decryption of a .3DS file is otherwise also known as _cryptofixing_. Important Note: Depending on you 3DS console type / FW version and the encryption in your NCCH/NCSD files you may need additional files key files (see 'Support files' above) and / or `seeddb.bin`.
-* __NCCH/NCSD Encryptor__: Use this to (re-)encrypt all NCCH / NCSD files in the folder using standard encryption (f.e. after decrypting them). Standard encryption can be processed on any 3DS, starting from the lowest firmware versions. On some hardware, .3DS files might need to be encrypted for compatibility.
-* __CIA Decryptor (shallow)__: Use this to decrypt, for all CIA files in the folder, the titlekey layer of CIA decryption. The internal NCCH encryption is left untouched.
-* __CIA Decryptor (deep)__:  Use this to fully decrypt all CIA files in the folder. This also processes the internal NCCH encryption. Deep decryption of a CIA file is otherwise known as _cryptofixing_. This also may need additional key files and / or `seeddb.bin`, see 'Support files' above.
-* __CIA Decryptor (CXI only)__: This is the same as CIA Decryptor (deep), but it does not process the 'deep' NCCH encryption for anything but the first CXI content. On some hardware, fully deep decrypted CIA files might not be installable, but CIA files processed with feature will work.
-* __CIA Encryptor (NCCH)__: Use this to encrypt the NCCH containers inside of the CIA files in the folder. NCCH encryption is required, for example, for system CIA files to be installable.
-* __BOSS Decryptor__: Use this to decrypt [BOSS files](http://3dbrew.org/wiki/SpotPass#Content_Container), which are typically received via Spotpass. This feature will decrypt all encrypted BOSS files (with a valid BOSS header) found in the folder.
-* __BOSS Encryptor__: Use this to encrypt [BOSS files](http://3dbrew.org/wiki/SpotPass#Content_Container). This feature will encrypt all unencrypted BOSS files (with a valid BOSS header) found in the folder.
-* __SD Decryptor/Encryptor__: Use this to decrypt or encrypt 'SD files'. SD files are titles, extdata and databases found inside the `/Nintendo 3DS/<id0>/<id1>/` folder. For this feature to work, you need to manually copy the file(s) you want to process. Copy them with their full folder structure (that's everything _after_ `/Nintendo 3DS/<id0>/<id1>/`) to the work / game folder. This feature should by now only be useful to encrypt content, decryption is much easier handled by the two features below.
-* __SD Decryptor (SysNAND dir)__: An improved version of the feature above. This allows you to select content from '/Nintendo 3DS/' (more specifically from the subfolder belonging to SysNAND) to be directly copied to your work / game folder and then decrypted from there.
-* __SD Decryptor (EmuNAND dir)__: This has the same functionality as the feature above, but handles the content of the '/Nintendo 3DS/' subfolder belonging to the EmuNAND instead.
+This category includes all features that allow the decryption (and encryption) of external and internal content files. Content files are directly processed - the encrypted versions are overwritten with the decrypted ones and vice versa, so keep backups. The standard work folder for content files is `/file9/D9Game/`, but if that does not exist, content files are processed inside the `/files9/` work folder.
+* __NCCH/NCSD File Options__: Files with .3DS and .APP extension are typically NCCH / NCSD files. NCCH/NCSD typically contain game or appdata.
+  * __NCCH/NCSD Decryptor__: Use this to fully decrypt all NCCH / NCSD files in the folder. A full decryption of a .3DS file is otherwise also known as _cryptofixing_. Important Note: Depending on you 3DS console type / FW version and the encryption in your NCCH/NCSD files you may need additional files key files (see 'Support files' above) and / or `seeddb.bin`.
+  * __NCCH/NCSD Encryptor__: Use this to (re-)encrypt all NCCH / NCSD files in the folder using standard encryption (f.e. after decrypting them). Standard encryption can be processed on any 3DS, starting from the lowest firmware versions. On some hardware, .3DS files might need to be encrypted for compatibility.
+  * __NCCH/NCSD to CIA Converter__: This allows you to convert any NCCH/NCSD file to an installable (on a signature patched system) CIA file. The CIA file will be written to `filename.ext.cia`.
+* __CIA File Options__: CIA files are 'Content Installable Files', this entry contains all related features.
+  * __CIA Decryptor (shallow)__: Use this to decrypt, for all CIA files in the folder, the titlekey layer of CIA decryption. The internal NCCH encryption is left untouched.
+  * __CIA Decryptor (deep)__:  Use this to fully decrypt all CIA files in the folder. This also processes the internal NCCH encryption. Deep decryption of a CIA file is otherwise known as _cryptofixing_. This also may need additional key files and / or `seeddb.bin`, see 'Support files' above.
+  * __CIA Decryptor (CXI only)__: This is the same as CIA Decryptor (deep), but it does not process the 'deep' NCCH encryption for anything but the first CXI content. On some hardware, fully deep decrypted CIA files might not be installable, but CIA files processed with feature will work.
+  * __CIA Encryptor (NCCH)__: Use this to encrypt the NCCH containers inside of the CIA files in the folder. NCCH encryption is required, for example, for system CIA files to be installable.
+* __BOSS File Options__: [BOSS files](http://3dbrew.org/wiki/SpotPass#Content_Container) are typically received via Spotpass, this entry contains all related features.
+  * __BOSS Decryptor__: Use this to decrypt BOSS files. This feature will decrypt all encrypted BOSS files (with a valid BOSS header) found in the folder.
+  * __BOSS Encryptor__: Use this to encrypt BOSS files. This feature will encrypt all unencrypted BOSS files (with a valid BOSS header) found in the folder.
+* __SD File Options__: SD files are titles, extdata and databases found inside the /Nintendo 3DS/<id0>/<id1>/ folder. This entry contains all related features.
+  * __SD Decryptor/Encryptor__: Use this to decrypt or encrypt 'SD files'. For this feature to work, you need to manually copy the file(s) you want to process. Copy them with their full folder structure (that's everything _after_ `/Nintendo 3DS/<id0>/<id1>/`) to the work / game folder. This feature should by now only be useful to encrypt content, decryption is much easier handled by the two features below.
+  * __SD Decryptor (SysNAND dir)__: An improved version of the feature above. This allows you to select content from `/Nintendo 3DS/` (more specifically from the subfolder belonging to SysNAND) to be directly copied to your work / game folder and then decrypted from there.
+  * __SD Decryptor (EmuNAND dir)__: This has the same functionality as the feature above, but handles the content of the `/Nintendo 3DS/` subfolder belonging to the EmuNAND instead.
 
 ### Gamecart Dumper Options
 This category includes all features handling dumping of content from external cartridges. Cartridge dumps are also known as .3ds files.
@@ -160,6 +171,7 @@ This category includes all features handling dumping of content from external ca
 * __Dump Cart (trim)__: Same as the above feature, but discards the unused padding for smaller output and faster processing. Using this is recommended unless the padding is required for digital preservation purposes.
 * __Dump & Decrypt Cart (full)__: Same as 'Dump Cart (full)', but also decrypts the cartridge data on-the-fly. Decrypted cartridge data is required for emulators and recommended for CIA conversion. The recommended CIA conversion tool is [3dsconv](https://github.com/ihaveamac/3dsconv).
 * __Dump & Decrypt Cart (trim)__: Same as above, but discards the unused padding for smaller output and faster processing. This is recommended over the above feature.
+* __Dump Cart to CIA__: Use this to directly dump an inserted cartridge to a fully decrypted CIA file, which can be installed to a patched system using CIA installer software like [FBI](https://github.com/Steveice10/FBI/releases). For most users, this type of dump will be the most convenient.
 * __Dump Private Header__: Dumps the cartridge unique private header from the inserted cartridge.
 
 ### Maintenance Options
@@ -184,9 +196,10 @@ You may use this under the terms of the GNU General Public License GPL v2 or und
 * Archshift for starting this project and being a great project maintainer
 * b1l1s, Normmatt for their 'behind-the-scenes' work and for making arm9loaderhax support possible
 * Gelex for various code improvements and useful advice throughout D9 development
+* ihaveamac for first developing the simple CIA generation method and for being an immensive help in porting it
 * patois, delebile, SteveIce10 for Brahma and it's updates
 * mid-kid for CakeHax and for hosting freenode #Cakey
 * Shadowtrance, dark_samus3, Syphurith, AuroraWright for being of great help developing this
 * profi200 for helpful hints that first made developing some features possible
-* Datalogger, zoogie, atkfromabove, mixups, key1340, k8099, Al3x_10m, Supster131, stbinan, Wolfvak and countless others from freenode #Cakey and the GBAtemp forums for testing, feedback and helpful hints
+* Datalogger, zoogie, atkfromabove, mixups, key1340, k8099, Al3x_10m, Supster131, stbinan, Wolfvak, imanoob, Stary2001 and countless others from freenode #Cakey and the GBAtemp forums for testing, feedback and helpful hints
 * Everyone I forgot about - if you think you deserve to be mentioned, just contact me
