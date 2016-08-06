@@ -1207,7 +1207,7 @@ u32 CryptSdFiles(u32 param)
     plen = strnlen(batch_dir, 128);
     
     // setup AES key from SD
-    SetupSdKeyY0x34(false, NULL);
+    SetupMovableKeyY(false, 0x34, NULL);
     
     // main processing loop
     for (u32 s = 0; subpaths[s] != NULL; s++) {
@@ -1263,7 +1263,7 @@ u32 DecryptSdFilesDirect(u32 param)
         return 1;
     }
     
-    if (SetupSdKeyY0x34(true, movable_keyY) != 0)
+    if (SetupMovableKeyY(true, 0x34, movable_keyY) != 0)
         return 1; // movable.sed has to be present in NAND
     
     Debug("");
