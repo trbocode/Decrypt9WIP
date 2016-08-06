@@ -364,7 +364,7 @@ u32 FixNandDataId0(void)
         checksum = ((checksum >> 1) | (checksum << 7)) + id0_fat[i];
     
     // rename the folder (SFN and LFN)
-    memcpy(dirblock + base, id0_fat, 13);
+    memcpy(dirblock + base, id0_fat, 8 + 3);
     id0_ch = id0_key; cb = 1; 
     for (u32 pos = base - 0x20; pos > 0; pos -= 0x20) {
         u32 idx = 0;
@@ -377,6 +377,7 @@ u32 FixNandDataId0(void)
         }
     }
     
+    // inject the directory block back
     if (EncryptMemToNand(dirblock, offset, dirblock_size, ctrnand_info) != 0)
         return 1;
     Debug("/DATA/<ID0>: renamed to match");
