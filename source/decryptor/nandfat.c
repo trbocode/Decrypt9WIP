@@ -296,7 +296,6 @@ u32 FixNandDataId0(void)
     // grab the FAT directory object
     u8* dirblock = buffer;
     u32 dirblock_size = 16 * 1024; // 16kB just to be careful
-    u8 checksum = 0;
     if ((SeekFileInNand(&offset, &size, "DATA       ", ctrnand_info) != 0) ||
         (DecryptNandToMem(dirblock, offset, dirblock_size, ctrnand_info) != 0))
         return 1;
@@ -321,6 +320,7 @@ u32 FixNandDataId0(void)
     }
     
     // calculate checksum
+    u8 checksum = 0;
     for (u32 i = 0; i < 8 + 3; i++)
         checksum = ((checksum >> 1) | (checksum << 7)) + dirblock[base+i];
     
@@ -360,6 +360,7 @@ u32 FixNandDataId0(void)
     }
     
     // calculate new checksum
+    checksum = 0;
     for (u32 i = 0; i < 8 + 3; i++)
         checksum = ((checksum >> 1) | (checksum << 7)) + id0_fat[i];
     
