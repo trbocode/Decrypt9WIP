@@ -16,6 +16,7 @@
 #define CD_TRIM         (1<<0)
 #define CD_DECRYPT      (1<<1)
 #define CD_MAKECIA      (1<<2)
+#define CD_NTRCART      (1<<3)
 
 #define MAX_ENTRIES 1024
 #define CIA_CERT_SIZE 0xA00
