@@ -12,14 +12,6 @@
 // title list shortcuts - will change if the array changes!
 #define TL_HS      (titleList +  3)
 #define TL_HS_N    (titleList +  4)
-#define TL_NFRM    (titleList + 11)
-#define TL_NFRM_N  (titleList + 12)
-#define TL_SFRM    (titleList + 13)
-#define TL_SFRM_N  (titleList + 14)
-#define TL_TFRM    (titleList + 15)
-#define TL_TFRM_N  (titleList + 16)
-#define TL_AFRM    (titleList + 17)
-#define TL_AFRM_N  (titleList + 18)
 
 // only a subset, see http://3dbrew.org/wiki/Title_list
 // regions: JPN, USA, EUR, CHN, KOR, TWN
@@ -43,6 +35,19 @@ TitleListInfo titleList[] = {
     { "TWL_FIRM_N3DS"         , 0x00040138, { 0x20000102, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000 } },
     { "AGB_FIRM"              , 0x00040138, { 0x00000202, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000 } },
     { "AGB_FIRM_N3DS"         , 0x00040138, { 0x20000202, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000 } }
+};
+
+// contains all available NCCH firms, see http://3dbrew.org/wiki/Title_list
+// N3DS firms first, O3DS FIRM starting at index 4
+TitleListInfo firms[] = {
+    { "NATIVE_FIRM_N3DS"      , 0x00040138, { 0x20000002, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000 } },
+    { "SAFE_MODE_FIRM_N3DS"   , 0x00040138, { 0x20000003, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000 } },
+    { "TWL_FIRM_N3DS"         , 0x00040138, { 0x20000102, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000 } },
+    { "AGB_FIRM_N3DS"         , 0x00040138, { 0x20000202, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000 } },
+    { "NATIVE_FIRM"           , 0x00040138, { 0x00000002, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000 } },
+    { "SAFE_MODE_FIRM"        , 0x00040138, { 0x00000002, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000 } },
+    { "TWL_FIRM"              , 0x00040138, { 0x00000102, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000 } },
+    { "AGB_FIRM"              , 0x00040138, { 0x00000202, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000 } }
 };
 
 NandFileInfo fileList[] = { // first six entries are .dbs, placement corresponds to id
@@ -405,6 +410,21 @@ u32 FixCmac(u8* cmac, u8* data, u32 size, u32 keyslot)
     }
 }
 
+u32 GetRegion(void)
+{
+    PartitionInfo* p_info = GetPartitionInfo(P_CTRNAND);
+    u8 secureinfo[0x200];
+    u32 offset;
+    u32 size;
+    
+    if (SeekFileInNand(&offset, &size, "RW         SYS        SECURE~?   ", p_info) != 0)
+        return 0xF;
+    if (DecryptNandToMem(secureinfo, offset, size, p_info) != 0)
+        return 0xF;
+    
+    return (u32) secureinfo[0x100];
+}
+
 u32 DumpFile(u32 param)
 {
     NandFileInfo* f_info = GetNandFileInfo(param);
@@ -417,7 +437,7 @@ u32 DumpFile(u32 param)
         return 1;
     if (OutputFileNameSelector(filename, f_info->name_l, NULL) != 0)
         return 1;
-    if (DecryptNandToFile(filename, offset, size, p_info) != 0)
+    if (DecryptNandToFile(filename, offset, size, p_info, NULL) != 0)
         return 1;
     
     return 0;
@@ -479,7 +499,7 @@ u32 DumpHealthAndSafety(u32 param)
         return 1;
         
     Debug("Dumping & decrypting APP0...");
-    if (DecryptNandToFile(filename, offset_app[0], size_app[0], ctrnand_info) != 0)
+    if (DecryptNandToFile(filename, offset_app[0], size_app[0], ctrnand_info, NULL) != 0)
         return 1;
     if (CryptNcch(filename, 0, 0, 0, NULL) != 0)
         return 1;
@@ -569,109 +589,113 @@ u32 InjectHealthAndSafety(u32 param)
     return 0;
 }
 
+u32 DumpNcchFirm(u32 firm_idx, bool version, bool a9l_decrypt)
+{
+    u8* buffer = BUFFER_ADDRESS;
+    PartitionInfo* ctrnand_info = GetPartitionInfo(P_CTRNAND);
+    TitleListInfo* firm = firms + firm_idx;
+    char filename[64];
+    u32 offset_app[4];
+    u32 size_app[4];
+    u32 offset_tmd;
+    u32 size_tmd;
+    u16 firm_ver;
+    
+    // search for firm title in NAND
+    if (DebugSeekTitleInNand(&offset_tmd, &size_tmd, offset_app, size_app, firm, 4) != 0)
+        return 1;
+    
+    // get version from TMD
+    u8* tmd_data = buffer;
+    if (DecryptNandToMem(tmd_data, offset_tmd, size_tmd, ctrnand_info) != 0)
+        return 1;
+    tmd_data += (tmd_data[3] == 3) ? 0x240 : (tmd_data[3] == 4) ? 0x140 : 0x80;
+    firm_ver = getbe16(tmd_data + 0x9C);
+    
+    // Dump & decrypt FIRM app
+    snprintf(filename, 64, (version) ? "%s_v%u.app" : "%s.app", firm->name, firm_ver);
+    Debug("Dumping & decrypting %s...", filename);
+    if (DecryptNandToFile(filename, offset_app[0], size_app[0], ctrnand_info, NULL) != 0)
+        return 1;
+    if (CryptNcch(filename, 0, 0, 0, NULL) != 0)
+        return 1;
+    
+    // Extract FIRM bin
+    NcchHeader* ncch = (NcchHeader*) buffer;
+    u8* exefs;
+    u8* firm_bin;
+    u32 firm_size;
+    u32 firm_offset;
+    Debug("Extracting binary FIRM..."); // show kB
+    if (size_app[0] > 0x400000) {
+        Debug("FIRM app is too big (%lu Byte)!", size_app[0]);
+        return 1;
+    }
+    if (FileGetData(filename, buffer, size_app[0], 0) != size_app[0]) {
+        Debug("Error reading %s", filename);
+        return 1;
+    }
+    if ((ncch->offset_exefs + ncch->size_exefs) * 0x200 > size_app[0])
+        return 1; // almost impossible to happen at this point
+    exefs = buffer + (ncch->offset_exefs * 0x200);
+    if (strncmp((char*) exefs, ".firm", 8) != 0) {
+        Debug(".firm not recognized");
+        return 1;
+    }
+    firm_offset = (ncch->offset_exefs * 0x200) + 0x200 + getle32(exefs + 8);
+    firm_size = getle32(exefs + 12);
+    if (firm_offset + firm_size > size_app[0]) {
+        Debug("Corrupt FIRM size / offset");
+        return 1;
+    }
+    firm_bin = buffer + firm_offset;
+    snprintf(filename, 64, (version) ? "%s_v%u.bin" : "%s.bin", firm->name, firm_ver);
+    if (FileDumpData(filename, firm_bin, firm_size) != firm_size) {
+        Debug("Error writing file");
+        return 1;
+    }
+    
+    // Verify FIRM bin
+    Debug("Verifying %s...", filename);
+    if (CheckFirmSize(firm_bin, firm_size) == 0) {
+        Debug("Verification failed!");
+        return 1;
+    } else {
+        Debug("Verified okay!");
+    }
+    
+    if (a9l_decrypt && (firm_idx < 2)) { // only for N3DS NATIVE_FIRM / SAFE_MODE_FIRM
+        Debug("Decrypting ARM9 binary...");
+        if (DecryptFirmArm9Mem(firm_bin, firm_size) != 0)
+            return 1;
+        snprintf(filename, 64, (version) ? "%s_v%u.dec" : "%s.dec", firm->name, firm_ver);
+        if (FileDumpData(filename, firm_bin, firm_size) != firm_size) {
+            Debug("Error writing file");
+            return 1;
+        }
+        Debug("Done!");
+    }
+    
+    return 0;
+}
+
 u32 DumpNcchFirms(u32 param)
 {
     (void) (param); // param is unused here
-    TitleListInfo* firms[8] = { TL_NFRM_N, TL_SFRM_N, TL_TFRM_N, TL_AFRM_N, TL_NFRM, TL_SFRM, TL_TFRM, TL_AFRM };
     u32 success = 0;
     
     Debug("Dumping FIRMs from NCCHs...");
     for (u32 i = (GetUnitPlatform() == PLATFORM_N3DS) ? 0 : 4; i < 8; i++) {
-        u8* buffer = BUFFER_ADDRESS;
-        PartitionInfo* ctrnand_info = GetPartitionInfo(P_CTRNAND);
-        TitleListInfo* firm = firms[i];
-        char filename[64];
-        u32 offset_app[4];
-        u32 size_app[4];
-        u32 offset_tmd;
-        u32 size_tmd;
-        u16 firm_ver;
-        
         Debug("");
-        
-        // search for firm title in NAND
-        if (DebugSeekTitleInNand(&offset_tmd, &size_tmd, offset_app, size_app, firm, 4) != 0)
-            continue;
-        
-        // get version from TMD
-        u8* tmd_data = buffer;
-        if (DecryptNandToMem(tmd_data, offset_tmd, size_tmd, ctrnand_info) != 0)
-            continue;
-        tmd_data += (tmd_data[3] == 3) ? 0x240 : (tmd_data[3] == 4) ? 0x140 : 0x80;
-        firm_ver = getbe16(tmd_data + 0x9C);
-        
-        // Dump & decrypt FIRM app
-        snprintf(filename, 64, "%s_v%u.app", firm->name, firm_ver);
-        Debug("Dumping & decrypting %s...", filename);
-        if (DecryptNandToFile(filename, offset_app[0], size_app[0], ctrnand_info) != 0)
-            continue;
-        if (CryptNcch(filename, 0, 0, 0, NULL) != 0)
-            continue;
-        
-        // Extract FIRM bin
-        NcchHeader* ncch = (NcchHeader*) buffer;
-        u8* exefs;
-        u8* firm_bin;
-        u32 firm_size;
-        u32 firm_offset;
-        Debug("Extracting binary FIRM..."); // show kB
-        if (size_app[0] > 0x400000) {
-            Debug("FIRM app is too big (%lu Byte)!", size_app[0]);
-            continue;
-        }
-        if (FileGetData(filename, buffer, size_app[0], 0) != size_app[0]) {
-            Debug("Error reading %s", filename);
-            continue;
-        }
-        if ((ncch->offset_exefs + ncch->size_exefs) * 0x200 > size_app[0])
-            continue; // almost impossible to happen at this point
-        exefs = buffer + (ncch->offset_exefs * 0x200);
-        if (strncmp((char*) exefs, ".firm", 8) != 0) {
-            Debug(".firm not recognized");
-            continue;
-        }
-        firm_offset = (ncch->offset_exefs * 0x200) + 0x200 + getle32(exefs + 8);
-        firm_size = getle32(exefs + 12);
-        if (firm_offset + firm_size > size_app[0]) {
-            Debug("Corrupt FIRM size / offset");
-            continue;
-        }
-        firm_bin = buffer + firm_offset;
-        snprintf(filename, 64, "%s_v%u.bin", firm->name, firm_ver);
-        if (FileDumpData(filename, firm_bin, firm_size) != firm_size) {
-            Debug("Error writing file");
-            continue;
-        }
-        
-        // Verify FIRM bin
-        Debug("Verifying %s...", filename);
-        if (CheckFirmSize(firm_bin, firm_size) == 0) {
-            Debug("Verification failed!");
-            continue;
-        } else {
-            Debug("Verified okay!");
-        }
-        
-        if (i < 4) { // only for N3DS FIRMs
-            Debug("Decrypting ARM9 binary...");
-            if (DecryptFirmArm9Mem(firm_bin, firm_size) != 0)
-                continue;
-            snprintf(filename, 64, "%s_v%u.dec", firm->name, firm_ver);
-            if (FileDumpData(filename, firm_bin, firm_size) != firm_size) {
-                Debug("Error writing file");
-                continue;
-            }
-            Debug("Done!");
-        }
-        
-        success |= (1<<i);
+        if (DumpNcchFirm(i, true, true) == 0)
+            success |= (1<<i);
     }
     
     Debug("");
     Debug("Succesfully processed FIRMs:");
     for (u32 i = 0; i < 8; i++) {
         if (success & (1<<i))
-            Debug(firms[i]->name);
+            Debug(firms[i].name);
     }
     if (!success)
         Debug("(none)");

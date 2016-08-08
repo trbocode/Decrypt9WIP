@@ -39,6 +39,8 @@ u32 DebugSeekFileInNand(u32* offset, u32* size, const char* filename, const char
 u32 SeekTitleInNandDb(u32* tid_low, u32* tmd_id, TitleListInfo* title_info);
 u32 DebugSeekTitleInNand(u32* offset_tmd, u32* size_tmd, u32* offset_app, u32* size_app, TitleListInfo* title_info, u32 max_cnt);
 u32 FixCmac(u8* cmac, u8* data, u32 size, u32 keyslot);
+u32 GetRegion(void);
+u32 DumpNcchFirm(u32 firm_idx, bool version, bool a9l_decrypt);
 
 // --> FEATURE FUNCTIONS <--
 u32 DumpFile(u32 param);
