@@ -20,6 +20,7 @@
 #define F_NNIDSAVE    (1<<12)
 #define F_FRIENDSAVE  (1<<13)
 #define F_CONFIGSAVE  (1<<14)
+#define FF_AUTONAME   (1<<31)
 
 typedef struct {
     char name[32];
@@ -40,6 +41,7 @@ u32 SeekTitleInNandDb(u32* tid_low, u32* tmd_id, TitleListInfo* title_info);
 u32 DebugSeekTitleInNand(u32* offset_tmd, u32* size_tmd, u32* offset_app, u32* size_app, TitleListInfo* title_info, u32 max_cnt);
 u32 FixCmac(u8* cmac, u8* data, u32 size, u32 keyslot);
 u32 GetRegion(void);
+u32 GetSystemId0(u8* id0);
 u32 DumpNcchFirm(u32 firm_idx, bool version, bool a9l_decrypt);
 
 // --> FEATURE FUNCTIONS <--

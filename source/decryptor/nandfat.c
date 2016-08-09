@@ -72,8 +72,8 @@ NandFileInfo fileList[] = { // first six entries are .dbs, placement corresponds
 NandFileInfo* GetNandFileInfo(u32 file_id)
 {
     u32 file_num = 0;
-    for(; !(file_id & (1<<file_num)) && (file_num < 32); file_num++);
-    return (file_num >= 32) ? NULL : &(fileList[file_num]);
+    for(; !(file_id & (1<<file_num)) && (file_num < 30); file_num++);
+    return (file_num >= 30) ? NULL : &(fileList[file_num]);
 }
 
 u32 SeekFileInNand(u32* offset, u32* size, const char* path, PartitionInfo* partition)
@@ -286,17 +286,12 @@ u32 FixNandDataId0(void)
     u32 offset;
     u32 size;
     
-    // grab movable.sed data / slot0x34keyY
-    u8* movable = buffer;
-    u8* slot0x34keyY = movable + 0x110;
-    unsigned int sha256sum[8];
-    if ((SeekFileInNand(&offset, &size, "PRIVATE    MOVABLE SED", ctrnand_info) != 0) || (size > 0x200) ||
-        (DecryptNandToMem(movable, offset, size, ctrnand_info) != 0)) {
+    // determine system id0, create filenames
+    unsigned int id0_int[4];
+    if (GetSystemId0((u8*) id0_int) != 0)
         return 1; // this should never happen
-    }
-    sha_quick(sha256sum, slot0x34keyY, 16, SHA256_MODE);
-    snprintf(id0_key, 32 + 1, "%08x%08x%08x%08x", sha256sum[0], sha256sum[1], sha256sum[2], sha256sum[3]);
-    snprintf(id0_fat, 8 + 3 + 1, "%06X~1   ", sha256sum[0] >> 8);
+    snprintf(id0_key, 32 + 1, "%08x%08x%08x%08x", id0_int[0], id0_int[1], id0_int[2], id0_int[3]);
+    snprintf(id0_fat, 8 + 3 + 1, "%06X~1   ", id0_int[0] >> 8);
     
     // grab the FAT directory object
     u8* dirblock = buffer;
@@ -417,12 +412,30 @@ u32 GetRegion(void)
     u32 offset;
     u32 size;
     
-    if (SeekFileInNand(&offset, &size, "RW         SYS        SECURE~?   ", p_info) != 0)
-        return 0xF;
-    if (DecryptNandToMem(secureinfo, offset, size, p_info) != 0)
+    if ((SeekFileInNand(&offset, &size, "RW         SYS        SECURE~?   ", p_info) != 0) ||
+        (DecryptNandToMem(secureinfo, offset, size, p_info) != 0))
         return 0xF;
     
     return (u32) secureinfo[0x100];
+}
+
+u32 GetSystemId0(u8* id0)
+{
+    PartitionInfo* p_info = GetPartitionInfo(P_CTRNAND);
+    u32 shasum[8];
+    u8 movable[0x200];
+    u8* movableKeyY = movable + 0x110;
+    u32 offset;
+    u32 size;
+    
+    if ((SeekFileInNand(&offset, &size, "PRIVATE    MOVABLE SED", p_info) != 0) || (size > 0x200) ||
+        (DecryptNandToMem(movable, offset, size, p_info) != 0)) {
+        return 1; // this should never happen
+    }
+    sha_quick(shasum, movableKeyY, 16, SHA256_MODE);
+    memcpy(id0, shasum, 16);
+    
+    return 0;
 }
 
 u32 DumpFile(u32 param)
@@ -435,8 +448,14 @@ u32 DumpFile(u32 param)
     
     if (DebugSeekFileInNand(&offset, &size, f_info->name_l, f_info->path, p_info) != 0)
         return 1;
-    if (OutputFileNameSelector(filename, f_info->name_l, NULL) != 0)
-        return 1;
+    if (!(param & FF_AUTONAME)) {
+        if (OutputFileNameSelector(filename, f_info->name_l, NULL) != 0)
+            return 1;
+    } else {
+        unsigned int id0[4];
+        GetSystemId0((u8*) id0);
+        snprintf(filename, 64, "%08X_%s", *id0, f_info->name_l);
+    }
     if (DecryptNandToFile(filename, offset, size, p_info, NULL) != 0)
         return 1;
     
@@ -456,8 +475,14 @@ u32 InjectFile(u32 param)
     
     if (DebugSeekFileInNand(&offset, &size, f_info->name_l, f_info->path, p_info) != 0)
         return 1;
-    if (InputFileNameSelector(filename, f_info->name_s, NULL, NULL, 0, size, false) != 0)
-        return 1;
+    if (!(param & FF_AUTONAME)) {
+        if (InputFileNameSelector(filename, f_info->name_s, NULL, NULL, 0, size, false) != 0)
+            return 1;
+    } else {
+        unsigned int id0[4];
+        GetSystemId0((u8*) id0);
+        snprintf(filename, 64, "%08X_%s", *id0, f_info->name_l);
+    }
     if (EncryptFileToNand(filename, offset, size, p_info) != 0)
         return 1;
     
@@ -475,6 +500,8 @@ u32 InjectFile(u32 param)
         if ((FixCmac(header, temp, 0x10C, 0x0B) != 0) && (EncryptMemToNand(header, offset, 0x200, p_info) != 0))
             return 1;
     }
+    
+    // CMACs for system saves?
     
     return 0;
 }
@@ -705,7 +732,6 @@ u32 DumpNcchFirms(u32 param)
 
 u32 AutoFixCtrnand(u32 param)
 {
-    (void) (param); // param is unused here
     NandFileInfo* f_info;
     PartitionInfo* p_info;
     u8 header[0x200];
