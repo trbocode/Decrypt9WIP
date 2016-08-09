@@ -50,7 +50,7 @@ u32 OutputFileNameSelector(char* filename, const char* basename, char* extension
 u32 InputFileNameSelector(char* filename, const char* basename, char* extension, u8* magic, u32 msize, u32 fsize, bool accept_bigger);
 
 u32 DecryptNandToMem(u8* buffer, u32 offset, u32 size, PartitionInfo* partition);
-u32 DecryptNandToFile(const char* filename, u32 offset, u32 size, PartitionInfo* partition);
+u32 DecryptNandToFile(const char* filename, u32 offset, u32 size, PartitionInfo* partition, u8* sha256);
 u32 EncryptMemToNand(u8* buffer, u32 offset, u32 size, PartitionInfo* partition);
 u32 EncryptFileToNand(const char* filename, u32 offset, u32 size, PartitionInfo* partition);
 

@@ -620,7 +620,7 @@ u32 DecryptNandToMem(u8* buffer, u32 offset, u32 size, PartitionInfo* partition)
     return 0;
 }
 
-u32 DecryptNandToFile(const char* filename, u32 offset, u32 size, PartitionInfo* partition)
+u32 DecryptNandToFile(const char* filename, u32 offset, u32 size, PartitionInfo* partition, u8* sha256)
 {
     u8* buffer = BUFFER_ADDRESS;
     u32 result = 0;
@@ -631,6 +631,8 @@ u32 DecryptNandToFile(const char* filename, u32 offset, u32 size, PartitionInfo*
     if (!DebugFileCreate(filename, true))
         return 1;
 
+    if (sha256)
+        sha_init(SHA256_MODE);
     for (u32 i = 0; i < size; i += NAND_SECTOR_SIZE * SECTORS_PER_READ) {
         u32 read_bytes = min(NAND_SECTOR_SIZE * SECTORS_PER_READ, (size - i));
         ShowProgress(i, size);
@@ -639,7 +641,11 @@ u32 DecryptNandToFile(const char* filename, u32 offset, u32 size, PartitionInfo*
             result = 1;
             break;
         }
+        if (sha256)
+            sha_update(buffer, read_bytes);
     }
+    if (sha256)
+        sha_get(sha256);
 
     ShowProgress(0, 0);
     FileClose();
@@ -753,7 +759,7 @@ u32 DecryptNandPartition(u32 param)
     if (OutputFileNameSelector(filename, p_info->name, "bin") != 0)
         return 1;
     
-    return DecryptNandToFile(filename, p_info->offset, p_info->size, p_info);
+    return DecryptNandToFile(filename, p_info->offset, p_info->size, p_info, NULL);
 }
 
 u32 DecryptSector0x96(u32 param)
