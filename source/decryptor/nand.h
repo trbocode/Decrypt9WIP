@@ -43,6 +43,7 @@ typedef struct {
 PartitionInfo* GetPartitionInfo(u32 partition_id);
 u32 GetNandCtr(u8* ctr, u32 offset);
 
+u32 SwitchCtrNandCrypto(void);
 u32 CheckFirmSize(const u8* firm, u32 f_size);
 u32 DecryptFirmArm9Mem(u8* firm, u32 f_size);
 

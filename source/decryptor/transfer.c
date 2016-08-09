@@ -4,16 +4,17 @@
 #include "decryptor/hashfile.h"
 #include "decryptor/nand.h"
 #include "decryptor/nandfat.h"
+#include "fatfs/sdmmc.h"
 
 
 u32 NandTransfer(u32 param) {
     PartitionInfo* p_ctrnand = GetPartitionInfo(P_CTRNAND);
-    PartitionInfo* p_firm0 = GetPartitionInfo(P_FIRM0);
-    PartitionInfo* p_firm1 = GetPartitionInfo(P_FIRM1);
+    u8* buffer = BUFFER_ADDRESS;
     char filename[64] = { 0 };
     char secnfoname[64] = { 0 };
     char hashname[64] = { 0 };
     bool a9lh = ((*(u32*) 0x101401C0) == 0);
+    bool reencrypt = false;
     u32 region = GetRegion();
     
     
@@ -24,6 +25,13 @@ u32 NandTransfer(u32 param) {
     // check free space
     if (!DebugCheckFreeSpace(128 * 1024 * 1024)) {
         Debug("You need at least 128MB free for this operation");
+        return 1;
+    }
+    
+    // check crypto type
+    if ((GetUnitPlatform() == PLATFORM_N3DS) && (p_ctrnand->keyslot == 0x04)) {
+        Debug("This does not work on N3DS with O3DS FW");
+        Debug("Restore a NAND backup first");
         return 1;
     }
     
@@ -107,6 +115,47 @@ u32 NandTransfer(u32 param) {
     if (AutoFixCtrnand(N_NANDWRITE) != 0)
         return 1;
     Debug("Step #5 success!");
+    
+    if (a9lh) { // done at this step if running from a9lh
+        Debug("");
+        return 0;
+    }
+    
+    Debug("");
+    Debug("Step #6: Dumping and injecting NATIVE_FIRM...");
+    PartitionInfo* p_firm0 = GetPartitionInfo(P_FIRM0);
+    PartitionInfo* p_firm1 = GetPartitionInfo(P_FIRM1);
+    u8* firm = buffer;
+    u32 firm_size = 0;
+    if (DumpNcchFirm(4, false, false) == 0) {
+        reencrypt = (GetUnitPlatform() == PLATFORM_N3DS);
+        Debug("O3DS NATIVE_FIRM found, injecting...");
+        firm_size = FileGetData("NATIVE_FIRM.bin", firm, 0x400000, 0);
+    } else if (GetUnitPlatform() == PLATFORM_3DS) {
+        Debug("NATIVE_FIRM not found, failure!");
+        return 1;
+    } else if (DumpNcchFirm(0, false, false) == 0) {
+        Debug("N3DS NATIVE_FIRM found, injecting...");
+        firm_size = FileGetData("NATIVE_FIRM_N3DS.bin", firm, 0x400000, 0);
+    } else {
+        Debug("NATIVE_FIRM_N3DS not found, failure!");
+        return 1;
+    }
+    firm_size = CheckFirmSize(firm, firm_size);
+    if (!firm_size)
+        return 0;
+    if ((EncryptMemToNand(firm, p_firm0->offset, firm_size, p_firm0) != 0) ||
+        (EncryptMemToNand(firm, p_firm1->offset, firm_size, p_firm1) != 0))
+        return 1;
+    Debug("Step #6 success!");
+    
+    if (reencrypt && (GetUnitPlatform() == PLATFORM_N3DS)) {
+        Debug("");
+        Debug("Step #7: Reencrypt CTRNAND partition...");
+        if (SwitchCtrNandCrypto() != 0)
+            return 1;
+        Debug("Step #7 success!");
+    }
     
     return 0;
 }

@@ -9,6 +9,7 @@
 #include "decryptor/keys.h"
 #include "decryptor/nand.h"
 #include "fatfs/sdmmc.h"
+#include "NCSD_header_o3ds_hdr.h"
 
 // return values for NAND header check
 #define NAND_HDR_UNK  0 // should be zero
@@ -600,6 +601,52 @@ u32 GetNandCtr(u8* ctr, u32 offset)
     memcpy(ctr, (offset >= 0x0B100000) ? CtrNandCtr : TwlNandCtr, 16);
     add_ctr(ctr, offset / 0x10);
 
+    return 0;
+}
+
+u32 SwitchCtrNandCrypto(void)
+{
+    u8* buffer = BUFFER_ADDRESS;
+    PartitionInfo p_from = { .offset = 0x0B930000, .size = 0x41ED0000, .keyslot = 0x5, .mode = AES_CNT_CTRNAND_MODE };
+    PartitionInfo p_to   = { .offset = 0x0B930000, .size = 0x41ED0000, .keyslot = 0x4, .mode = AES_CNT_CTRNAND_MODE };
+    
+    // basic safety checks
+    if ((GetUnitPlatform() != PLATFORM_N3DS) || (CheckNandHeaderType(NULL) != NAND_HDR_N3DS))
+        return 1;
+    
+    // Encryption magic check
+    PartitionInfo* p_chk = GetPartitionInfo(P_CTRNAND);
+    if (DecryptNandToMem(buffer, p_chk->offset, 16, p_chk) != 0)
+        return 1;
+    if (memcmp(p_chk->magic, buffer, 8) != 0) {
+        Debug("CTRNAND is not slot0x05 encrypted!");
+        return 1;
+    }
+    
+    Debug("Switching CTRNAND partition 0x05 -> 0x04...");
+    u32 size = p_from.size;
+    u32 offset = p_from.offset;
+    for (u32 i = 0; i < size; i += NAND_SECTOR_SIZE * SECTORS_PER_READ) {
+        u32 read_bytes = min(NAND_SECTOR_SIZE * SECTORS_PER_READ, (size - i));
+        ShowProgress(i, size);
+        if ((DecryptNandToMem(buffer, offset + i, read_bytes, &p_from) != 0) ||
+            (EncryptMemToNand(buffer, offset + i, read_bytes, &p_to) != 0)) {
+            Debug("NAND i/o failure");
+            return 1;
+        }
+    }
+    ShowProgress(0, 0);
+    
+    // make a backup of the genuine header @0x200 (if genuine)
+    if (ReadNandSectors(0, 1, buffer) && (CheckNandHeaderIntegrity(buffer) == 0))
+        WriteNandSectors(1, 1, buffer); // only basic checks here - this is for last resort
+    
+    // write O3DS header
+    if ((NCSD_header_o3ds_hdr_size != 0x200) || (WriteNandSectors(0, 1, (u8*) NCSD_header_o3ds_hdr) != 0)) {
+        Debug("NAND header write failure");
+        return 1;
+    }
+    
     return 0;
 }
 
