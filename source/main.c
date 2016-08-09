@@ -122,117 +122,117 @@ MenuInfo menu[] =
     {
         "Partition Dump... (SysNAND)", 8, // ID 2
         {
-            { "Dump TWLN Partition",          &DecryptNandPartition, P_TWLN },
-            { "Dump TWLP Partition",          &DecryptNandPartition, P_TWLP },
-            { "Dump AGBSAVE Partition",       &DecryptNandPartition, P_AGBSAVE },
-            { "Dump FIRM0 Partition",         &DecryptNandPartition, P_FIRM0 },
-            { "Dump FIRM1 Partition",         &DecryptNandPartition, P_FIRM1 },
-            { "Dump CTRNAND Partition",       &DecryptNandPartition, P_CTRNAND },
-            { "Dump Sector 0x96",             &DecryptSector0x96,    0 },
-            { "Dump NAND Header",             &DumpNandHeader,       0 }
+            { "Dump TWLN Partition",          &DecryptNandPartition,  P_TWLN },
+            { "Dump TWLP Partition",          &DecryptNandPartition,  P_TWLP },
+            { "Dump AGBSAVE Partition",       &DecryptNandPartition,  P_AGBSAVE },
+            { "Dump FIRM0 Partition",         &DecryptNandPartition,  P_FIRM0 },
+            { "Dump FIRM1 Partition",         &DecryptNandPartition,  P_FIRM1 },
+            { "Dump CTRNAND Partition",       &DecryptNandPartition,  P_CTRNAND },
+            { "Dump Sector 0x96",             &DecryptSector0x96,     0 },
+            { "Dump NAND Header",             &DumpNandHeader,        0 }
         }
     },
     {
         "Partition Dump...(EmuNAND)", 8, // ID 3
         {
-            { "Dump TWLN Partition",          &DecryptNandPartition, N_EMUNAND | P_TWLN },
-            { "Dump TWLP Partition",          &DecryptNandPartition, N_EMUNAND | P_TWLP },
-            { "Dump AGBSAVE Partition",       &DecryptNandPartition, N_EMUNAND | P_AGBSAVE },
-            { "Dump FIRM0 Partition",         &DecryptNandPartition, N_EMUNAND | P_FIRM0 },
-            { "Dump FIRM1 Partition",         &DecryptNandPartition, N_EMUNAND | P_FIRM1 },
-            { "Dump CTRNAND Partition",       &DecryptNandPartition, N_EMUNAND | P_CTRNAND },
-            { "Dump Sector 0x96",             &DecryptSector0x96,    N_EMUNAND },
-            { "Dump NAND Header",             &DumpNandHeader,       N_EMUNAND }
+            { "Dump TWLN Partition",          &DecryptNandPartition,  N_EMUNAND | P_TWLN },
+            { "Dump TWLP Partition",          &DecryptNandPartition,  N_EMUNAND | P_TWLP },
+            { "Dump AGBSAVE Partition",       &DecryptNandPartition,  N_EMUNAND | P_AGBSAVE },
+            { "Dump FIRM0 Partition",         &DecryptNandPartition,  N_EMUNAND | P_FIRM0 },
+            { "Dump FIRM1 Partition",         &DecryptNandPartition,  N_EMUNAND | P_FIRM1 },
+            { "Dump CTRNAND Partition",       &DecryptNandPartition,  N_EMUNAND | P_CTRNAND },
+            { "Dump Sector 0x96",             &DecryptSector0x96,     N_EMUNAND },
+            { "Dump NAND Header",             &DumpNandHeader,        N_EMUNAND }
         }
     },
     {
         "Partition Inject... (SysNAND)", 8, // ID 4
         {
-            { "Inject TWLN Partition",        &InjectNandPartition, N_NANDWRITE | P_TWLN },
-            { "Inject TWLP Partition",        &InjectNandPartition, N_NANDWRITE | P_TWLP },
-            { "Inject AGBSAVE Partition",     &InjectNandPartition, N_NANDWRITE | P_AGBSAVE },
-            { "Inject FIRM0 Partition",       &InjectNandPartition, N_NANDWRITE | N_A9LHWRITE | P_FIRM0 },
-            { "Inject FIRM1 Partition",       &InjectNandPartition, N_NANDWRITE | N_A9LHWRITE | P_FIRM1 },
-            { "Inject CTRNAND Partition",     &InjectNandPartition, N_NANDWRITE | P_CTRNAND },
-            { "Inject Sector 0x96",           &InjectSector0x96,    N_NANDWRITE | N_A9LHWRITE },
-            { "Restore NAND Header",          &RestoreNandHeader,   N_NANDWRITE | N_A9LHWRITE }
+            { "Inject TWLN Partition",        &InjectNandPartition,   N_NANDWRITE | P_TWLN },
+            { "Inject TWLP Partition",        &InjectNandPartition,   N_NANDWRITE | P_TWLP },
+            { "Inject AGBSAVE Partition",     &InjectNandPartition,   N_NANDWRITE | P_AGBSAVE },
+            { "Inject FIRM0 Partition",       &InjectNandPartition,   N_NANDWRITE | N_A9LHWRITE | P_FIRM0 },
+            { "Inject FIRM1 Partition",       &InjectNandPartition,   N_NANDWRITE | N_A9LHWRITE | P_FIRM1 },
+            { "Inject CTRNAND Partition",     &InjectNandPartition,   N_NANDWRITE | P_CTRNAND },
+            { "Inject Sector 0x96",           &InjectSector0x96,      N_NANDWRITE | N_A9LHWRITE },
+            { "Restore NAND Header",          &RestoreNandHeader,     N_NANDWRITE | N_A9LHWRITE }
         }
     },
     {
         "Partition Inject... (EmuNAND)", 8, // ID 5
         {
-            { "Inject TWLN Partition",        &InjectNandPartition, N_NANDWRITE | N_EMUNAND | P_TWLN },
-            { "Inject TWLP Partition",        &InjectNandPartition, N_NANDWRITE | N_EMUNAND | P_TWLP },
-            { "Inject AGBSAVE Partition",     &InjectNandPartition, N_NANDWRITE | N_EMUNAND | P_AGBSAVE },
-            { "Inject FIRM0 Partition",       &InjectNandPartition, N_NANDWRITE | N_EMUNAND | P_FIRM0 },
-            { "Inject FIRM1 Partition",       &InjectNandPartition, N_NANDWRITE | N_EMUNAND | P_FIRM1 },
-            { "Inject CTRNAND Partition",     &InjectNandPartition, N_NANDWRITE | N_EMUNAND | P_CTRNAND },
-            { "Inject Sector0x96",            &InjectSector0x96,    N_NANDWRITE | N_EMUNAND },
-            { "Restore NAND Header",          &RestoreNandHeader,   N_NANDWRITE | N_EMUNAND }
+            { "Inject TWLN Partition",        &InjectNandPartition,   N_NANDWRITE | N_EMUNAND | P_TWLN },
+            { "Inject TWLP Partition",        &InjectNandPartition,   N_NANDWRITE | N_EMUNAND | P_TWLP },
+            { "Inject AGBSAVE Partition",     &InjectNandPartition,   N_NANDWRITE | N_EMUNAND | P_AGBSAVE },
+            { "Inject FIRM0 Partition",       &InjectNandPartition,   N_NANDWRITE | N_EMUNAND | P_FIRM0 },
+            { "Inject FIRM1 Partition",       &InjectNandPartition,   N_NANDWRITE | N_EMUNAND | P_FIRM1 },
+            { "Inject CTRNAND Partition",     &InjectNandPartition,   N_NANDWRITE | N_EMUNAND | P_CTRNAND },
+            { "Inject Sector0x96",            &InjectSector0x96,      N_NANDWRITE | N_EMUNAND },
+            { "Restore NAND Header",          &RestoreNandHeader,     N_NANDWRITE | N_EMUNAND }
         }
     },
     {
         "File Dump... (SysNAND)", 11, // ID 6
         {
-            { "Dump ticket.db",               &DumpFile,             F_TICKET },
-            { "Dump title.db",                &DumpFile,             F_TITLE },
-            { "Dump import.db",               &DumpFile,             F_IMPORT },
-            { "Dump certs.db",                &DumpFile,             F_CERTS },
-            { "Dump SecureInfo_A",            &DumpFile,             F_SECUREINFO },
-            { "Dump LocalFriendCodeSeed_B",   &DumpFile,             F_LOCALFRIEND },
-            { "Dump movable.sed",             &DumpFile,             F_MOVABLE },
-            { "Dump seedsave.bin",            &DumpFile,             F_SEEDSAVE },
-            { "Dump nagsave.bin",             &DumpFile,             F_NAGSAVE },
-            { "Dump nnidsave.bin",            &DumpFile,             F_NNIDSAVE },
-            { "Dump friendsave.bin",          &DumpFile,             F_FRIENDSAVE }
+            { "Dump ticket.db",               &DumpNandFile,          F_TICKET },
+            { "Dump title.db",                &DumpNandFile,          F_TITLE },
+            { "Dump import.db",               &DumpNandFile,          F_IMPORT },
+            { "Dump certs.db",                &DumpNandFile,          F_CERTS },
+            { "Dump SecureInfo_A",            &DumpNandFile,          F_SECUREINFO },
+            { "Dump LocalFriendCodeSeed_B",   &DumpNandFile,          F_LOCALFRIEND },
+            { "Dump movable.sed",             &DumpNandFile,          F_MOVABLE },
+            { "Dump seedsave.bin",            &DumpNandFile,          F_SEEDSAVE },
+            { "Dump nagsave.bin",             &DumpNandFile,          F_NAGSAVE },
+            { "Dump nnidsave.bin",            &DumpNandFile,          F_NNIDSAVE },
+            { "Dump friendsave.bin",          &DumpNandFile,          F_FRIENDSAVE }
         }
     },
     {
         "File Dump... (EmuNAND)", 11, // ID 7
         {
-            { "Dump ticket.db",               &DumpFile,             N_EMUNAND | F_TICKET },
-            { "Dump title.db",                &DumpFile,             N_EMUNAND | F_TITLE },
-            { "Dump import.db",               &DumpFile,             N_EMUNAND | F_IMPORT },
-            { "Dump certs.db",                &DumpFile,             N_EMUNAND | F_CERTS },
-            { "Dump SecureInfo_A",            &DumpFile,             N_EMUNAND | F_SECUREINFO },
-            { "Dump LocalFriendCodeSeed_B",   &DumpFile,             N_EMUNAND | F_LOCALFRIEND },
-            { "Dump movable.sed",             &DumpFile,             N_EMUNAND | F_MOVABLE },
-            { "Dump seedsave.bin",            &DumpFile,             N_EMUNAND | F_SEEDSAVE },
-            { "Dump nagsave.bin",             &DumpFile,             N_EMUNAND | F_NAGSAVE },
-            { "Dump nnidsave.bin",            &DumpFile,             N_EMUNAND | F_NNIDSAVE },
-            { "Dump friendsave.bin",          &DumpFile,             N_EMUNAND | F_FRIENDSAVE }
+            { "Dump ticket.db",               &DumpNandFile,          N_EMUNAND | F_TICKET },
+            { "Dump title.db",                &DumpNandFile,          N_EMUNAND | F_TITLE },
+            { "Dump import.db",               &DumpNandFile,          N_EMUNAND | F_IMPORT },
+            { "Dump certs.db",                &DumpNandFile,          N_EMUNAND | F_CERTS },
+            { "Dump SecureInfo_A",            &DumpNandFile,          N_EMUNAND | F_SECUREINFO },
+            { "Dump LocalFriendCodeSeed_B",   &DumpNandFile,          N_EMUNAND | F_LOCALFRIEND },
+            { "Dump movable.sed",             &DumpNandFile,          N_EMUNAND | F_MOVABLE },
+            { "Dump seedsave.bin",            &DumpNandFile,          N_EMUNAND | F_SEEDSAVE },
+            { "Dump nagsave.bin",             &DumpNandFile,          N_EMUNAND | F_NAGSAVE },
+            { "Dump nnidsave.bin",            &DumpNandFile,          N_EMUNAND | F_NNIDSAVE },
+            { "Dump friendsave.bin",          &DumpNandFile,          N_EMUNAND | F_FRIENDSAVE }
         }
     },
     {
         "File Inject... (SysNAND)", 11, // ID 8
         {
-            { "Inject ticket.db",             &InjectFile,           N_NANDWRITE | F_TICKET },
-            { "Inject title.db",              &InjectFile,           N_NANDWRITE | F_TITLE },
-            { "Inject import.db",             &InjectFile,           N_NANDWRITE | F_IMPORT },
-            { "Inject certs.db",              &InjectFile,           N_NANDWRITE | F_CERTS },
-            { "Inject SecureInfo_A",          &InjectFile,           N_NANDWRITE | F_SECUREINFO },
-            { "Inject LocalFriendCodeSeed_B", &InjectFile,           N_NANDWRITE | F_LOCALFRIEND },
-            { "Inject movable.sed",           &InjectFile,           N_NANDWRITE | F_MOVABLE },
-            { "Inject seedsave.bin",          &InjectFile,           N_NANDWRITE | F_SEEDSAVE },
-            { "Inject nagsave.bin",           &InjectFile,           N_NANDWRITE | F_NAGSAVE },
-            { "Inject nnidsave.bin",          &InjectFile,           N_NANDWRITE | F_NNIDSAVE },
-            { "Inject friendsave.bin",        &InjectFile,           N_NANDWRITE | F_FRIENDSAVE }
+            { "Inject ticket.db",             &InjectNandFile,        N_NANDWRITE | F_TICKET },
+            { "Inject title.db",              &InjectNandFile,        N_NANDWRITE | F_TITLE },
+            { "Inject import.db",             &InjectNandFile,        N_NANDWRITE | F_IMPORT },
+            { "Inject certs.db",              &InjectNandFile,        N_NANDWRITE | F_CERTS },
+            { "Inject SecureInfo_A",          &InjectNandFile,        N_NANDWRITE | F_SECUREINFO },
+            { "Inject LocalFriendCodeSeed_B", &InjectNandFile,        N_NANDWRITE | F_LOCALFRIEND },
+            { "Inject movable.sed",           &InjectNandFile,        N_NANDWRITE | F_MOVABLE },
+            { "Inject seedsave.bin",          &InjectNandFile,        N_NANDWRITE | F_SEEDSAVE },
+            { "Inject nagsave.bin",           &InjectNandFile,        N_NANDWRITE | F_NAGSAVE },
+            { "Inject nnidsave.bin",          &InjectNandFile,        N_NANDWRITE | F_NNIDSAVE },
+            { "Inject friendsave.bin",        &InjectNandFile,        N_NANDWRITE | F_FRIENDSAVE }
         }
     },
     {
         "File Inject... (EmuNAND)", 11, // ID 9
         {
-            { "Inject ticket.db",             &InjectFile,           N_NANDWRITE | N_EMUNAND | F_TICKET },
-            { "Inject title.db",              &InjectFile,           N_NANDWRITE | N_EMUNAND | F_TITLE },
-            { "Inject import.db",             &InjectFile,           N_NANDWRITE | N_EMUNAND | F_IMPORT },
-            { "Inject certs.db",              &InjectFile,           N_NANDWRITE | N_EMUNAND | F_CERTS },
-            { "Inject SecureInfo_A",          &InjectFile,           N_NANDWRITE | N_EMUNAND | F_SECUREINFO },
-            { "Inject LocalFriendCodeSeed_B", &InjectFile,           N_NANDWRITE | N_EMUNAND | F_LOCALFRIEND },
-            { "Inject movable.sed",           &InjectFile,           N_NANDWRITE | N_EMUNAND | F_MOVABLE },
-            { "Inject seedsave.bin",          &InjectFile,           N_NANDWRITE | N_EMUNAND | F_SEEDSAVE },
-            { "Inject nagsave.bin",           &InjectFile,           N_NANDWRITE | N_EMUNAND | F_NAGSAVE },
-            { "Inject nnidsave.bin",          &InjectFile,           N_NANDWRITE | N_EMUNAND | F_NNIDSAVE },
-            { "Inject friendsave.bin",        &InjectFile,           N_NANDWRITE | N_EMUNAND | F_FRIENDSAVE }
+            { "Inject ticket.db",             &InjectNandFile,        N_NANDWRITE | N_EMUNAND | F_TICKET },
+            { "Inject title.db",              &InjectNandFile,        N_NANDWRITE | N_EMUNAND | F_TITLE },
+            { "Inject import.db",             &InjectNandFile,        N_NANDWRITE | N_EMUNAND | F_IMPORT },
+            { "Inject certs.db",              &InjectNandFile,        N_NANDWRITE | N_EMUNAND | F_CERTS },
+            { "Inject SecureInfo_A",          &InjectNandFile,        N_NANDWRITE | N_EMUNAND | F_SECUREINFO },
+            { "Inject LocalFriendCodeSeed_B", &InjectNandFile,        N_NANDWRITE | N_EMUNAND | F_LOCALFRIEND },
+            { "Inject movable.sed",           &InjectNandFile,        N_NANDWRITE | N_EMUNAND | F_MOVABLE },
+            { "Inject seedsave.bin",          &InjectNandFile,        N_NANDWRITE | N_EMUNAND | F_SEEDSAVE },
+            { "Inject nagsave.bin",           &InjectNandFile,        N_NANDWRITE | N_EMUNAND | F_NAGSAVE },
+            { "Inject nnidsave.bin",          &InjectNandFile,        N_NANDWRITE | N_EMUNAND | F_NNIDSAVE },
+            { "Inject friendsave.bin",        &InjectNandFile,        N_NANDWRITE | N_EMUNAND | F_FRIENDSAVE }
         }
     },
     {

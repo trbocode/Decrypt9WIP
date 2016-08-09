@@ -6,7 +6,7 @@
 #include "decryptor/nandfat.h"
 
 
-u32 CtrNandTransfer(u32 param) {
+u32 NandTransfer(u32 param) {
     PartitionInfo* p_ctrnand = GetPartitionInfo(P_CTRNAND);
     PartitionInfo* p_firm0 = GetPartitionInfo(P_FIRM0);
     PartitionInfo* p_firm1 = GetPartitionInfo(P_FIRM1);
@@ -15,6 +15,7 @@ u32 CtrNandTransfer(u32 param) {
     char hashname[64] = { 0 };
     bool a9lh = ((*(u32*) 0x101401C0) == 0);
     u32 region = GetRegion();
+    
     
     // developer screwup protection
     if (!(param & N_NANDWRITE))
@@ -66,11 +67,11 @@ u32 CtrNandTransfer(u32 param) {
     
     Debug("");
     Debug("Step #2: Dumping transfer files...");
-    if ((DumpFile(FF_AUTONAME | F_MOVABLE) != 0) ||
-        (DumpFile(FF_AUTONAME | F_TICKET) != 0) ||
-        (DumpFile(FF_AUTONAME | F_CONFIGSAVE) != 0) ||
-        (DumpFile(FF_AUTONAME | F_LOCALFRIEND) != 0) ||
-        (DumpFile(FF_AUTONAME | F_SECUREINFO) != 0))
+    if ((DumpNandFile(FF_AUTONAME | F_MOVABLE) != 0) ||
+        (DumpNandFile(FF_AUTONAME | F_TICKET) != 0) ||
+        (DumpNandFile(FF_AUTONAME | F_CONFIGSAVE) != 0) ||
+        (DumpNandFile(FF_AUTONAME | F_LOCALFRIEND) != 0) ||
+        (DumpNandFile(FF_AUTONAME | F_SECUREINFO) != 0))
         return 1;
     Debug("Step #2 success!");
         
@@ -85,11 +86,11 @@ u32 CtrNandTransfer(u32 param) {
     
     Debug("");
     Debug("Step #4: Injecting transfer files...");
-    if ((InjectFile(N_NANDWRITE | FF_AUTONAME | F_MOVABLE) != 0) ||
-        (InjectFile(N_NANDWRITE | FF_AUTONAME | F_TICKET) != 0) ||
-        (InjectFile(N_NANDWRITE | FF_AUTONAME | F_CONFIGSAVE) != 0) ||
-        (InjectFile(N_NANDWRITE | FF_AUTONAME | F_LOCALFRIEND) != 0) ||
-        (*secnfoname && (InjectFile(N_NANDWRITE | FF_AUTONAME | F_SECUREINFO) != 0)))
+    if ((InjectNandFile(N_NANDWRITE | FF_AUTONAME | F_MOVABLE) != 0) ||
+        (InjectNandFile(N_NANDWRITE | FF_AUTONAME | F_TICKET) != 0) ||
+        (InjectNandFile(N_NANDWRITE | FF_AUTONAME | F_CONFIGSAVE) != 0) ||
+        (InjectNandFile(N_NANDWRITE | FF_AUTONAME | F_LOCALFRIEND) != 0) ||
+        (*secnfoname && (InjectNandFile(N_NANDWRITE | FF_AUTONAME | F_SECUREINFO) != 0)))
         return 1;
     if (*secnfoname) {
         u32 offset;

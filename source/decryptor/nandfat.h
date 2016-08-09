@@ -45,8 +45,8 @@ u32 GetSystemId0(u8* id0);
 u32 DumpNcchFirm(u32 firm_idx, bool version, bool a9l_decrypt);
 
 // --> FEATURE FUNCTIONS <--
-u32 DumpFile(u32 param);
-u32 InjectFile(u32 param);
+u32 DumpNandFile(u32 param);
+u32 InjectNandFile(u32 param);
 u32 DumpHealthAndSafety(u32 param);
 u32 InjectHealthAndSafety(u32 param);
 u32 DumpNcchFirms(u32 param);
