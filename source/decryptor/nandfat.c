@@ -438,6 +438,15 @@ u32 GetSystemId0(u8* id0)
     return 0;
 }
 
+u32 CheckNandFile(u32 param) {
+    NandFileInfo* f_info = GetNandFileInfo(param);
+    PartitionInfo* p_info = GetPartitionInfo(f_info->partition_id);
+    u32 offset;
+    u32 size;
+    
+    return DebugSeekFileInNand(&offset, &size, f_info->name_l, f_info->path, p_info);
+}
+
 u32 DumpNandFile(u32 param)
 {
     NandFileInfo* f_info = GetNandFileInfo(param);
@@ -452,9 +461,9 @@ u32 DumpNandFile(u32 param)
         if (OutputFileNameSelector(filename, f_info->name_l, NULL) != 0)
             return 1;
     } else {
-        unsigned int id0[4];
-        GetSystemId0((u8*) id0);
-        snprintf(filename, 64, "%08X_%s", *id0, f_info->name_l);
+        unsigned int fileid[4];
+        GetNandCtr((u8*) fileid, 0);
+        snprintf(filename, 64, "%08X_%s", *fileid, f_info->name_l);
     }
     if (DecryptNandToFile(filename, offset, size, p_info, NULL) != 0)
         return 1;
@@ -479,9 +488,9 @@ u32 InjectNandFile(u32 param)
         if (InputFileNameSelector(filename, f_info->name_s, NULL, NULL, 0, size, false) != 0)
             return 1;
     } else {
-        unsigned int id0[4];
-        GetSystemId0((u8*) id0);
-        snprintf(filename, 64, "%08X_%s", *id0, f_info->name_l);
+        unsigned int fileid[4];
+        GetNandCtr((u8*) fileid, 0);
+        snprintf(filename, 64, "%08X_%s", *fileid, f_info->name_l);
     }
     if (EncryptFileToNand(filename, offset, size, p_info) != 0)
         return 1;

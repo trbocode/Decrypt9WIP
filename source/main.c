@@ -236,7 +236,7 @@ MenuInfo menu[] =
         }
     },
     {
-        "Miscellaneous... (SysNAND)", 9, // ID 10
+        "Miscellaneous... (SysNAND)", 10, // ID 10
         {
             
             { "Health&Safety Dump",           &DumpHealthAndSafety,   0 },
@@ -247,11 +247,12 @@ MenuInfo menu[] =
             { "Autofix CTRNAND",              &AutoFixCtrnand,        N_NANDWRITE },
             { "NCCH FIRMs Dump",              &DumpNcchFirms,         0 },
             { "FIRM ARM9 Decryptor",          &DecryptFirmArm9File,   0 },
-            { "Auto CTRNAND Transfer",        &CtrNandTransfer,       N_NANDWRITE }
+            { "Auto CTRNAND Transfer",        &NandTransfer,          N_NANDWRITE },
+            { "Dump transferable CTRNAND",    &DumpTransferable,      0 }
         }
     },
     {
-        "Miscellaneous... (EmuNAND)", 7, // ID 11
+        "Miscellaneous... (EmuNAND)", 8, // ID 11
         {
             
             { "Health&Safety Dump",           &DumpHealthAndSafety,   N_EMUNAND },
@@ -260,7 +261,8 @@ MenuInfo menu[] =
             { "Autofix CTRNAND",              &AutoFixCtrnand,        N_NANDWRITE | N_EMUNAND },
             { "NCCH FIRMs Dump",              &DumpNcchFirms,         N_EMUNAND },
             { "FIRM ARM9 Decryptor",          &DecryptFirmArm9File,   0 },
-            { "Auto CTRNAND Transfer",        &CtrNandTransfer,       N_NANDWRITE | N_EMUNAND }
+            { "Auto CTRNAND Transfer",        &NandTransfer,          N_NANDWRITE | N_EMUNAND },
+            { "Dump transferable CTRNAND",    &DumpTransferable,      N_EMUNAND }
         }
     },
     {

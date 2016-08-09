@@ -110,3 +110,45 @@ u32 NandTransfer(u32 param) {
     
     return 0;
 }
+
+u32 DumpTransferable(u32 param) {
+    (void) param;
+    PartitionInfo* p_info = GetPartitionInfo(P_CTRNAND);
+    char filename[64];
+    char hashname[64];
+    u8 magic[0x200];
+    u8 sha256[0x21];
+    
+    if ((DecryptNandToMem(magic, p_info->offset, 16, p_info) != 0) || (memcmp(p_info->magic, magic, 8) != 0)) {
+        Debug("Corrupt partition or decryption error");
+        if (p_info->keyslot == 0x05)
+            Debug("(or slot0x05keyY not set up)");
+        return 1;
+    }
+    
+    if ((CheckNandFile(F_MOVABLE) != 0) ||
+        (CheckNandFile(F_TICKET) != 0) ||
+        (CheckNandFile(F_CONFIGSAVE) != 0) ||
+        (CheckNandFile(F_LOCALFRIEND) != 0) ||
+        (CheckNandFile(F_SECUREINFO) != 0)) {
+        Debug("CTRNAND is fragmented or corrupt");
+        return 1;
+    }
+    
+    Debug("");
+    Debug("Creating transferable CTRNAND, size (MB): %u", p_info->size / (1024 * 1024));
+    Debug("Select name for transfer file");
+    if (OutputFileNameSelector(filename, p_info->name, "bin") != 0)
+        return 1;
+    if (DecryptNandToFile(filename, p_info->offset, p_info->size, p_info, sha256) != 0)
+        return 1;
+    
+    sha256[0x20] = (u8) GetRegion();
+    snprintf(hashname, 64, "%s.sha", filename);
+    if ((sha256[0x20] > 6) || (FileDumpData(hashname, sha256, 0x21) != 0x21)) {
+        Debug("Failed creating hashfile");
+        return 1;
+    }
+    
+    return 0;
+}

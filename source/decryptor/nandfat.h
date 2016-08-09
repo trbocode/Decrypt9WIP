@@ -43,6 +43,7 @@ u32 FixCmac(u8* cmac, u8* data, u32 size, u32 keyslot);
 u32 GetRegion(void);
 u32 GetSystemId0(u8* id0);
 u32 DumpNcchFirm(u32 firm_idx, bool version, bool a9l_decrypt);
+u32 CheckNandFile(u32 param);
 
 // --> FEATURE FUNCTIONS <--
 u32 DumpNandFile(u32 param);
