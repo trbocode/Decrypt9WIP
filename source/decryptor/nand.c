@@ -823,7 +823,9 @@ u32 EncryptFileToNand(const char* filename, u32 offset, u32 size, PartitionInfo*
     if (!DebugFileOpen(filename))
         return 1;
     
-    if (FileGetSize() != size) {
+    u32 fsize = FileGetSize();
+        size = fsize;
+    } else if (fsize != size) {
         Debug("%s has wrong size", filename);
         FileClose();
         return 1;
