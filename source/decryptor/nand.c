@@ -9,7 +9,6 @@
 #include "decryptor/keys.h"
 #include "decryptor/nand.h"
 #include "fatfs/sdmmc.h"
-#include "NCSD_header_o3ds_hdr.h"
 
 // return values for NAND header check
 #define NAND_HDR_UNK  0 // should be zero
@@ -65,7 +64,9 @@ static PartitionInfo partitions[] = {
     { "FIRM",    {0x46, 0x49, 0x52, 0x4D, 0x00, 0x00, 0x00, 0x00}, 0x0B530000, 0x00400000, 0x6, AES_CNT_CTRNAND_MODE },
     { "CTRNAND", {0xE9, 0x00, 0x00, 0x43, 0x54, 0x52, 0x20, 0x20}, 0x0B95CA00, 0x2F3E3600, 0x4, AES_CNT_CTRNAND_MODE }, // O3DS
     { "CTRNAND", {0xE9, 0x00, 0x00, 0x43, 0x54, 0x52, 0x20, 0x20}, 0x0B95AE00, 0x41D2D200, 0x5, AES_CNT_CTRNAND_MODE }, // N3DS
-    { "CTRNAND", {0xE9, 0x00, 0x00, 0x43, 0x54, 0x52, 0x20, 0x20}, 0x0B95AE00, 0x41D2D200, 0x4, AES_CNT_CTRNAND_MODE }  // NO3DS
+    { "CTRNAND", {0xE9, 0x00, 0x00, 0x43, 0x54, 0x52, 0x20, 0x20}, 0x0B95AE00, 0x41D2D200, 0x4, AES_CNT_CTRNAND_MODE }, // NO3DS
+    { "CTRFULL", {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF}, 0x0B930000, 0x2F5D0000, 0x4, AES_CNT_CTRNAND_MODE }, // O3DS
+    { "CTRFULL", {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF}, 0x0B930000, 0x41ED0000, 0x5, AES_CNT_CTRNAND_MODE }  // N3DS
 };
 
 static u32 emunand_header = 0;
@@ -566,8 +567,10 @@ PartitionInfo* GetPartitionInfo(u32 partition_id)
 {
     u32 partition_num = 0;
     
-    if (partition_id == P_CTRNAND) {
+    if (partition_id & P_CTRNAND) {
         partition_num = (GetUnitPlatform() == PLATFORM_3DS) ? 5 : (CheckNandHeaderType(NULL) == NAND_HDR_N3DS) ? 6 : 7;
+    } else if (partition_id & P_CTRFULL) {
+        partition_num = (GetUnitPlatform() == PLATFORM_3DS) ? 8 : 9;
     } else {
         for(; !(partition_id & (1<<partition_num)) && (partition_num < 32); partition_num++);
     }
@@ -601,52 +604,6 @@ u32 GetNandCtr(u8* ctr, u32 offset)
     memcpy(ctr, (offset >= 0x0B100000) ? CtrNandCtr : TwlNandCtr, 16);
     add_ctr(ctr, offset / 0x10);
 
-    return 0;
-}
-
-u32 SwitchCtrNandCrypto(void)
-{
-    u8* buffer = BUFFER_ADDRESS;
-    PartitionInfo p_from = { .offset = 0x0B930000, .size = 0x41ED0000, .keyslot = 0x5, .mode = AES_CNT_CTRNAND_MODE };
-    PartitionInfo p_to   = { .offset = 0x0B930000, .size = 0x41ED0000, .keyslot = 0x4, .mode = AES_CNT_CTRNAND_MODE };
-    
-    // basic safety checks
-    if ((GetUnitPlatform() != PLATFORM_N3DS) || (CheckNandHeaderType(NULL) != NAND_HDR_N3DS))
-        return 1;
-    
-    // Encryption magic check
-    PartitionInfo* p_chk = GetPartitionInfo(P_CTRNAND);
-    if (DecryptNandToMem(buffer, p_chk->offset, 16, p_chk) != 0)
-        return 1;
-    if (memcmp(p_chk->magic, buffer, 8) != 0) {
-        Debug("CTRNAND is not slot0x05 encrypted!");
-        return 1;
-    }
-    
-    Debug("Switching CTRNAND partition 0x05 -> 0x04...");
-    u32 size = p_from.size;
-    u32 offset = p_from.offset;
-    for (u32 i = 0; i < size; i += NAND_SECTOR_SIZE * SECTORS_PER_READ) {
-        u32 read_bytes = min(NAND_SECTOR_SIZE * SECTORS_PER_READ, (size - i));
-        ShowProgress(i, size);
-        if ((DecryptNandToMem(buffer, offset + i, read_bytes, &p_from) != 0) ||
-            (EncryptMemToNand(buffer, offset + i, read_bytes, &p_to) != 0)) {
-            Debug("NAND i/o failure");
-            return 1;
-        }
-    }
-    ShowProgress(0, 0);
-    
-    // make a backup of the genuine header @0x200 (if genuine)
-    if (ReadNandSectors(0, 1, buffer) && (CheckNandHeaderIntegrity(buffer) == 0))
-        WriteNandSectors(1, 1, buffer); // only basic checks here - this is for last resort
-    
-    // write O3DS header
-    if ((NCSD_header_o3ds_hdr_size != 0x200) || (WriteNandSectors(0, 1, (u8*) NCSD_header_o3ds_hdr) != 0)) {
-        Debug("NAND header write failure");
-        return 1;
-    }
-    
     return 0;
 }
 
@@ -754,6 +711,16 @@ u32 DumpNand(u32 param)
     return result;
 }
 
+u32 GetNandHeader(u8* header)
+{
+    if (ReadNandSectors(0, 1, header) != 0)  {
+        Debug("%sNAND read error", (emunand_header) ? "Emu" : "Sys");
+        return 1;
+    }
+    
+    return 0;
+}
+
 u32 DumpNandHeader(u32 param)
 {
     char filename[64];
@@ -767,10 +734,8 @@ u32 DumpNandHeader(u32 param)
     if (OutputFileNameSelector(filename, "NAND_hdr.bin", NULL) != 0)
         return 1;
 
-    if (ReadNandSectors(0, 1, header) != 0)  {
-        Debug("%sNAND read error", (emunand_header) ? "Emu" : "Sys");
+    if (GetNandHeader(header) != 0)
         return 1;
-    }
     if (FileDumpData(filename, header, 0x200) != 0x200) {
         Debug("Error writing file");
         return 1;
@@ -785,12 +750,7 @@ u32 DecryptNandPartition(u32 param)
     char filename[64];
     u8 magic[NAND_SECTOR_SIZE];
     
-    for (u32 partition_id = P_TWLN; partition_id <= P_CTRNAND; partition_id = partition_id << 1) {
-        if (param & partition_id) {
-            p_info = GetPartitionInfo(partition_id);
-            break;
-        }
-    }
+    p_info = GetPartitionInfo(param);
     if (p_info == NULL)
         return 1;
     
@@ -987,6 +947,35 @@ u32 RestoreNand(u32 param)
     return result;
 }
 
+u32 PutNandHeader(u8* header)
+{
+    u8 header_old[0x200];
+    
+    if (header) { // inject provided header
+        // make a backup of the genuine header @0x200 (if genuine)
+        if (ReadNandSectors(0, 1, header_old) && (CheckNandHeaderIntegrity(header_old) == 0))
+            WriteNandSectors(1, 1, header_old); // only basic checks here - this is for last resort
+        // write provided header
+        if (WriteNandSectors(0, 1, header) != 0) {
+            Debug("%sNAND write error", (emunand_header) ? "Emu" : "Sys");
+            return 1;
+        }
+    } else {
+        // grab the genuine header backup @0x200
+        if (ReadNandSectors(1, 1, header_old) && (CheckNandHeaderIntegrity(header_old) != 0)) {
+            Debug("Header backup not found");
+            return 1;
+        }
+        // write backup header
+        if (WriteNandSectors(0, 1, header_old) != 0) {
+            Debug("%sNAND write error", (emunand_header) ? "Emu" : "Sys");
+            return 1;
+        }
+    }
+    
+    return 0;
+}
+
 u32 RestoreNandHeader(u32 param)
 {
     char filename[64];
@@ -1016,11 +1005,8 @@ u32 RestoreNandHeader(u32 param)
     }
     
     Debug("Restoring %sNAND header. Size (Byte): 512", (param & N_EMUNAND) ? "Emu" : "Sys");
-    
-    if (WriteNandSectors(0, 1, header) != 0) {
-        Debug("%sNAND write error", (emunand_header) ? "Emu" : "Sys");
+    if (PutNandHeader(header) != 0)
         return 1;
-    }
 
     return 0;
 }
@@ -1038,12 +1024,7 @@ u32 InjectNandPartition(u32 param)
     if (is_firm && !(param & N_EMUNAND) && !(param & N_A9LHWRITE))
         return 1;
     
-    for (u32 partition_id = P_TWLN; partition_id <= P_CTRNAND; partition_id = partition_id << 1) {
-        if (param & partition_id) {
-            p_info = GetPartitionInfo(partition_id);
-            break;
-        }
-    }
+    p_info = GetPartitionInfo(param);
     if (p_info == NULL)
         return 1;
     

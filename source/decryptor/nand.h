@@ -12,6 +12,7 @@
 #define P_FIRM0     (1<<3)
 #define P_FIRM1     (1<<4)
 #define P_CTRNAND   (1<<5)
+#define P_CTRFULL   (1<<8)
 
 // options for NAND backup & restore
 #define NB_MINSIZE  (1<<10)
@@ -43,12 +44,14 @@ typedef struct {
 PartitionInfo* GetPartitionInfo(u32 partition_id);
 u32 GetNandCtr(u8* ctr, u32 offset);
 
-u32 SwitchCtrNandCrypto(void);
 u32 CheckFirmSize(const u8* firm, u32 f_size);
 u32 DecryptFirmArm9Mem(u8* firm, u32 f_size);
 
 u32 OutputFileNameSelector(char* filename, const char* basename, char* extension);
 u32 InputFileNameSelector(char* filename, const char* basename, char* extension, u8* magic, u32 msize, u32 fsize, bool accept_bigger);
+
+u32 GetNandHeader(u8* header);
+u32 PutNandHeader(u8* header);
 
 u32 DecryptNandToMem(u8* buffer, u32 offset, u32 size, PartitionInfo* partition);
 u32 DecryptNandToFile(const char* filename, u32 offset, u32 size, PartitionInfo* partition, u8* sha256);
