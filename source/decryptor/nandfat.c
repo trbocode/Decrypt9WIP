@@ -386,25 +386,6 @@ u32 FixNandDataId0(void)
     return 0;
 }
 
-u32 FixCmac(u8* cmac, u8* data, u32 size, u32 keyslot)
-{
-    u8 lcmac[16] __attribute__((aligned(32)));
-    u8 shasum[32];
-    
-    // calculate cmac (local)
-    sha_quick(shasum, data, size, SHA256_MODE);
-    use_aeskey(keyslot);
-    aes_cmac(shasum, lcmac, 2);
-    if (memcmp(lcmac, cmac, 16) != 0) {
-        memcpy(cmac, lcmac, 16);
-        Debug("CMAC mismatch -> fixed CMAC");
-        return 1;
-    } else {
-        Debug("Validated CMAC okay");
-        return 0;
-    }
-}
-
 u32 GetRegion(void)
 {
     PartitionInfo* p_info = GetPartitionInfo(P_CTRNAND);
@@ -434,6 +415,65 @@ u32 GetSystemId0(u8* id0)
     }
     sha_quick(shasum, movableKeyY, 16, SHA256_MODE);
     memcpy(id0, shasum, 16);
+    
+    return 0;
+}
+
+u32 FixCmac(u8* cmac, u8* data, u32 size, u32 keyslot)
+{
+    u8 lcmac[16] __attribute__((aligned(32)));
+    u8 shasum[32];
+    
+    // calculate cmac (local)
+    sha_quick(shasum, data, size, SHA256_MODE);
+    use_aeskey(keyslot);
+    aes_cmac(shasum, lcmac, 2);
+    if (memcmp(lcmac, cmac, 16) != 0) {
+        memcpy(cmac, lcmac, 16);
+        Debug("CMAC mismatch -> fixed CMAC");
+        return 1;
+    } else {
+        Debug("Validated CMAC okay");
+        return 0;
+    }
+}
+
+u32 FixNandCmac(u32 param) {
+    NandFileInfo* f_info = GetNandFileInfo(param);
+    PartitionInfo* p_info = GetPartitionInfo(f_info->partition_id);
+    u8 data[0x200];
+    u8 temp[0x200];
+    u32 offset;
+    u32 size;
+    u64 id = 0;
+    
+    if (DebugSeekFileInNand(&offset, &size, f_info->name_l, f_info->path, p_info) != 0)
+        return 1;
+    if (DecryptNandToMem(data, offset, 0x200, p_info) != 0)
+        return 1;
+    
+    if (f_info - fileList < 6) { // .db files
+        id = f_info - fileList;
+        Debug("CMAC id: %llu", id); 
+        memcpy(temp + 0x0, "CTR-9DB0", 8);
+        memcpy(temp + 0x8, &id, 4);
+        memcpy(temp + 0xC, data + 0x100, 0x100);
+        if ((FixCmac(data, temp, 0x10C, 0x0B) != 0) && (EncryptMemToNand(data, offset, 0x200, p_info) != 0))
+            return 1;
+    } else if (sscanf(f_info->path, "DATA       ???????????SYSDATA    %08llX   00000000   ", &id) == 1) { // system save
+        Debug("CMAC id: %08llX", id); 
+        SetupMovableKeyY(true, 0x30, NULL);
+        memcpy(temp + 0x00, "CTR-SYS0", 8);
+        memcpy(temp + 0x08, &id, 8);
+        memcpy(temp + 0x10, data + 0x100, 0x100);
+        if ((FixCmac(data, temp, 0x110, 0x30) != 0) && (EncryptMemToNand(data, offset, 0x200, p_info) != 0))
+            return 1;
+    } else if ((param == F_MOVABLE) && (size == 0x140)) { // movable.sed
+        if ((FixCmac(data + 0x130, data, 0x130, 0x0B) != 0) && (EncryptMemToNand(data, offset, 0x200, p_info) != 0))
+            return 1;
+    } else {
+        Debug("File has no fixable CMAC");
+    }
     
     return 0;
 }
@@ -741,14 +781,6 @@ u32 DumpNcchFirms(u32 param)
 
 u32 AutoFixCtrnand(u32 param)
 {
-    NandFileInfo* f_info;
-    PartitionInfo* p_info;
-    u8 header[0x200];
-    u8 temp[0x200];
-    u32 offset;
-    u32 size;
-    u32 res = 0;
-    
     if (!(param & N_NANDWRITE)) // developer screwup protection
         return 1;
     
@@ -756,59 +788,24 @@ u32 AutoFixCtrnand(u32 param)
     if (FixNandDataId0() != 0)
         return 1;
     
-    Debug("Checking and fixing .db CMACs...");
-    for (u32 id = 0; id < 6; id++) { // fix CMACs for .db files
-        f_info = fileList + id;
-        p_info = GetPartitionInfo(f_info->partition_id);
-        if ((DebugSeekFileInNand(&offset, &size, f_info->name_l, f_info->path, p_info) != 0) || (size < 0x200)) {
-            res = 1;
-            continue;
-        }
-        if (DecryptNandToMem(header, offset, 0x200, p_info) != 0)
-            return 1;
-        memcpy(temp + 0x0, "CTR-9DB0", 8);
-        memcpy(temp + 0x8, &id, 4);
-        memcpy(temp + 0xC, header + 0x100, 0x100);
-        if ((FixCmac(header, temp, 0x10C, 0x0B) != 0) && (EncryptMemToNand(header, offset, 0x200, p_info) != 0))
-            return 1;
-    }
+    Debug("Fixing essential system file CMACs");
+    if ((FixNandCmac(F_TICKET)  != 0) ||
+        (FixNandCmac(F_CERTS)   != 0) ||
+        (FixNandCmac(F_TITLE)   != 0) ||
+        (FixNandCmac(F_IMPORT)  != 0) ||
+        (FixNandCmac(F_MOVABLE) != 0))
+        return 1;
+        
+    Debug("Fixing other system file CMACs");
+    FixNandCmac(F_TMPTDB);
+    FixNandCmac(F_TMPIDB);
+    FixNandCmac(F_SEEDSAVE);
+    FixNandCmac(F_NAGSAVE);
+    FixNandCmac(F_NNIDSAVE);
+    FixNandCmac(F_FRIENDSAVE);
+    FixNandCmac(F_FRIENDSAVE);
     
-    SetupMovableKeyY(true, 0x30, NULL);
-    Debug("Checking and fixing config save...");
-    f_info = GetNandFileInfo(F_CONFIGSAVE);
-    p_info = GetPartitionInfo(f_info->partition_id);
-    if ((DebugSeekFileInNand(&offset, &size, f_info->name_l, f_info->path, p_info) != 0) || (size < 0x200)) {
-        return 0;
-    }
-    if (DecryptNandToMem(header, offset, 0x200, p_info) != 0)
-        return 1;
-    u64 save_id = 0x00010017; 
-    memcpy(temp + 0x00, "CTR-SYS0", 8);
-    memcpy(temp + 0x08, &save_id, 8);
-    memcpy(temp + 0x10, header + 0x100, 0x100);
-    if ((FixCmac(header, temp, 0x110, 0x30) != 0) && (EncryptMemToNand(header, offset, 0x200, p_info) != 0))
-        return 1;
-    
-    Debug("Checking and fixing movable.sed CMAC...");
-    f_info = GetNandFileInfo(F_MOVABLE);
-    p_info = GetPartitionInfo(f_info->partition_id);
-    u8 movable[0x200];
-    if ((DebugSeekFileInNand(&offset, &size, f_info->name_l, f_info->path, p_info) != 0) || (size < 0x120)) {
-        return 1;
-    }
-    if (size == 0x120) {
-        Debug("movable.sed has no CMAC yet");
-        return res;
-    } else if (size != 0x140) {
-        Debug("movable.sed has bad size");
-        return 1;
-    }
-    if (DecryptNandToMem(movable, offset, 0x200, p_info) != 0)
-        return 1;
-    if ((FixCmac(movable + 0x130, movable, 0x130, 0x0B) != 0) && (EncryptMemToNand(movable, offset, 0x200, p_info) != 0))
-            return 1;
-    
-    return res;
+    return 0;
 }
 
 u32 UpdateSeedDb(u32 param)

@@ -80,10 +80,8 @@ u32 SetupMovableKeyY(bool from_nand, u32 keyslot, u8* movable_key) // setup the 
         PartitionInfo* p_info = GetPartitionInfo(P_CTRNAND);
         u32 offset;
         u32 size;
-        if (DebugSeekFileInNand(&offset, &size, "movable.sed", "PRIVATE    MOVABLE SED", p_info) != 0)
-            return 1;
-        if (size < 0x120) {
-            Debug("movable.sed has bad size!");
+        if ((SeekFileInNand(&offset, &size, "PRIVATE    MOVABLE SED", p_info) != 0) || (size < 0x120)) {
+            Debug("movable.sed not found or bad size!");
             return 1;
         }
         if (DecryptNandToMem(movable_sed, offset, 0x120, p_info) != 0)
